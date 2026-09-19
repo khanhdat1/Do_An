@@ -1,0 +1,865 @@
+// =============================================================================
+// PCZone — Prisma schema (MySQL 8)
+// Đồ án chuyên ngành — Build Your Power, Own Your Zone
+//
+// Tổ chức theo 4 tầng:
+//   TẦNG 1 — CATALOG      : Category, Brand, Product, ProductImage, ProductSpec
+//   TẦNG 2 — NGƯỜI DÙNG   : User, Address, RefreshToken
+//   TẦNG 3 — THƯƠNG MẠI   : Cart, Order, Payment, Inventory, Voucher, Review...
+//   TẦNG 4 — AI           : Embedding, Conversation, PcBuild, SearchLog
+//
+// Lưu ý MySQL: Prisma tự tạo index cho mọi khoá ngoại (InnoDB bắt buộc),
+// nên bên dưới chỉ khai báo thêm các index phục vụ truy vấn thực tế.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+  // Từ Prisma 6.19 trở đi, @@fulltext dùng được thẳng — không cần khai báo
+  // previewFeatures = ["fullTextIndex"] nữa (khai báo sẽ bị cảnh báo deprecated).
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum UserRole {
+  CUSTOMER
+  STAFF
+  ADMIN
+}
+
+enum ProductStatus {
+  DRAFT // đang nhập liệu, chưa hiện
+  ACTIVE // đang bán
+  HIDDEN // tạm ẩn
+  DISCONTINUED // ngừng kinh doanh
+}
+
+enum StockStatus {
+  IN_STOCK
+  OUT_OF_STOCK
+  PREORDER
+  UNKNOWN
+}
+
+enum OrderStatus {
+  PENDING // chờ xác nhận
+  CONFIRMED // đã xác nhận
+  PACKING // đang đóng gói
+  SHIPPING // đang giao
+  DELIVERED // đã giao
+  CANCELLED // đã huỷ
+  RETURNED // hoàn trả
+}
+
+enum PaymentMethod {
+  COD
+  VNPAY
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+enum InventoryTxType {
+  IMPORT // nhập kho
+  EXPORT // xuất kho (bán)
+  ADJUST // kiểm kê / điều chỉnh
+  RETURN // khách trả hàng
+}
+
+enum ComponentType {
+  CPU
+  MAINBOARD
+  RAM
+  VGA
+  SSD
+  HDD
+  PSU
+  CASE
+  COOLER
+  MONITOR
+  KEYBOARD
+  MOUSE
+  OTHER
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum EmbeddingStatus {
+  PENDING // chờ sinh vector
+  INDEXED // đã có trong Qdrant
+  STALE // dữ liệu sản phẩm đổi, cần sinh lại
+  FAILED
+}
+
+// =============================================================================
+// TẦNG 1 — CATALOG
+// Kế thừa từ crawler KCCShop, bổ sung các trường vận hành của PCZone.
+// =============================================================================
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  slug        String  @unique
+  description String? @db.Text
+  imageUrl    String? @db.VarChar(500)
+  icon        String? // tên icon hiển thị ở lưới danh mục trang chủ
+
+  // Danh mục cha–con: "Linh kiện" > "Mainboard"
+  parentId String?
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryTree")
+
+  // Loại linh kiện dùng cho AI Build PC. Danh mục không phải linh kiện để null.
+  componentType ComponentType?
+
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([parentId, sortOrder])
+  @@index([componentType])
+}
+
+model Brand {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  slug        String  @unique
+  logoUrl     String? @db.VarChar(500)
+  description String? @db.Text
+  website     String? @db.VarChar(500)
+
+  isActive  Boolean   @default(true)
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id   String @id @default(cuid())
+  name String @db.VarChar(300)
+  slug String @unique
+
+  // --- Mã hàng & nguồn dữ liệu -------------------------------------------
+  sku       String  @unique // mã nội bộ PCZone, VD: PCZ-MB-ASR-B760M
+  source    String  @default("MANUAL") // MANUAL | KCCSHOP | ASROCK | GIGABYTE...
+  sourceUrl String? @unique @db.VarChar(500) // URL gốc khi dữ liệu do crawler sinh
+
+  // --- Giá (VNĐ, không có phần thập phân) ---------------------------------
+  costPrice     Decimal? @db.Decimal(14, 0) // giá vốn — chỉ admin thấy
+  sellingPrice  Decimal  @db.Decimal(14, 0) // giá bán hiện tại
+  originalPrice Decimal? @db.Decimal(14, 0) // giá niêm yết, để gạch ngang
+  refPrice      Decimal? @db.Decimal(14, 0) // giá tham khảo từ nguồn crawl
+
+  // --- Kho ----------------------------------------------------------------
+  inventoryQuantity Int         @default(0)
+  reservedQuantity  Int         @default(0) // đã giữ cho đơn chưa hoàn tất
+  lowStockThreshold Int         @default(5)
+  stockStatus       StockStatus @default(UNKNOWN)
+
+  // --- Nội dung -----------------------------------------------------------
+  shortDescription String? @db.VarChar(500)
+  description      String? @db.LongText
+  shortSpecs       Json? // MySQL không có mảng: lưu ["...","..."] dạng JSON
+  specifications   Json? // thông số thô dạng { "Chipset": "Intel B760", ... }
+  warrantyMonths   Int?
+
+  // --- Trạng thái & marketing ---------------------------------------------
+  status     ProductStatus @default(DRAFT)
+  isFeatured Boolean       @default(false)
+  isFlashSale Boolean      @default(false)
+  flashSaleEndsAt DateTime?
+
+  // --- Số liệu tổng hợp (denormalized để tránh COUNT mỗi lần render) -------
+  viewCount   Int     @default(0)
+  soldCount   Int     @default(0)
+  ratingAvg   Decimal @default(0) @db.Decimal(3, 2) // 0.00 – 5.00
+  ratingCount Int     @default(0)
+
+  // --- Hỗ trợ AI ----------------------------------------------------------
+  // Văn bản đã gộp sẵn (tên + brand + specs) để sinh embedding và tìm kiếm.
+  aiSearchText String? @db.LongText
+
+  // --- SEO ----------------------------------------------------------------
+  metaTitle       String? @db.VarChar(300)
+  metaDescription String? @db.VarChar(500)
+
+  // --- Quan hệ ------------------------------------------------------------
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  brandId    String?
+  brand      Brand?   @relation(fields: [brandId], references: [id], onDelete: SetNull)
+
+  images       ProductImage[]
+  spec         ProductSpec?
+  embedding    ProductEmbedding?
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+  reviews      Review[]
+  wishlistedBy WishlistItem[]
+  buildItems   PcBuildItem[]
+  inventoryTxs InventoryTransaction[]
+
+  publishedAt DateTime?
+  scrapedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Index phục vụ trang danh mục: lọc theo danh mục + trạng thái, sắp theo giá
+  @@index([categoryId, status, sellingPrice])
+  @@index([brandId, status])
+  @@index([status, isFeatured])
+  @@index([status, isFlashSale, flashSaleEndsAt])
+  @@index([sellingPrice])
+  @@index([soldCount])
+  @@fulltext([name, shortDescription])
+}
+
+model ProductImage {
+  id String @id @default(cuid())
+
+  /// URL để hiển thị. Sau khi qua tầng ingest, đây là đường dẫn NỘI BỘ của
+  /// PCZone (VD /images/products/PCZ-MB-.../a1b2c3-medium.webp), không còn trỏ
+  /// sang server của hãng. Hotlink sang asrock.com/gigabyte.com là rủi ro:
+  /// hãng đổi đường dẫn hoặc chặn Referer là ảnh chết hàng loạt.
+  url String  @db.VarChar(500)
+  alt String? @db.VarChar(300)
+
+  position  Int     @default(0)
+  isPrimary Boolean @default(false)
+
+  // --- Truy vết nguồn gốc --------------------------------------------------
+  /// ASROCK | GIGABYTE | KCCSHOP | MANUAL
+  source    String? @db.VarChar(50)
+  /// Trang sản phẩm nơi tìm ra ảnh
+  sourceUrl String? @db.VarChar(500)
+  /// URL ảnh gốc trước khi tải về — để tải lại khi cần
+  remoteUrl String? @db.VarChar(500)
+
+  // --- Ảnh đã tự host ------------------------------------------------------
+  /// Đường dẫn tương đối trên đĩa, so với IMAGE_STORAGE_DIR
+  localPath String? @db.VarChar(500)
+  width     Int?
+  height    Int?
+  bytes     Int?
+  /// SHA-256 của file gốc — dùng để bỏ ảnh trùng nội dung dù khác URL
+  checksum  String? @db.VarChar(64)
+
+  /// true khi ảnh chưa đạt: còn watermark của shop khác, hoặc so khớp model
+  /// chưa chắc chắn. Frontend KHÔNG hiển thị ảnh này, admin lọc ra để xử lý.
+  needsReview Boolean @default(false)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  // Chặn ảnh trùng URL trong cùng một sản phẩm (phục hồi ràng buộc đã bị bỏ)
+  @@unique([productId, url(length: 255)])
+  // Chặn trùng theo nội dung file, kể cả khi URL khác nhau
+  @@unique([productId, checksum])
+  @@index([productId, position])
+  @@index([source, needsReview])
+}
+
+/// Thông số kỹ thuật đã chuẩn hoá — đây là bảng mà AI Build PC dùng để kiểm tra
+/// tương thích. `Product.specifications` giữ dữ liệu thô; bảng này giữ các
+/// trường có kiểu rõ ràng, so sánh được bằng SQL.
+model ProductSpec {
+  id        String  @id @default(cuid())
+  productId String  @unique
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  componentType ComponentType
+
+  // --- CPU & Mainboard ----------------------------------------------------
+  socket     String? @db.VarChar(50) // LGA1700, AM5...
+  chipset    String? @db.VarChar(50) // B760, X670E...
+  cpuCores   Int?
+  cpuThreads Int?
+  baseClock  Decimal? @db.Decimal(5, 2) // GHz
+  boostClock Decimal? @db.Decimal(5, 2)
+  hasIgpu    Boolean? // CPU có nhân đồ hoạ tích hợp không
+
+  // --- RAM ----------------------------------------------------------------
+  ramType     String? @db.VarChar(20) // DDR4, DDR5
+  ramSpeed    Int? // MHz
+  ramCapacity Int? // GB của một kit
+  ramModules  Int? // số thanh trong kit
+  ramSlots    Int? // mainboard có bao nhiêu khe
+  maxRamGb    Int? // mainboard hỗ trợ tối đa
+
+  // --- VGA ----------------------------------------------------------------
+  vramGb       Int?
+  gpuLengthMm  Int? // để so với độ dài tối đa của case
+  gpuSlotWidth Decimal? @db.Decimal(3, 1) // 2.0, 2.5, 3.0 slot
+  gpuPowerPins String?  @db.VarChar(50) // "1x16-pin", "2x8-pin"
+
+  // --- Lưu trữ ------------------------------------------------------------
+  storageCapacityGb Int?
+  storageInterface  String? @db.VarChar(30) // NVMe PCIe 4.0, SATA III
+  storageFormFactor String? @db.VarChar(30) // M.2 2280, 2.5"
+
+  // --- PSU ----------------------------------------------------------------
+  psuWattage     Int?
+  psuEfficiency  String? @db.VarChar(30) // 80 Plus Gold
+  psuModular     String? @db.VarChar(20) // Full, Semi, Non
+  psuFormFactor  String? @db.VarChar(20) // ATX, SFX
+
+  // --- Case ---------------------------------------------------------------
+  caseFormFactors  Json? // ["ATX","mATX","ITX"] — mainboard case này nhận
+  caseMaxGpuMm     Int?
+  caseMaxCoolerMm  Int?
+  caseMaxPsuMm     Int?
+
+  // --- Tản nhiệt & điện năng ----------------------------------------------
+  coolerHeightMm Int?
+  coolerTdpWatts Int? // khả năng giải nhiệt tối đa
+  tdpWatts       Int? // điện năng tiêu thụ của linh kiện này
+
+  // --- Chung --------------------------------------------------------------
+  formFactor String? @db.VarChar(30) // ATX, mATX, ITX cho mainboard
+  extra      Json? // trường phát sinh riêng của từng loại
+
+  updatedAt DateTime @updatedAt
+
+  // Các index dưới đây là đường đi chính của thuật toán kiểm tra tương thích
+  @@index([componentType, socket])
+  @@index([componentType, ramType])
+  @@index([componentType, psuWattage])
+  @@index([componentType, formFactor])
+}
+
+// =============================================================================
+// TẦNG 2 — NGƯỜI DÙNG & XÁC THỰC
+// =============================================================================
+
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  passwordHash String // bcrypt
+  fullName     String  @db.VarChar(150)
+  phone        String? @db.VarChar(20)
+  avatarUrl    String? @db.VarChar(500)
+
+  role     UserRole @default(CUSTOMER)
+  isActive Boolean  @default(true)
+
+  emailVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+
+  addresses     Address[]
+  refreshTokens RefreshToken[]
+  cart          Cart?
+  orders        Order[]
+  reviews       Review[]
+  wishlist      WishlistItem[]
+  conversations AiConversation[]
+  builds        PcBuild[]
+  searchLogs    AiSearchLog[]
+  voucherUses   VoucherRedemption[]
+  inventoryTxs  InventoryTransaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role, isActive])
+  @@index([phone])
+}
+
+model Address {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  recipientName String  @db.VarChar(150)
+  phone         String  @db.VarChar(20)
+  province      String  @db.VarChar(100) // Tỉnh/Thành phố
+  district      String  @db.VarChar(100) // Quận/Huyện
+  ward          String  @db.VarChar(100) // Phường/Xã
+  streetAddress String  @db.VarChar(300)
+  note          String? @db.VarChar(500)
+
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isDefault])
+}
+
+/// Refresh token cho luồng JWT. Access token không lưu DB.
+model RefreshToken {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tokenHash String    @unique // lưu hash, không lưu token gốc
+  userAgent String?   @db.VarChar(300)
+  ipAddress String?   @db.VarChar(45)
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, expiresAt])
+}
+
+// =============================================================================
+// TẦNG 3 — GIỎ HÀNG, ĐƠN HÀNG, THANH TOÁN
+// =============================================================================
+
+model Cart {
+  id String @id @default(cuid())
+
+  // Giỏ của khách đã đăng nhập, hoặc giỏ khách vãng lai theo sessionId.
+  // MySQL cho phép nhiều NULL trong unique index nên hai trường này cùng nullable.
+  userId    String? @unique
+  user      User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId String? @unique @db.VarChar(100)
+
+  items CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([updatedAt]) // dọn giỏ vãng lai quá hạn
+}
+
+model CartItem {
+  id     String @id @default(cuid())
+  cartId String
+  cart   Cart   @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  quantity Int @default(1)
+
+  // Giá tại thời điểm thêm vào giỏ — để cảnh báo khi giá thay đổi
+  priceAtAdd Decimal @db.Decimal(14, 0)
+
+  // Nếu item này được thêm từ một cấu hình AI Build PC
+  buildId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])
+}
+
+model Order {
+  id        String @id @default(cuid())
+  orderCode String @unique @db.VarChar(30) // PCZ20260919-0001, hiển thị cho khách
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  status OrderStatus @default(PENDING)
+
+  // --- Tiền (VNĐ) ---------------------------------------------------------
+  subtotal       Decimal @db.Decimal(14, 0) // tổng tiền hàng
+  discountAmount Decimal @default(0) @db.Decimal(14, 0)
+  shippingFee    Decimal @default(0) @db.Decimal(14, 0)
+  totalAmount    Decimal @db.Decimal(14, 0) // subtotal - discount + shipping
+
+  // --- Thanh toán ---------------------------------------------------------
+  paymentMethod PaymentMethod @default(COD)
+  paymentStatus PaymentStatus @default(PENDING)
+
+  // --- Địa chỉ giao hàng: SNAPSHOT, không phải khoá ngoại ------------------
+  // Khách có thể sửa/xoá địa chỉ sau khi đặt; đơn phải giữ nguyên thông tin cũ.
+  recipientName    String  @db.VarChar(150)
+  recipientPhone   String  @db.VarChar(20)
+  shippingProvince String  @db.VarChar(100)
+  shippingDistrict String  @db.VarChar(100)
+  shippingWard     String  @db.VarChar(100)
+  shippingAddress  String  @db.VarChar(300)
+  customerNote     String? @db.VarChar(500)
+  internalNote     String? @db.VarChar(500) // ghi chú nội bộ của nhân viên
+
+  voucherId String?
+  voucher   Voucher? @relation(fields: [voucherId], references: [id], onDelete: SetNull)
+
+  items         OrderItem[]
+  payments      Payment[]
+  statusHistory OrderStatusHistory[]
+  inventoryTxs  InventoryTransaction[]
+  reviews       Review[]
+
+  confirmedAt DateTime?
+  shippedAt   DateTime?
+  deliveredAt DateTime?
+  cancelledAt DateTime?
+  cancelReason String? @db.VarChar(300)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([paymentStatus])
+  @@index([createdAt]) // báo cáo doanh thu theo thời gian
+}
+
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  // SNAPSHOT tại thời điểm đặt — sản phẩm có thể đổi tên, đổi giá, bị xoá
+  productName String  @db.VarChar(300)
+  productSku  String  @db.VarChar(100)
+  productImage String? @db.VarChar(500)
+
+  unitPrice Decimal @db.Decimal(14, 0)
+  quantity  Int
+  lineTotal Decimal @db.Decimal(14, 0) // unitPrice * quantity
+
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+}
+
+/// Lịch sử chuyển trạng thái đơn — phục vụ tra soát và màn hình theo dõi đơn.
+model OrderStatusHistory {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  note       String?      @db.VarChar(300)
+  changedBy  String? // userId của nhân viên, hoặc null nếu hệ thống tự đổi
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+/// Một đơn có thể có nhiều lần thử thanh toán (thất bại rồi thử lại).
+model Payment {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  method PaymentMethod
+  status PaymentStatus @default(PENDING)
+  amount Decimal       @db.Decimal(14, 0)
+
+  // --- Trường riêng của VNPay Sandbox -------------------------------------
+  transactionNo String? @db.VarChar(100) // vnp_TransactionNo
+  bankCode      String? @db.VarChar(50) // vnp_BankCode
+  responseCode  String? @db.VarChar(10) // vnp_ResponseCode ("00" = thành công)
+  payUrl        String? @db.VarChar(1000)
+  gatewayData   Json? // toàn bộ payload IPN/return để đối soát
+
+  paidAt     DateTime?
+  refundedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId, status])
+  @@index([transactionNo])
+}
+
+/// Sổ nhập–xuất kho. Mọi thay đổi Product.inventoryQuantity nên đi kèm một dòng
+/// ở đây để số tồn luôn truy vết được.
+model InventoryTransaction {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  type           InventoryTxType
+  quantityChange Int // âm khi xuất, dương khi nhập
+  quantityAfter  Int // tồn kho sau giao dịch
+
+  orderId String?
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  unitCost Decimal? @db.Decimal(14, 0) // giá nhập, dùng tính giá vốn
+  note     String?  @db.VarChar(300)
+
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([productId, createdAt])
+  @@index([type, createdAt])
+}
+
+// =============================================================================
+// TẦNG 3B — TÍNH NĂNG NÂNG CAO: VOUCHER, ĐÁNH GIÁ, YÊU THÍCH
+// =============================================================================
+
+model Voucher {
+  id   String @id @default(cuid())
+  code String @unique @db.VarChar(50)
+  name String @db.VarChar(200)
+  description String? @db.VarChar(500)
+
+  discountType  DiscountType
+  discountValue Decimal      @db.Decimal(14, 2) // % nếu PERCENT, VNĐ nếu FIXED
+
+  minOrderAmount Decimal? @db.Decimal(14, 0) // đơn tối thiểu để áp dụng
+  maxDiscount    Decimal? @db.Decimal(14, 0) // trần giảm khi dùng PERCENT
+
+  usageLimit     Int? // tổng lượt dùng, null = không giới hạn
+  usageCount     Int  @default(0)
+  perUserLimit   Int  @default(1)
+
+  startsAt DateTime
+  endsAt   DateTime
+  isActive Boolean  @default(true)
+
+  orders      Order[]
+  redemptions VoucherRedemption[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, startsAt, endsAt])
+}
+
+model VoucherRedemption {
+  id        String  @id @default(cuid())
+  voucherId String
+  voucher   Voucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  orderId        String  @db.VarChar(30)
+  discountApplied Decimal @db.Decimal(14, 0)
+
+  createdAt DateTime @default(now())
+
+  @@index([voucherId, userId]) // đếm số lần một người đã dùng mã
+}
+
+model Review {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Ràng buộc "đã mua mới được đánh giá"
+  orderId String?
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  rating  Int // 1..5 — kiểm tra ở tầng service, MySQL không có CHECK qua Prisma
+  title   String? @db.VarChar(200)
+  content String? @db.Text
+  images  Json? // ["url1","url2"]
+
+  isApproved Boolean @default(false) // admin duyệt trước khi hiển thị
+  isVerified Boolean @default(false) // đã xác minh là khách mua hàng
+
+  adminReply   String?   @db.Text
+  adminRepliedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Mỗi người chỉ đánh giá một sản phẩm một lần trong một đơn
+  @@unique([productId, userId, orderId])
+  @@index([productId, isApproved, createdAt])
+  @@index([rating])
+}
+
+model WishlistItem {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId, createdAt])
+}
+
+// =============================================================================
+// TẦNG 4 — AI
+// Vector nằm ở Qdrant. MySQL chỉ giữ ánh xạ và trạng thái đồng bộ.
+// =============================================================================
+
+/// Ánh xạ Product <-> vector trong Qdrant. `contentHash` cho biết nội dung sản
+/// phẩm đã đổi so với lúc sinh vector hay chưa để đánh dấu STALE.
+model ProductEmbedding {
+  id        String  @id @default(cuid())
+  productId String  @unique
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  vectorId    String  @unique @db.VarChar(100) // point id bên Qdrant
+  collection  String  @default("pczone_products") @db.VarChar(100)
+  model       String  @db.VarChar(100) // tên model sinh embedding
+  dimensions  Int
+  contentHash String  @db.VarChar(64) // SHA-256 của aiSearchText
+  chunkText   String? @db.LongText // văn bản đã đưa vào embedding
+
+  status      EmbeddingStatus @default(PENDING)
+  errorMessage String?        @db.VarChar(500)
+  indexedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status]) // job nền quét PENDING/STALE
+}
+
+model AiConversation {
+  id String @id @default(cuid())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  sessionId String? @db.VarChar(100) // khách vãng lai
+  title     String? @db.VarChar(300) // tóm tắt tự sinh, hiện ở danh sách chat
+
+  messages AiMessage[]
+
+  lastMessageAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId, lastMessageAt])
+  @@index([sessionId])
+}
+
+model AiMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  role    MessageRole
+  content String      @db.LongText
+
+  // Sản phẩm mà câu trả lời đã trích dẫn — bằng chứng cho nguyên tắc
+  // "AI chỉ dùng dữ liệu lấy từ DB, không tự sinh thông tin sản phẩm".
+  citedProductIds Json? // ["prod_id_1","prod_id_2"]
+  retrievedChunks Json? // kết quả RAG thô, để debug và chấm chất lượng
+
+  tokensIn  Int?
+  tokensOut Int?
+  latencyMs Int?
+  model     String? @db.VarChar(100)
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+/// Một cấu hình PC do khách tự ráp hoặc do AI Build PC đề xuất.
+model PcBuild {
+  id String @id @default(cuid())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  sessionId String? @db.VarChar(100)
+  name      String  @db.VarChar(200)
+  purpose   String? @db.VarChar(100) // gaming, đồ hoạ, văn phòng
+  budget    Decimal? @db.Decimal(14, 0) // ngân sách khách đưa ra
+
+  totalPrice        Decimal @default(0) @db.Decimal(14, 0)
+  estimatedWattage  Int     @default(0) // tổng TDP ước tính
+  recommendedPsuW   Int? // = estimatedWattage * 1.3, làm tròn lên
+
+  // Kết quả kiểm tra tương thích: [{rule, severity, message, productIds}]
+  validationResult Json?
+  isValid          Boolean @default(false)
+
+  // AI tạo hay người dùng tự ráp
+  isAiGenerated Boolean @default(false)
+  aiPrompt      String? @db.Text
+
+  // Chia sẻ cấu hình qua link
+  isPublic  Boolean @default(false)
+  shareCode String? @unique @db.VarChar(20)
+
+  items PcBuildItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([isPublic, createdAt])
+}
+
+model PcBuildItem {
+  id      String  @id @default(cuid())
+  buildId String
+  build   PcBuild @relation(fields: [buildId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  componentType ComponentType
+  quantity      Int           @default(1)
+  priceAtAdd    Decimal       @db.Decimal(14, 0)
+
+  createdAt DateTime @default(now())
+
+  // Mỗi loại linh kiện chỉ xuất hiện một dòng trong một cấu hình
+  // (RAM 2 thanh -> một dòng quantity = 2)
+  @@unique([buildId, componentType])
+  @@index([productId])
+}
+
+/// Nhật ký tìm kiếm AI — dùng để đo chất lượng RAG và viết phần đánh giá
+/// trong báo cáo đồ án.
+model AiSearchLog {
+  id String @id @default(cuid())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  sessionId String? @db.VarChar(100)
+  query     String  @db.VarChar(500)
+
+  // Truy vấn có cấu trúc mà AI đã suy ra từ câu hỏi tự nhiên,
+  // VD: { "category":"VGA", "maxPrice":15000000, "brand":"ASUS" }
+  parsedFilters Json?
+
+  resultCount   Int  @default(0)
+  clickedProductId String? @db.VarChar(50) // sản phẩm khách bấm vào
+  tookMs        Int?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}
