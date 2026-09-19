@@ -1,9 +1,10 @@
-import { PrismaClient, Prisma, ComponentType, ProductStatus } from "@prisma/client";
+import { prisma, Prisma, ComponentType, ProductStatus } from "@pczone/db";
 import { createHash } from "node:crypto";
 import { toSlug } from "./utils.js";
 import type { ScrapedProduct } from "./types.js";
 
-export const prisma = new PrismaClient();
+// Prisma Client dùng chung cho cả monorepo (xem packages/db)
+export { prisma };
 
 /*
  * Nguyên tắc: dữ liệu crawl từ KCCShop là NGUỒN THAM KHẢO, không phải dữ liệu

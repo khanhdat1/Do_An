@@ -1,30 +1,33 @@
 {
-  "name": "pczone-kccshop-crawler",
+  "name": "pczone",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
+  "description": "PCZone – Đồ án chuyên ngành. Monorepo: web (Next.js) + api (Express) + crawler + db (Prisma).",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "tsx src/index.ts",
-    "crawl": "tsx src/index.ts crawl",
-    "single": "tsx src/index.ts single",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev --name init",
-    "prisma:studio": "prisma studio",
-    "build": "tsc -p tsconfig.json"
+    "setup": "npm install && npm run db:generate && npm run db:build",
+
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:generate": "npm run generate -w @pczone/db",
+    "db:build": "npm run build -w @pczone/db",
+    "db:migrate": "npm run migrate -w @pczone/db",
+    "db:seed": "npm run seed -w @pczone/db",
+    "db:studio": "npm run studio -w @pczone/db",
+
+    "dev:api": "npm run db:build && npm run dev -w @pczone/api",
+    "dev:web": "npm run dev -w @pczone/web",
+
+    "crawl": "npm run crawl -w @pczone/crawler",
+    "sync-images": "npm run sync-images -w @pczone/crawler",
+
+    "build": "npm run db:build && npm run build -w @pczone/api && npm run build -w @pczone/web",
+    "typecheck": "npm run db:build && npm run typecheck -w @pczone/api"
   },
-  "dependencies": {
-    "@prisma/client": "^6.16.2",
-    "axios": "^1.12.2",
-    "cheerio": "^1.1.2",
-    "dotenv": "^17.2.2",
-    "p-limit": "^7.1.1",
-    "sharp": "^0.35.4",
-    "slugify": "^1.6.6"
-  },
-  "devDependencies": {
-    "@types/node": "^22.18.6",
-    "prisma": "^6.16.2",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+  "engines": {
+    "node": ">=20"
   }
 }

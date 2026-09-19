@@ -1,4 +1,18 @@
-node_modules
-dist
+node_modules/
+dist/
+.next/
+out/
+build/
+
 .env
+.env.local
+.env*.local
+
 *.log
+npm-debug.log*
+
+.DS_Store
+.cache/
+
+# Ảnh sản phẩm tải về từ crawler – không commit vào git
+apps/web/public/images/products/
