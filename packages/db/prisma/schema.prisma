@@ -193,6 +193,16 @@ model Product {
   isFlashSale Boolean      @default(false)
   flashSaleEndsAt DateTime?
 
+  // Nhãn nhỏ hiển thị đè lên ảnh ở thẻ sản phẩm: "Trả góp 0%", "Giá sốc"
+  promoTag  String? @db.VarChar(100)
+  // Tông màu của nhãn: amber | green | blue | red | slate
+  promoTone String? @db.VarChar(20)
+  // Dòng quà tặng / cam kết dưới giá: "Tặng Balo Legion 2.5tr"
+  giftNote  String? @db.VarChar(200)
+
+  // Số suất của đợt Flash Sale, để vẽ thanh tiến trình "đã bán x/y"
+  flashSaleQuota Int?
+
   // --- Số liệu tổng hợp (denormalized để tránh COUNT mỗi lần render) -------
   viewCount   Int     @default(0)
   soldCount   Int     @default(0)

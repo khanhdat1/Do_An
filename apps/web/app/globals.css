@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   PCZone – Design tokens
+   Bảng màu lấy theo giao diện tham chiếu: nền sáng xám, khối tối navy,
+   nhấn cam/vàng, giá khuyến mãi đỏ.
+   ========================================================================== */
+@theme {
+  /* Nền tối (header, hero, footer, khối AI) */
+  --color-ink-950: #070b12;
+  --color-ink-900: #0c1421;
+  --color-ink-850: #111a2a;
+  --color-ink-800: #162033;
+  --color-ink-750: #1a2436;
+  --color-ink-700: #24314a;
+  --color-ink-600: #33425f;
+  --color-ink-500: #4a5a79;
+
+  /* Cam thương hiệu (CTA chính: MUA NGAY, BUILD PC) */
+  --color-brand-50: #fff7ed;
+  --color-brand-100: #ffedd5;
+  --color-brand-200: #fed7aa;
+  --color-brand-400: #fb923c;
+  --color-brand-500: #f97316;
+  --color-brand-600: #ea580c;
+  --color-brand-700: #c2410c;
+
+  /* Vàng nhấn (logo ZONE, AI SEARCH, AI PC BUILDER) */
+  --color-gold-300: #fde047;
+  --color-gold-400: #facc15;
+  --color-gold-500: #eab308;
+  --color-gold-600: #ca8a04;
+
+  /* Giá khuyến mãi / badge giảm giá */
+  --color-sale-500: #ef4444;
+  --color-sale-600: #dc2626;
+  --color-sale-700: #b91c1c;
+
+  /* Nền trang */
+  --color-canvas: #eceff3;
+
+  /* Font (nạp qua <link> Google Fonts trong app/layout.tsx) */
+  --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --font-display: "Saira", "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: #0f172a;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer components {
+  /* Khung nội dung chuẩn của toàn trang */
+  .container-page {
+    width: 100%;
+    max-width: 1280px;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+
+  /* Thẻ trắng bo góc dùng chung cho các section */
+  .surface-card {
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+  }
+
+  /* Tiêu đề section in hoa kiểu kỹ thuật */
+  .section-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    color: #0f172a;
+  }
+}
+
+@layer utilities {
+  /* Thanh cuộn ngang mảnh cho các hàng sản phẩm trên mobile */
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 999px;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
