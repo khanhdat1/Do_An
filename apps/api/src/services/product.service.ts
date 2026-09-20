@@ -1,6 +1,11 @@
 import { prisma, ProductStatus, type Prisma } from "@pczone/db";
-import { productInclude, toProductDto } from "../mappers/product.mapper.js";
-import type { Paginated, ProductDto } from "../types/dto.js";
+import {
+  productDetailInclude,
+  productInclude,
+  toProductDetailDto,
+  toProductDto,
+} from "../mappers/product.mapper.js";
+import type { Paginated, ProductDetailDto, ProductDto } from "../types/dto.js";
 
 export interface ListProductsParams {
   /** Slug danh mục (lá hoặc cha — cha sẽ lấy cả danh mục con) */
@@ -124,10 +129,10 @@ export async function listProducts(
   };
 }
 
-export async function getProductBySlug(slug: string): Promise<ProductDto | null> {
+export async function getProductBySlug(slug: string): Promise<ProductDetailDto | null> {
   const product = await prisma.product.findFirst({
     where: { slug, ...PUBLIC_FILTER },
-    include: productInclude,
+    include: productDetailInclude,
   });
 
   if (!product) return null;
@@ -137,7 +142,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDto | null>
     .update({ where: { id: product.id }, data: { viewCount: { increment: 1 } } })
     .catch(() => undefined);
 
-  return toProductDto(product);
+  return toProductDetailDto(product);
 }
 
 /** Sản phẩm bán chạy nhất trong N ngày gần đây (dùng cho "Top bán chạy trong tuần") */

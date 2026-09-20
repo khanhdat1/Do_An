@@ -31,14 +31,24 @@ npm run lint    # kiểm tra ESLint
 
 ```
 app/                      # App Router
-  layout.tsx              # layout gốc: nạp font, Header, Footer
+  layout.tsx              # layout gốc: nạp font, providers, Header, Footer
   page.tsx                # trang chủ, ráp các section theo thứ tự
   globals.css             # design token (màu, font) + class dùng chung
+  not-found.tsx           # trang 404
+  san-pham/[slug]/        # chi tiết sản phẩm (Server Component, cache ISR 60s)
+  gio-hang/               # giỏ hàng
+  dang-nhap/  dang-ky/    # đăng nhập / đăng ký (?next= để quay lại trang đang xem dở)
+  tai-khoan/              # hồ sơ, tài khoản liên kết (Google / Facebook), đăng xuất (yêu cầu đăng nhập)
+  thanh-toan/             # trang giữ chỗ cho bước đặt hàng (yêu cầu đăng nhập)
 
 components/
+  providers/              # ToastProvider, AuthProvider, CartProvider — bọc trong AppProviders
+  auth/                   # AuthFrame (khung 2 cột) + AuthAside / AuthTabs / SocialLogin,
+                          # LoginForm, RegisterForm, AccountView, useRequireAuth...
+  cart/                   # CartView, CartItemRow, CartSummary, BuyNowButton, CheckoutGate
   layout/                 # khung site
-    TopBar.tsx            # thanh hotline / showroom / đăng nhập
-    Header.tsx            # logo + ô tìm kiếm AI + giỏ hàng + tài khoản
+    TopBar.tsx            # thanh hotline / showroom (+ TopBarAccount: đăng nhập / xin chào)
+    Header.tsx            # logo + ô tìm kiếm AI + giỏ hàng (CartButton) + tài khoản (UserMenu)
     SearchBar.tsx         # ô tìm kiếm có nút AI SEARCH (client component)
     Navbar.tsx            # menu danh mục + AI PC Builder (có menu mobile)
     TrustStrip.tsx        # dải cam kết dịch vụ dưới header
@@ -57,14 +67,25 @@ components/
   product/
     ProductCard.tsx       # thẻ sản phẩm dùng chung toàn site
     ProductThumb.tsx      # khung ảnh sản phẩm (có placeholder)
+    ProductGallery.tsx    # trang chi tiết: ảnh lớn + dải ảnh nhỏ
+    ProductPurchasePanel.tsx  # chọn số lượng, Thêm vào giỏ, Mua ngay
+    ProductDescription.tsx / SpecTable.tsx / Breadcrumb.tsx
   ui/
     SectionHeading.tsx    # tiêu đề section dùng chung
     Countdown.tsx         # đồng hồ đếm ngược
+    TextField.tsx         # ô nhập liệu (nhãn, icon, dấu *, gợi ý, lỗi nối bằng aria)
+    QuantityStepper.tsx   # bộ chọn số lượng − / +
+    Avatar.tsx            # ảnh đại diện; lỗi tải ảnh thì hiện chữ cái đầu
 
 lib/
+  api.ts                  # gọi API từ SERVER (Server Component): cache ISR, có dữ liệu dự phòng
+  api-client.ts           # gọi API từ TRÌNH DUYỆT: cookie, tự refresh token khi gặp 401
   format.ts               # format giá VNĐ, % giảm giá, đếm ngược
+  navigation.ts           # chuẩn hoá ?next= (chống open redirect), dựng link đăng nhập
+  auth-errors.ts          # đổi mã lỗi ?error= (đăng nhập / liên kết Google, Facebook) và ?linked= sang câu tiếng Việt
+  config.ts               # URL công khai của API (nút đăng nhập mạng xã hội trỏ thẳng vào đây)
   utils.ts                # cn() gộp class Tailwind
-  data/                   # DỮ LIỆU MẪU – thay bằng API sau
+  data/                   # DỮ LIỆU DỰ PHÒNG khi API chưa chạy
     navigation.ts
     categories.ts
     products.ts
@@ -90,11 +111,18 @@ Sửa màu tại một chỗ duy nhất: khối `@theme` trong `app/globals.css`
 
 ## 5. Nối với backend
 
-Hiện tại dữ liệu nằm trong `lib/data/products.ts` (mock). Khi API sẵn sàng:
+Có **hai lớp** gọi API, dùng cho hai loại dữ liệu khác nhau:
 
-1. Tạo `lib/api.ts` gọi Express bằng `fetch` hoặc `axios`.
-2. Đổi các section thành Server Component `async` và `await getProducts()`.
-3. Giữ nguyên kiểu `Product` trong `types/index.ts` để component không phải sửa.
+| | `lib/api.ts` | `lib/api-client.ts` |
+| - | ------------ | ------------------- |
+| Chạy ở | Server Component | Trình duyệt (Client Component) |
+| Dữ liệu | Sản phẩm, danh mục — ai xem cũng như nhau | Đăng nhập, giỏ hàng — của riêng từng người |
+| Cache | ISR 60 giây | Không cache |
+| API tắt | Dùng dữ liệu dự phòng trong `lib/data/` | Báo lỗi thật (không có dữ liệu giả cho giỏ hàng) |
+
+Trạng thái đăng nhập và giỏ hàng nằm ở `AuthProvider` / `CartProvider`; component nào cũng đọc
+được qua `useAuth()` / `useCart()`. Kiểu dữ liệu trong `types/index.ts` phải khớp
+`apps/api/src/types/dto.ts`.
 
 Các chỗ đã đánh dấu `// TODO` cần nối API:
 

@@ -55,6 +55,39 @@ export interface Product {
   inStock?: boolean;
 }
 
+/** Một mắt xích trên đường dẫn danh mục: Linh kiện > VGA */
+export interface Breadcrumb {
+  slug: string;
+  name: string;
+}
+
+export interface ProductImage {
+  url: string;
+  alt: string;
+}
+
+/** Một dòng trong bảng thông số kỹ thuật */
+export interface SpecRow {
+  label: string;
+  value: string;
+}
+
+/** Dữ liệu trang chi tiết = thẻ sản phẩm + phần chỉ trang chi tiết mới cần */
+export interface ProductDetail extends Product {
+  sku: string;
+  /** Ảnh cho gallery, ảnh chính đứng đầu. Rỗng thì hiện placeholder. */
+  images: ProductImage[];
+  /** Toàn bộ dòng thông tin nổi bật (`specs` của Product chỉ có tối đa 3) */
+  highlights: string[];
+  /** Văn bản thuần, các đoạn cách nhau bằng dòng trống */
+  description?: string;
+  specifications: SpecRow[];
+  warrantyMonths?: number;
+  /** Số lượng tối đa chọn được trong một lần đặt (đã tính tồn kho) */
+  maxQuantity: number;
+  breadcrumb: Breadcrumb[];
+}
+
 export interface Category {
   slug: string;
   name: string;
@@ -86,4 +119,74 @@ export interface Paginated<T> {
   pageSize: number;
   total: number;
   totalPages: number;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Xác thực                                                                  */
+/* -------------------------------------------------------------------------- */
+
+export type UserRole = "CUSTOMER" | "STAFF" | "ADMIN";
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  fullName: string;
+  phone?: string;
+  avatarUrl?: string;
+  role: UserRole;
+  createdAt: string;
+}
+
+/** Nhà cung cấp đăng nhập mạng xã hội; trùng `:provider` trên đường dẫn /api/auth/:provider */
+export type SocialProvider = "google" | "facebook";
+
+/** Một tài khoản mạng xã hội đã liên kết với người dùng hiện tại (GET /api/auth/providers) */
+export interface LinkedProvider {
+  provider: SocialProvider;
+  /** Email nhà cung cấp trả về lúc liên kết; có thể khác email đăng nhập PCZone */
+  email?: string;
+  linkedAt: string;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Giỏ hàng                                                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Vấn đề của một dòng trong giỏ:
+ * - UNAVAILABLE: sản phẩm đã ngừng bán / bị ẩn
+ * - OUT_OF_STOCK: hết hàng
+ * - INSUFFICIENT_STOCK: số lượng trong giỏ vượt quá số còn bán được
+ */
+export type CartItemIssue = "UNAVAILABLE" | "OUT_OF_STOCK" | "INSUFFICIENT_STOCK";
+
+export interface CartItem {
+  /** Id dòng giỏ — dùng cho sửa / xoá */
+  id: string;
+  productId: string;
+  slug: string;
+  name: string;
+  image?: string;
+  brand?: string;
+  categoryPath: string[];
+  /** Giá bán hiện tại; tổng tiền luôn tính theo giá này */
+  unitPrice: number;
+  oldPrice?: number;
+  /** Giá lúc khách thêm vào giỏ */
+  priceAtAdd: number;
+  priceChanged: boolean;
+  quantity: number;
+  /** Số lượng tối đa chọn được cho dòng này (0 nếu không mua được) */
+  maxQuantity: number;
+  lineTotal: number;
+  issue?: CartItemIssue;
+}
+
+export interface Cart {
+  items: CartItem[];
+  /** Tổng số lượng của mọi dòng — con số trên biểu tượng giỏ hàng */
+  itemCount: number;
+  subtotal: number;
+  /** true khi còn dòng có `issue` — phải xử lý xong mới đặt hàng được */
+  hasBlockingIssues: boolean;
 }

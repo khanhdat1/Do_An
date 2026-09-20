@@ -1,17 +1,17 @@
 # PCZone — Thiết kế cơ sở dữ liệu
 
-**Đồ án chuyên ngành** · MySQL 8 + Prisma ORM · Cập nhật 19/09/2026
+**Đồ án chuyên ngành** · MySQL 8 + Prisma ORM · Cập nhật 20/09/2026
 
 ---
 
 ## 1. Tổng quan
 
-Cơ sở dữ liệu gồm **25 bảng** và **11 kiểu liệt kê (enum)**, chia làm bốn tầng:
+Cơ sở dữ liệu gồm **26 bảng** và **12 kiểu liệt kê (enum)**, chia làm bốn tầng:
 
 | Tầng | Bảng | Vai trò |
 |---|---|---|
 | **1. Catalog** | Category, Brand, Product, ProductImage, ProductSpec | Danh mục sản phẩm — nền tảng của mọi tầng trên |
-| **2. Người dùng** | User, Address, RefreshToken | Xác thực JWT, hồ sơ khách hàng, sổ địa chỉ |
+| **2. Người dùng** | User, Address, RefreshToken, OAuthAccount | Xác thực JWT, đăng nhập Google / Facebook, hồ sơ khách hàng, sổ địa chỉ |
 | **3. Thương mại** | Cart, CartItem, Order, OrderItem, OrderStatusHistory, Payment, InventoryTransaction, Voucher, VoucherRedemption, Review, WishlistItem | Giỏ hàng → đặt hàng → thanh toán → kho |
 | **4. AI** | ProductEmbedding, AiConversation, AiMessage, PcBuild, PcBuildItem, AiSearchLog | RAG, trợ lý chat, xây dựng cấu hình PC |
 
@@ -34,6 +34,7 @@ Category ──┬─< Product >─┬── Brand
            │
 User ──┬──< Address              Voucher ──< VoucherRedemption
        ├──< RefreshToken         Voucher ──< Order
+       ├──< OAuthAccount
        ├──< AiConversation ──< AiMessage
        └──< AiSearchLog
 ```
@@ -120,9 +121,21 @@ Mô hình JWT hai token: access token ngắn hạn (15 phút, **không lưu DB**
 
 Điểm đáng nói trong báo cáo: bảng lưu `tokenHash` chứ không lưu token gốc. Nếu database bị lộ, kẻ tấn công vẫn không đăng nhập được. `userAgent` và `ipAddress` cho phép làm chức năng "đăng xuất khỏi thiết bị khác".
 
+Ô "Ghi nhớ đăng nhập" không có cột riêng: hạn của dòng (`expiresAt − createdAt`) chính là dấu hiệu — 30 ngày là có nhớ, 1 ngày là chỉ trong phiên trình duyệt. Khi refresh, token mới giữ đúng chế độ của token cũ.
+
 ### 3.3 Address
 
 Tách riêng thay vì nhét vào `User` vì một khách có nhiều địa chỉ (nhà, công ty). Chia bốn cấp theo chuẩn hành chính Việt Nam: Tỉnh/Thành → Quận/Huyện → Phường/Xã → số nhà.
+
+### 3.4 OAuthAccount — đăng nhập Google / Facebook
+
+Một `User` có thể liên kết với nhiều tài khoản mạng xã hội (quan hệ 1–N). Khoá nhận diện là cặp **`(provider, providerAccountId)`** — `sub` của Google, `id` của Facebook — với ràng buộc `UNIQUE`, tức một tài khoản Google chỉ thuộc về đúng một `User`.
+
+Điểm cần nhấn mạnh khi bảo vệ: **không nhận diện người dùng bằng email**. Email có thể đổi, và không phải nhà cung cấp nào cũng bảo đảm email đã xác minh (Facebook thì không). Nếu tự gộp tài khoản theo email, kẻ xấu đăng ký trước bằng email của nạn nhân rồi chờ nạn nhân đăng nhập Google sẽ vẫn giữ được quyền vào tài khoản đó (*pre-hijacking*). Vì vậy chỉ email do **Google** bảo đảm đã xác minh mới được dùng để liên kết vào tài khoản có sẵn, và khi tài khoản đó chưa từng xác minh email thì nó được trao cho chủ email thật (mật khẩu cũ bị vô hiệu, mọi liên kết và phiên cũ bị huỷ). Quy tắc đầy đủ nằm ở `apps/api/src/services/oauth.service.ts` và mục 8 của README.
+
+Lối ra hợp lệ cho trường hợp Facebook trùng email là **liên kết thủ công**: người dùng đăng nhập bằng cách cũ rồi bấm "Liên kết" ở trang Tài khoản. Lúc này danh tính đã được chứng minh từ cả hai phía (phiên PCZone đang mở + đăng nhập được tài khoản mạng xã hội) nên không cần dựa vào email. Ràng buộc "mỗi User một tài khoản cho mỗi nhà cung cấp" hiện do tầng ứng dụng kiểm tra (`linkSocialProfile`), chưa có `UNIQUE(userId, provider)` ở mức CSDL.
+
+Người chỉ đăng nhập bằng mạng xã hội vẫn có `User.passwordHash` (cột bắt buộc) nhưng là băm của một chuỗi ngẫu nhiên 256 bit không ai biết, nên không thể đăng nhập bằng mật khẩu.
 
 ---
 
@@ -330,7 +343,7 @@ volumes:
 
 ## 8. Thứ tự triển khai đề xuất
 
-Với 8–12 tuần còn lại, không nên migrate cả 25 bảng ngay. Chia bốn đợt:
+Với 8–12 tuần còn lại, không nên migrate cả 26 bảng ngay. Chia bốn đợt:
 
 | Đợt | Bảng | Mở khoá tính năng |
 |---|---|---|

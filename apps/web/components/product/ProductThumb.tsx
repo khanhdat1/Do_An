@@ -20,6 +20,8 @@ interface ProductThumbProps {
   /** Đường dẫn danh mục gốc → lá, ví dụ ["linh-kien","vga"] */
   categoryPath?: string[];
   className?: string;
+  /** Gợi ý kích thước hiển thị cho next/image; mặc định hợp với ô ảnh của thẻ sản phẩm */
+  sizes?: string;
 }
 
 const ICON_CLASS =
@@ -79,6 +81,7 @@ export default function ProductThumb({
   image,
   categoryPath,
   className,
+  sizes = "(max-width: 768px) 50vw, 20vw",
 }: ProductThumbProps) {
   return (
     <div
@@ -92,7 +95,7 @@ export default function ProductThumb({
           src={image}
           alt={name}
           fill
-          sizes="(max-width: 768px) 50vw, 20vw"
+          sizes={sizes}
           className="object-contain p-3 transition duration-300 group-hover:scale-105"
         />
       ) : (
