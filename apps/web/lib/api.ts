@@ -1,4 +1,4 @@
-import type { Category, Paginated, Product } from "@/types";
+import type { Category, Paginated, Product, ProductDetail } from "@/types";
 import {
   bestSellerProducts,
   featuredProducts,
@@ -116,18 +116,84 @@ export async function getProducts(
   });
 }
 
-/** Chi tiết một sản phẩm */
-export async function getProductBySlug(slug: string): Promise<Product | null> {
+/**
+ * Dựng bản chi tiết tối thiểu từ dữ liệu dự phòng của trang chủ, để bấm vào thẻ
+ * sản phẩm khi API tắt vẫn ra được trang thay vì 404. Thiếu ảnh, thông số, mô tả.
+ */
+function fallbackProductDetail(slug: string): ProductDetail | null {
+  const product = [...flashSaleProducts, ...featuredProducts, ...bestSellerProducts].find(
+    (item) => item.slug === slug,
+  );
+  if (!product) return null;
+
+  return {
+    ...product,
+    sku: "",
+    images: [],
+    highlights: product.specs,
+    specifications: [],
+    maxQuantity: 10,
+    // Dữ liệu dự phòng chỉ biết tên của các danh mục lá ở lưới trang chủ
+    breadcrumb: product.categoryPath.flatMap((categorySlug) => {
+      const category = featuredCategories.find((item) => item.slug === categorySlug);
+      return category ? [{ slug: category.slug, name: category.name }] : [];
+    }),
+  };
+}
+
+/**
+ * Chi tiết một sản phẩm. Trả về `null` khi API xác nhận không có sản phẩm này
+ * (trang hiện 404); nếu API không trả lời được thì rơi về dữ liệu dự phòng.
+ */
+export async function getProductBySlug(slug: string): Promise<ProductDetail | null> {
+  const path = `/api/products/${encodeURIComponent(slug)}`;
+
   try {
-    const response = await fetch(`${API_BASE}/api/products/${slug}`, {
+    const response = await fetch(`${API_BASE}${path}`, {
       next: { revalidate: REVALIDATE_SECONDS },
+      headers: { Accept: "application/json" },
     });
-    if (!response.ok) return null;
-    return (await response.json()) as Product;
+
+    if (response.status === 404) return null;
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    return (await response.json()) as ProductDetail;
   } catch (error) {
-    warnOffline(`/api/products/${slug}`, error);
-    return null;
+    warnOffline(path, error);
+    return fallbackProductDetail(slug);
   }
+}
+
+/**
+ * Sản phẩm liên quan: cùng danh mục (bán chạy trước). Chưa đủ thì bù bằng danh
+ * mục cha — ví dụ CPU chỉ có 2 sản phẩm thì lấy thêm từ "Linh kiện".
+ */
+export async function getRelatedProducts(
+  product: ProductDetail,
+  limit = 4,
+): Promise<Product[]> {
+  const seen = new Set([product.id]);
+  const related: Product[] = [];
+
+  // categoryPath đi từ gốc tới lá; duyệt ngược để ưu tiên danh mục gần nhất
+  for (const category of [...product.categoryPath].reverse()) {
+    if (related.length >= limit) break;
+
+    const page = await getProducts({
+      category,
+      sort: "best-selling",
+      pageSize: limit + 1,
+    });
+
+    for (const item of page.items) {
+      if (related.length >= limit) break;
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+      related.push(item);
+    }
+  }
+
+  return related;
 }
 
 /* -------------------------------------------------------------------------- */

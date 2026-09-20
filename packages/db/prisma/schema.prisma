@@ -4,7 +4,7 @@
 //
 // Tổ chức theo 4 tầng:
 //   TẦNG 1 — CATALOG      : Category, Brand, Product, ProductImage, ProductSpec
-//   TẦNG 2 — NGƯỜI DÙNG   : User, Address, RefreshToken
+//   TẦNG 2 — NGƯỜI DÙNG   : User, Address, RefreshToken, OAuthAccount
 //   TẦNG 3 — THƯƠNG MẠI   : Cart, Order, Payment, Inventory, Voucher, Review...
 //   TẦNG 4 — AI           : Embedding, Conversation, PcBuild, SearchLog
 //
@@ -31,6 +31,11 @@ enum UserRole {
   CUSTOMER
   STAFF
   ADMIN
+}
+
+enum OAuthProvider {
+  GOOGLE
+  FACEBOOK
 }
 
 enum ProductStatus {
@@ -383,6 +388,7 @@ model User {
 
   addresses     Address[]
   refreshTokens RefreshToken[]
+  oauthAccounts OAuthAccount[]
   cart          Cart?
   orders        Order[]
   reviews       Review[]
@@ -436,6 +442,30 @@ model RefreshToken {
   createdAt DateTime @default(now())
 
   @@index([userId, expiresAt])
+}
+
+/// Tài khoản mạng xã hội (Google, Facebook) đã liên kết với một User.
+///
+/// Khoá nhận diện là (provider, providerAccountId) — `sub` của Google, `id` của
+/// Facebook — CHỨ KHÔNG PHẢI email: email có thể đổi hoặc bị nhà cung cấp cấp cho
+/// người khác, còn mã này gắn với đúng một tài khoản mạng xã hội. Người dùng chỉ
+/// đăng nhập mạng xã hội thì `User.passwordHash` là một chuỗi băm ngẫu nhiên không
+/// ai biết, tức không thể đăng nhập bằng mật khẩu.
+model OAuthAccount {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider          OAuthProvider
+  providerAccountId String        @db.VarChar(100)
+  /// Email nhà cung cấp trả về lúc liên kết — chỉ để tham khảo / đối soát
+  email             String?       @db.VarChar(254)
+
+  createdAt DateTime @default(now())
+
+  // Một tài khoản Google / Facebook chỉ liên kết với một User duy nhất
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 // =============================================================================

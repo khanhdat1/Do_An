@@ -1,23 +1,52 @@
 import type { Prisma } from "@pczone/db";
-import type { ProductDto, StockInfoDto, Tone } from "../types/dto.js";
+import type {
+  BreadcrumbDto,
+  ProductDetailDto,
+  ProductDto,
+  SpecRowDto,
+  StockInfoDto,
+  Tone,
+} from "../types/dto.js";
+import { MAX_QUANTITY_PER_LINE } from "../utils/limits.js";
+
+/**
+ * Ảnh được phép hiển thị ra ngoài: bỏ ảnh `needsReview` (còn watermark của shop
+ * khác, hoặc so khớp model chưa chắc chắn — xem ProductImage trong schema.prisma),
+ * ảnh chính đứng đầu rồi tới thứ tự `position`.
+ */
+const publicImages = {
+  where: { needsReview: false },
+  orderBy: [{ isPrimary: "desc" }, { position: "asc" }],
+} satisfies Prisma.Product$imagesArgs;
+
+const categoryChain = {
+  include: { parent: { include: { parent: true } } },
+} satisfies Prisma.CategoryDefaultArgs;
 
 /**
  * Kiểu Product kèm quan hệ mà mapper cần.
- * Dùng Prisma.validator để TypeScript tự kiểm tra query và mapper khớp nhau —
+ * Dùng `satisfies` để TypeScript tự kiểm tra query và mapper khớp nhau —
  * quên `include` một quan hệ là lỗi biên dịch, không phải lỗi lúc chạy.
  */
 export const productInclude = {
-  category: { include: { parent: { include: { parent: true } } } },
+  category: categoryChain,
   brand: true,
-  images: {
-    where: { isPrimary: true },
-    take: 1,
-    orderBy: { position: "asc" },
-  },
+  images: { ...publicImages, take: 1 },
 } satisfies Prisma.ProductInclude;
 
 export type ProductWithRelations = Prisma.ProductGetPayload<{
   include: typeof productInclude;
+}>;
+
+/** Trang chi tiết cần đủ bộ ảnh cho gallery, không chỉ ảnh đầu tiên */
+export const productDetailInclude = {
+  category: categoryChain,
+  brand: true,
+  images: publicImages,
+} satisfies Prisma.ProductInclude;
+
+export type ProductDetailRow = Prisma.ProductGetPayload<{
+  include: typeof productDetailInclude;
 }>;
 
 const VALID_TONES: Tone[] = ["amber", "green", "blue", "red", "slate"];
@@ -32,14 +61,19 @@ function toNumber(value: Prisma.Decimal | null): number | undefined {
  * Schema cho phép cây nhiều tầng; PCZone dùng tối đa 3 tầng nên
  * `productInclude` lấy sẵn 2 cấp cha là đủ.
  */
-function buildCategoryPath(category: ProductWithRelations["category"]): string[] {
-  const path = [category.slug];
+export function buildCategoryPath(category: ProductWithRelations["category"]): string[] {
+  return buildBreadcrumb(category).map((crumb) => crumb.slug);
+}
+
+/** Cùng đường dẫn với `buildCategoryPath` nhưng kèm tên để hiện breadcrumb */
+function buildBreadcrumb(category: ProductWithRelations["category"]): BreadcrumbDto[] {
+  const path: BreadcrumbDto[] = [{ slug: category.slug, name: category.name }];
 
   const parent = category.parent;
   if (parent) {
-    path.unshift(parent.slug);
+    path.unshift({ slug: parent.slug, name: parent.name });
     if (parent.parent) {
-      path.unshift(parent.parent.slug);
+      path.unshift({ slug: parent.parent.slug, name: parent.parent.name });
     }
   }
 
@@ -87,9 +121,49 @@ function buildStockInfo(product: ProductWithRelations): StockInfoDto | undefined
 }
 
 /** Lấy mảng shortSpecs từ cột JSON, lọc bỏ giá trị không phải chuỗi. */
-function readSpecs(value: Prisma.JsonValue | null): string[] {
+function readAllShortSpecs(value: Prisma.JsonValue | null): string[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((item): item is string => typeof item === "string").slice(0, 3);
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+/** Thẻ sản phẩm chỉ đủ chỗ cho 3 chip thông số đầu tiên */
+function readSpecs(value: Prisma.JsonValue | null): string[] {
+  return readAllShortSpecs(value).slice(0, 3);
+}
+
+/**
+ * Đọc cột `specifications` thành các dòng của bảng thông số.
+ *
+ * Chấp nhận hai dạng vì có hai nguồn dữ liệu:
+ * - Mảng `[{ "label": "...", "value": "..." }]` — giữ đúng thứ tự, dùng cho dữ liệu nhập tay / seed.
+ * - Object `{ "Chipset": "Intel B760" }` — crawler ghi dạng này. Lưu ý MySQL không giữ
+ *   thứ tự khoá của kiểu JSON (nó tự sắp xếp), nên thứ tự với dạng này không kiểm soát được.
+ */
+function readSpecifications(value: Prisma.JsonValue | null): SpecRowDto[] {
+  const rows: SpecRowDto[] = [];
+
+  const push = (label: unknown, raw: unknown) => {
+    if (typeof label !== "string") return;
+    if (typeof raw !== "string" && typeof raw !== "number") return;
+    const cleanLabel = label.trim();
+    const cleanValue = String(raw).trim();
+    if (cleanLabel && cleanValue) rows.push({ label: cleanLabel, value: cleanValue });
+  };
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (item && typeof item === "object" && !Array.isArray(item)) {
+        push(item.label, item.value);
+      }
+    }
+  } else if (value && typeof value === "object") {
+    for (const [label, raw] of Object.entries(value)) push(label, raw);
+  }
+
+  return rows;
 }
 
 export function toProductDto(product: ProductWithRelations): ProductDto {
@@ -122,5 +196,24 @@ export function toProductDto(product: ProductWithRelations): ProductDto {
     gift: product.giftNote ?? undefined,
     stock: buildStockInfo(product),
     inStock: product.inventoryQuantity - product.reservedQuantity > 0,
+  };
+}
+
+export function toProductDetailDto(product: ProductDetailRow): ProductDetailDto {
+  const available = Math.max(0, product.inventoryQuantity - product.reservedQuantity);
+
+  return {
+    ...toProductDto(product),
+    sku: product.sku,
+    images: product.images.map((image) => ({
+      url: image.url,
+      alt: image.alt ?? product.name,
+    })),
+    highlights: readAllShortSpecs(product.shortSpecs),
+    description: product.description?.trim() || undefined,
+    specifications: readSpecifications(product.specifications),
+    warrantyMonths: product.warrantyMonths ?? undefined,
+    maxQuantity: Math.min(available, MAX_QUANTITY_PER_LINE),
+    breadcrumb: buildBreadcrumb(product.category),
   };
 }

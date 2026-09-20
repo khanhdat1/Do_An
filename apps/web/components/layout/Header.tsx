@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { Bot, Heart, ShoppingCart, UserRound } from "lucide-react";
+import { Bot, Heart } from "lucide-react";
+import CartButton from "./CartButton";
+import IconButton from "./IconButton";
 import Logo from "./Logo";
+import Navbar from "./Navbar";
 import SearchBar from "./SearchBar";
 import TopBar from "./TopBar";
-import Navbar from "./Navbar";
+import UserMenu from "./UserMenu";
 
 /**
  * Header tổng của site, gồm 3 tầng như bản thiết kế:
@@ -47,54 +50,18 @@ export default function Header() {
             href="/yeu-thich"
             label="Sản phẩm yêu thích"
             count={3}
-            className="hidden sm:inline-flex"
+            className="hidden sm:grid"
           >
             <Heart className="size-5" />
           </IconButton>
 
-          <IconButton href="/gio-hang" label="Giỏ hàng" count={2}>
-            <ShoppingCart className="size-5" />
-          </IconButton>
+          <CartButton />
 
-          <Link
-            href="/tai-khoan"
-            aria-label="Tài khoản của tôi"
-            className="grid size-10 place-items-center rounded-xl bg-brand-500 text-white transition hover:bg-brand-600"
-          >
-            <UserRound className="size-5" />
-          </Link>
+          <UserMenu />
         </div>
       </div>
 
       <Navbar />
     </header>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-
-interface IconButtonProps {
-  href: string;
-  label: string;
-  count?: number;
-  className?: string;
-  children: React.ReactNode;
-}
-
-/** Nút icon tròn có badge số lượng (wishlist, giỏ hàng) */
-function IconButton({ href, label, count, className, children }: IconButtonProps) {
-  return (
-    <Link
-      href={href}
-      aria-label={label}
-      className={`relative grid size-10 place-items-center rounded-xl bg-ink-800 text-slate-200 ring-1 ring-white/10 transition hover:text-gold-400 hover:ring-gold-400/50 ${className ?? ""}`}
-    >
-      {children}
-      {count ? (
-        <span className="absolute -right-1 -top-1 grid size-4.5 place-items-center rounded-full bg-sale-600 text-[10px] font-bold text-white">
-          {count}
-        </span>
-      ) : null}
-    </Link>
   );
 }

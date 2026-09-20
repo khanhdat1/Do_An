@@ -5,10 +5,10 @@ import {
   PhoneCall,
   ShieldCheck,
   Store,
-  UserRound,
 } from "lucide-react";
 
 import { topBarLinks } from "@/lib/data/navigation";
+import TopBarAccount from "./TopBarAccount";
 
 const linkIcons = {
   Store,
@@ -52,13 +52,7 @@ export default function TopBar() {
         </div>
 
         <div className="flex items-center gap-4">
-          <Link
-            href="/dang-nhap"
-            className="flex items-center gap-1.5 transition hover:text-gold-400"
-          >
-            <UserRound className="size-3.5" />
-            Đăng nhập / Đăng ký
-          </Link>
+          <TopBarAccount />
           <span className="flex items-center gap-1.5 border-l border-white/10 pl-4">
             <Globe className="size-3.5" />
             VN | Bảng tin nhanh

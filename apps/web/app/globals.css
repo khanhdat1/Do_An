@@ -47,6 +47,17 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /*
+      Header dính ở đầu trang cao ~178px trên mobile (3 hàng), ~156px trên desktop.
+      Chừa chỗ để ô nhập được focus / phần tử được cuộn tới không nằm dưới header.
+    */
+    scroll-padding-top: 12rem;
+  }
+
+  @media (min-width: 1024px) {
+    html {
+      scroll-padding-top: 10.5rem;
+    }
   }
 
   body {
@@ -104,5 +115,28 @@
 
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Thông báo (toast) trượt lên khi xuất hiện */
+  .animate-toast-in {
+    animation: toast-in 0.2s ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-toast-in {
+      animation: none;
+    }
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

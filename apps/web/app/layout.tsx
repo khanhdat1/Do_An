@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import AppProviders from "@/components/providers/AppProviders";
 
 export const metadata: Metadata = {
   title: "PCZone – Build Your Power, Own Your Zone",
@@ -20,7 +21,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="vi">
+    <html lang="vi" data-scroll-behavior="smooth">
       <head>
         {/*
           Font nạp qua Google Fonts CDN:
@@ -42,9 +43,11 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <Header />
-        <main className="min-h-screen pb-6">{children}</main>
-        <Footer />
+        <AppProviders>
+          <Header />
+          <main className="min-h-screen pb-6">{children}</main>
+          <Footer />
+        </AppProviders>
       </body>
     </html>
   );

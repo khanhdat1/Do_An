@@ -25,6 +25,38 @@ export class BadRequestError extends HttpError {
   }
 }
 
+/** Chưa đăng nhập, token sai hoặc hết hạn */
+export class UnauthorizedError extends HttpError {
+  constructor(message = "Bạn cần đăng nhập để thực hiện thao tác này") {
+    super(401, message);
+  }
+}
+
+/** Đã đăng nhập nhưng không được phép (tài khoản bị khoá, sai quyền...) */
+export class ForbiddenError extends HttpError {
+  constructor(message = "Bạn không có quyền thực hiện thao tác này") {
+    super(403, message);
+  }
+}
+
+/** Xung đột trạng thái: email đã tồn tại, hết hàng, vượt tồn kho... */
+export class ConflictError extends HttpError {
+  constructor(message = "Yêu cầu xung đột với trạng thái hiện tại") {
+    super(409, message);
+  }
+}
+
+function isClientError(error: unknown): error is { status: number } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    typeof error.status === "number" &&
+    error.status >= 400 &&
+    error.status < 500
+  );
+}
+
 /** 404 cho route không khớp */
 export function notFoundHandler(req: Request, res: Response) {
   res.status(404).json({
@@ -58,6 +90,18 @@ export function errorHandler(
 
   if (error instanceof HttpError) {
     res.status(error.status).json({ error: error.name, message: error.message });
+    return;
+  }
+
+  // Lỗi 4xx do express.json() ném ra: JSON sai cú pháp, body quá lớn...
+  if (isClientError(error)) {
+    const tooLarge = error.status === 413;
+    res.status(error.status).json({
+      error: "BAD_REQUEST",
+      message: tooLarge
+        ? "Dữ liệu gửi lên quá lớn"
+        : "Dữ liệu gửi lên không đúng định dạng JSON",
+    });
     return;
   }
 

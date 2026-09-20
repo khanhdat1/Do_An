@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Gift, ShoppingCart, Star, Trophy } from "lucide-react";
+import { Gift, Star, Trophy } from "lucide-react";
+import BuyNowButton from "@/components/cart/BuyNowButton";
 import ProductThumb from "./ProductThumb";
 import type { Product, Tone } from "@/types";
 import { discountPercent, formatPrice } from "@/lib/format";
@@ -172,13 +173,7 @@ export default function ProductCard({
 
         {/* mt-auto đẩy nút xuống đáy để các thẻ trong cùng hàng thẳng nhau */}
         <div className="mt-auto pt-3">
-          <button
-            type="button"
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-500 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition hover:bg-brand-600 active:scale-[0.99]"
-          >
-            <ShoppingCart className="size-4" />
-            Mua ngay
-          </button>
+          <BuyNowButton productId={product.id} inStock={product.inStock !== false} />
         </div>
       </div>
     </article>
