@@ -25,6 +25,8 @@ const BRANDS: { name: string; match: RegExp }[] = [
   { name: "ASUS", match: /\basus\b|\btuf\b/i },
   { name: "Acer", match: /\bacer\b|\bpredator\b/i },
   { name: "Dell", match: /\bdell\b/i },
+  // Đứng trước HP: nguồn ghi "HP HYPERX Cloud…" nhưng thương hiệu bán hàng là HyperX
+  { name: "HyperX", match: /\bhyperx\b/i },
   { name: "HP", match: /\bhp\b/i },
   { name: "Lenovo", match: /\blenovo\b/i },
   { name: "MSI", match: /\bmsi\b/i },
@@ -66,6 +68,21 @@ const BRANDS: { name: string; match: RegExp }[] = [
   { name: "Veekos", match: /\bveekos\b/i },
   { name: "HyperWork", match: /\bhyperwork\b/i },
   { name: "Rapoo", match: /\brapoo\b/i },
+  { name: "SteelSeries", match: /\bsteelseries\b/i },
+  { name: "DareU", match: /\bdare-?u\b/i },
+  { name: "Edifier", match: /\bedifier\b/i },
+  { name: "Microlab", match: /\bmicrolab\b/i },
+  { name: "Sony", match: /\bsony\b/i },
+  { name: "Warrior", match: /\bwarrior\b/i },
+  { name: "Cougar", match: /\bcougar\b/i },
+  { name: "AKRacing", match: /\bak\s?racing\b/i },
+  { name: "DXRacer", match: /\bdxracer\b/i },
+  { name: "Sihoo", match: /\bsihoo\b/i },
+  { name: "SoundPeats", match: /\bsound\s?peats\b/i },
+  { name: "Onikuma", match: /\bonikuma\b/i },
+  // Nguồn ghi hãng "AERO" cho loa Acoustic Energy; loa Mitchell Acoustics không có hãng trên nguồn
+  { name: "Acoustic Energy", match: /\bacoustic energy\b/i },
+  { name: "Mitchell Acoustics", match: /\bmitchell acoustic/i },
 ];
 
 /** Hãng trong tên phần cứng lõi: chỉ dùng cho CPU, nơi Intel/AMD chính là hãng bán */
@@ -102,7 +119,17 @@ export function resolveBrand(item: CatalogItem): BrandInfo | null {
 /* -------------------------------------------------------------------------- */
 
 /** Chữ hoa/thường chuẩn của tên hãng bên trong tên sản phẩm (nguồn viết "Asus", "Gigabyte", "Msi"...) */
-const CANONICAL_CASE = ["ASUS", "GIGABYTE", "MSI", "AOC", "LG", "BenQ", "ViewSonic", "KOORUI", "AKKO", "AULA", "SSTC", "VSP", "HP", "ZOTAC", "NZXT", "FSP", "HYTE", "RAM", "SSD"];
+const CANONICAL_CASE = ["ASUS", "GIGABYTE", "MSI", "AOC", "LG", "BenQ", "ViewSonic", "KOORUI", "AKKO", "AULA", "SSTC", "VSP", "HP", "ZOTAC", "NZXT", "FSP", "HYTE", "RAM", "SSD", "HyperX", "DXRacer", "AKRacing", "SteelSeries", "DareU", "SoundPeats", "Warrior", "Sihoo", "Edifier", "Microlab"];
+
+/**
+ * Lỗi cách viết lặp lại trong tên của nguồn: HyperX ghi kèm "HP" (chủ sở hữu), một dòng ghế bị gõ nhầm chữ I
+ * hoa thành chữ l thường, "CoolerMaster" viết liền trong khi hãng viết "Cooler Master".
+ */
+const NAME_FIXES: [RegExp, string][] = [
+  [/(?<![\p{L}\p{N}])HP\s+HyperX(?![\p{L}\p{N}])/giu, "HyperX"],
+  [/(?<![\p{L}\p{N}])lmmortal(?![\p{L}\p{N}])/gu, "Immortal"],
+  [/(?<![\p{L}\p{N}])CoolerMaster(?![\p{L}\p{N}])/gu, "Cooler Master"],
+];
 
 /** Đầu tên theo danh mục: viết đúng một kiểu để danh sách nhìn đều */
 const PREFIXES: Record<string, [RegExp, string][]> = {
@@ -115,6 +142,11 @@ const PREFIXES: Record<string, [RegExp, string][]> = {
   vga: [[/^card\s*màn\s*hình\b/i, "Card màn hình"]],
   "laptop-gaming": [[/^laptop\s*gaming\b/i, "Laptop gaming"]],
   "ban-phim": [[/^bàn\s*phím\b/i, "Bàn phím"]],
+  chuot: [[/^chuột(?![\p{L}\p{N}])/iu, "Chuột"]],
+  "tai-nghe": [[/^tai\s*nghe\b/i, "Tai nghe"]],
+  loa: [[/^loa\b/i, "Loa"]],
+  ghe: [[/^ghế(?![\p{L}\p{N}])/iu, "Ghế"]],
+  ban: [[/^bàn\b/i, "Bàn"]],
 };
 
 /**
@@ -214,6 +246,8 @@ export function displayName(item: CatalogItem): string {
   for (const word of CANONICAL_CASE) {
     name = name.replace(new RegExp(`(?<![\\p{L}\\p{N}])${word}(?![\\p{L}\\p{N}])`, "giu"), word);
   }
+
+  for (const [pattern, replacement] of NAME_FIXES) name = name.replace(pattern, replacement);
 
   return name;
 }

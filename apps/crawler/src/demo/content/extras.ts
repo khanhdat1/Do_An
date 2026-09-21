@@ -5,7 +5,7 @@
  * của chính sản phẩm khi có. Người mua thường phân vân đúng những điều này, và đây cũng là chỗ bài mô tả
  * thể hiện cửa hàng tư vấn thật chứ không chỉ chép lại bảng thông số.
  */
-import { firstNumber, formatCapacity, toGigabytes } from "../attributes.js";
+import { firstNumber, firstPart, formatCapacity, toGigabytes } from "../attributes.js";
 import { compact, type Ctx, type Maybe } from "./common.js";
 
 export interface Extras {
@@ -224,6 +224,97 @@ const EXTRAS: Record<string, (ctx: Ctx) => Extras> = {
         qa("Chuột không dây có bị trễ khi chơi game không?", "Kết nối không dây 2.4GHz chuyên dụng cho game hiện nay có độ trễ rất thấp, gần như không phân biệt được với chuột có dây trong sử dụng thông thường."),
         qa("Chuột này hợp với kiểu cầm nào?", "Kích thước và kiểu dáng nằm ở bảng thông số; nếu bàn tay bạn nhỏ hoặc lớn, hãy đối chiếu số đo với bàn tay để chọn cho vừa."),
         qa("Có dùng được trên macOS không?", "Chuột dùng được trên macOS với các chức năng cơ bản; phần mềm tùy chỉnh có thể chỉ hỗ trợ Windows, xem mục thông số phần mềm."),
+      ],
+    };
+  },
+
+  "tai-nghe"({ a }) {
+    const connection = a.get(/^Phương thức kết nối$/);
+    const dongle = connection !== undefined && /2\.4|usb receiver|dongle|lightspeed|hyperspeed/i.test(connection);
+    const bluetooth = connection !== undefined && /bluetooth/i.test(connection);
+    const battery = a.get(/^Thời lượng pin$/);
+    const software = firstPart(a.get(/^Phần mềm hỗ trợ$/));
+    const compat = a.get(/^Tương thích$/);
+    const mic = a.flag(/^Micro$/);
+    return {
+      tips: [
+        dongle && "Cắm đầu thu 2.4GHz trực tiếp vào cổng USB của máy (hạn chế dùng qua hub) và đặt xa thiết bị phát sóng mạnh như router để tín hiệu ổn định.",
+        bluetooth && "Ghép đôi Bluetooth rất tiện với điện thoại; khi chơi game trên máy tính nên ưu tiên đầu thu 2.4GHz hoặc dây để độ trễ thấp hơn.",
+        battery && `Pin dùng được khoảng ${battery}; sạc khi còn khoảng 20% và tránh để pin cạn hẳn thường xuyên để pin bền hơn.`,
+        software && `Cài ${software} để chỉnh EQ, hiệu ứng âm thanh và micro, đồng thời cập nhật firmware khi có bản mới.`,
+        "Đeo thử ít nhất vài chục phút: độ ôm của gọng và độ êm của đệm tai ảnh hưởng tới sự thoải mái nhiều hơn các con số thông số.",
+        "Giữ âm lượng ở mức vừa phải và nghỉ tai sau mỗi 1–2 giờ nghe liên tục để bảo vệ thính giác; lau đệm tai định kỳ bằng khăn mềm hơi ẩm.",
+      ],
+      faq: [
+        qa(
+          "Tai nghe có dùng được với PS5, Xbox hoặc Nintendo Switch không?",
+          compat
+            ? `Theo thông số, tai nghe tương thích ${compat}. Tùy nền tảng, bạn có thể cần dùng đầu thu hoặc cổng kết nối tương ứng.`
+            : "Còn tùy phương thức kết nối của từng nền tảng; hãy xem mục tương thích trong bảng thông số hoặc hỏi PCZone để được kiểm tra giúp.",
+        ),
+        qa("Tai nghe có cần sound card riêng không?", "Không cần. Tai nghe kết nối trực tiếp qua USB, jack 3.5mm, đầu thu 2.4GHz hoặc Bluetooth; sound card rời chỉ là lựa chọn nâng cấp cho người nghe nhạc kỹ."),
+        mic === false
+          ? qa("Tai nghe không có micro thì trò chuyện thế nào?", "Bạn có thể dùng micro rời, micro tích hợp trên webcam hoặc bàn phím; nếu cần đàm thoại thường xuyên, hãy chọn mẫu tai nghe có micro.")
+          : qa("Micro có thu cả tiếng ồn xung quanh không?", "Micro tai nghe thu tốt nhất khi đặt gần miệng; các mẫu có micro chống ồn hoặc kiểu thu cardioid sẽ giảm tiếng quạt, tiếng bàn phím so với micro thường."),
+      ],
+    };
+  },
+
+  loa({ a }) {
+    const connection = a.get(/^Kết nối$/);
+    const channels = a.get(/^Hệ thống loa$/);
+    const type = a.get(/^Loại sản phẩm$/);
+    const portable = type !== undefined && /di động|portable/i.test(type);
+    return {
+      tips: [
+        !portable && "Đặt hai loa cách nhau xấp xỉ khoảng cách từ bạn tới loa và hướng thẳng vào tai (tạo thành tam giác đều) để sân khấu âm thanh rõ nhất.",
+        !portable && "Kê loa ngang tầm tai (dùng chân đế nếu cần) và để cách tường vài cm để bass không bị dội, ù.",
+        channels !== undefined && /2\.1/.test(channels) && "Loa siêu trầm nên đặt trên sàn hoặc cạnh bàn; đặt sát tường thì bass mạnh hơn, đặt xa tường nếu thấy tiếng trầm quá ù.",
+        connection !== undefined && /bluetooth/i.test(connection) && "Khi xem phim qua Bluetooth mà hình và tiếng bị lệch, hãy chuyển sang kết nối dây hoặc bật chế độ độ trễ thấp nếu loa có.",
+        portable && "Sạc pin đầy trước khi mang đi và tránh để loa dưới nắng gắt hoặc trong xe đóng kín; chỉ nhúng nước khi loa có chuẩn kháng nước ghi rõ.",
+        "Tắt loa hoặc rút nguồn khi không dùng lâu để tiết kiệm điện và bảo vệ mạch khuếch đại.",
+      ],
+      faq: [
+        qa("Loa này có cần ampli riêng không?", "Không. Loa máy tính hiện đại là loa liền ampli (active): chỉ cần cắm nguồn và nối với máy tính hoặc điện thoại."),
+        qa("Có dùng được cho TV, điện thoại hoặc máy chơi game không?", "Được nếu thiết bị có đầu ra tương thích (Bluetooth, jack 3.5mm, RCA hoặc cổng quang); xem mục kết nối trong bảng thông số để chọn cáp phù hợp."),
+        qa("Công suất càng lớn càng tốt phải không?", "Không hẳn. Công suất chỉ cho biết loa có thể phát to đến đâu; chất âm còn phụ thuộc củ loa, thùng loa và cách hãng phối âm. Với bàn làm việc, loa vài chục W đã rất dư dùng."),
+      ],
+    };
+  },
+
+  ghe({ a }) {
+    const load = a.get(/^Tải trọng tối đa$/);
+    return {
+      tips: [
+        "Chỉnh độ cao để bàn chân chạm sàn, đầu gối vuông góc và khuỷu tay ngang mặt bàn khi gõ phím.",
+        "Đặt lưng sát tựa lưng, tựa thắt lưng đúng vùng eo; ngả nhẹ lưng ghế thay vì ngồi thẳng cứng cả ngày.",
+        "Cứ 45–60 phút hãy đứng dậy vận động vài phút: ghế tốt đến đâu cũng không thay thế được việc thay đổi tư thế.",
+        load && `Ghế chịu tải tối đa ${load}; không nên ngồi vượt mức này, cũng không nên ngồi lên tay ghế hay mép tựa lưng.`,
+        "Trải thảm hoặc tấm lót dưới ghế nếu sàn cứng để bảo vệ sàn và bánh xe; siết lại ốc chân ghế, tay ghế mỗi vài tháng.",
+        "Lau bề mặt bằng khăn mềm hơi ẩm, tránh chất tẩy mạnh làm bong da hoặc phai màu vải.",
+      ],
+      faq: [
+        qa("Ghế có tự lắp được không?", "Có. Ghế đóng thùng kèm dụng cụ và hướng dẫn, thường mất khoảng 20–30 phút và nên có người phụ khi lắp trụ và mâm ngồi. Bạn có thể nhờ PCZone tư vấn nếu cần hỗ trợ."),
+        qa("Ghế gaming và ghế công thái học khác nhau thế nào?", "Ghế gaming có tựa lưng cao, ôm người và kiểu dáng thể thao; ghế công thái học ưu tiên nâng đỡ cột sống, thoáng khí và nhiều điểm điều chỉnh hơn. Ngồi cả ngày ở văn phòng thì ghế công thái học thường dễ chịu hơn."),
+        qa("Trụ thủy lực (gas lift) có quan trọng không?", "Có. Đây là chi tiết chịu tải chính của ghế; hãy chọn ghế có trụ đạt chuẩn an toàn của hãng và đừng tự thay trụ không rõ nguồn gốc."),
+      ],
+    };
+  },
+
+  ban({ item, a }) {
+    const adjustable = /nâng hạ/i.test(`${a.get(/^Loại bàn$/) ?? ""} ${item.name}`);
+    const load = a.get(/^Tải trọng tối đa mặt bàn$/);
+    return {
+      tips: [
+        "Đặt màn hình sao cho mép trên ngang tầm mắt và cách mắt khoảng một sải tay; bàn nâng hạ nên chỉnh để khuỷu tay vuông góc khi gõ phím.",
+        adjustable && "Bàn nâng hạ: chừa khoảng trống quanh và dưới bàn để chân bàn nâng lên hạ xuống không bị vướng, và gom dây điện đủ chùng để dây không bị kéo căng khi bàn di chuyển.",
+        load && `Tải trọng tối đa của mặt bàn là ${load}: cộng khối lượng màn hình, thân máy, loa và phụ kiện rồi chừa dư để bàn hoạt động êm và bền.`,
+        "Đặt bàn nơi thoáng, tránh ánh nắng trực tiếp lên mặt bàn để lớp phủ không phai màu; lau bằng khăn mềm hơi ẩm.",
+      ],
+      faq: [
+        qa("Bàn có tự lắp được không?", "Có. Bàn đóng thùng kèm dụng cụ và hướng dẫn; mặt bàn và khung khá nặng nên nên lắp hai người. Bạn có thể nhờ PCZone tư vấn nếu cần hỗ trợ."),
+        qa("Bàn nâng hạ có tốt cho sức khỏe không?", "Thay đổi giữa ngồi và đứng trong ngày giúp giảm mỏi lưng và cổ so với ngồi liên tục. Nên bắt đầu bằng 15–30 phút đứng mỗi lần rồi tăng dần."),
+        qa("Đặt được những gì lên bàn?", "Xem tải trọng và kích thước mặt bàn trong bảng thông số; nếu dùng nhiều màn hình hoặc máy nặng, hãy chọn bàn có tải trọng dư so với tổng khối lượng thiết bị."),
       ],
     };
   },

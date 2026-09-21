@@ -4,7 +4,8 @@
  */
 import { firstNumber, firstPart, formatCapacity, toGigabytes } from "../attributes.js";
 import { pcParts, pickVariant } from "../names.js";
-import { compact, midSentence, noDot, paragraph, warrantyMonths, type Ctx, type Draft } from "./common.js";
+import { compact, lowerList, midSentence, noDot, paragraph, warrantyMonths, type Ctx, type Draft } from "./common.js";
+import { cpuNote, gpuNote, memoryNote, screenNotes, storageNote } from "./laptop-notes.js";
 
 const tight = (value: string | undefined) => value?.replace(/\s+/g, "");
 const lower = (value: string) => value.charAt(0).toLowerCase() + value.slice(1);
@@ -19,8 +20,15 @@ const stripProcessor = (cpu: string) => cpu.replace(/\s+processor\b/i, "").trim(
 /** "Intel Core 5 210H (8 lõi / 12 luồng…)" → "Core 5 210H" */
 function shortCpu(cpu: string | undefined): string | undefined {
   return cpu
-    ? stripProcessor(cpu.split(" (")[0].replace(/^(intel|amd)\s+/i, "").replace(/\s+\d+(?:\.\d+)?\s*GHz.*$/i, ""))
+    ? chipLength(stripProcessor(cpu.split(/\s*\(/)[0].replace(/^(intel|amd|qualcomm)\s+/i, "").replace(/\s+\d+(?:\.\d+)?\s*GHz.*$/i, "")))
     : undefined;
+}
+
+/** Chip trên thẻ sản phẩm tối đa ~24 ký tự: tên chip dài ("Snapdragon X2 Elite Extreme X2E94100") bỏ bớt từ cuối */
+function chipLength(text: string, max = 24): string {
+  const words = text.split(" ");
+  while (words.length > 2 && words.join(" ").length > max) words.pop();
+  return words.join(" ");
 }
 
 /**
@@ -48,7 +56,7 @@ function shortGpu(gpu: string | undefined): string | undefined {
 function laptop(ctx: Ctx, gaming: boolean): Draft {
   const { name, brand, a, seed } = ctx;
   const cpuFull = a.get(/^CPU$/);
-  const cpu = cpuFull ? stripProcessor(cpuFull.split(" (")[0].replace(/\s+\d+(?:\.\d+)?\s*GHz.*$/i, "")) : undefined;
+  const cpu = cpuFull ? stripProcessor(cpuFull.split(/\s*\(/)[0].replace(/\s+\d+(?:\.\d+)?\s*GHz.*$/i, "")) : undefined;
   const cpuDetail = cpuDetailVi(cpuFull?.match(/\(([^)]*)\)?/)?.[1]);
   const gpuFull = firstPart(a.get(/^Card đồ họa$/));
   const gpuShortName = shortGpu(gpuFull);
@@ -97,27 +105,32 @@ function laptop(ctx: Ctx, gaming: boolean): Draft {
     ),
   ]);
 
-  const performance = paragraph(
+  const processorText = paragraph(
     cpu && `${cpu} là bộ xử lý ${gaming ? "hiệu năng cao dành cho laptop, đủ sức xử lý game, livestream và các tác vụ đa nhiệm" : "tiết kiệm điện cho laptop, đáp ứng tốt văn phòng, học online, xem phim và duyệt web nhiều tab"}${cpuDetail ? ` (${cpuDetail})` : ""}.`,
-    discrete && gpuFull && `Card đồ họa rời ${gpuFull} ${/rtx/i.test(gpuFull) ? "hỗ trợ Ray Tracing và các công nghệ tăng khung hình bằng AI như DLSS trong những game được hỗ trợ" : "cho hiệu năng đồ họa vượt xa đồ họa tích hợp"}, đồng thời tăng tốc dựng video và thiết kế.`,
-    !discrete && gpuFull && `Máy dùng đồ họa tích hợp ${gpuFull}, tiết kiệm điện và đủ cho xem phim, làm việc văn phòng, chỉnh sửa ảnh cơ bản.`,
+    cpuNote(cpuFull),
     ram && `${ram} RAM${ramType ? ` ${ramType}` : ""}${ramBus ? ` bus ${ramBus}` : ""} giúp máy đa nhiệm mượt${ramMax ? `, có thể nâng cấp tối đa ${ramMax}` : ""}.`,
   );
+  const graphicsText = paragraph(
+    discrete && gpuFull && `Card đồ họa rời ${gpuFull} ${/rtx/i.test(gpuFull) ? "hỗ trợ Ray Tracing và các công nghệ tăng khung hình bằng AI như DLSS trong những game được hỗ trợ" : "cho hiệu năng đồ họa vượt xa đồ họa tích hợp"}, đồng thời tăng tốc dựng video và thiết kế.`,
+    discrete && gpuNote(gpuFull),
+    !discrete && gpuFull && `Máy dùng đồ họa tích hợp ${gpuFull}, tiết kiệm điện và đủ cho xem phim, làm việc văn phòng, chỉnh sửa ảnh cơ bản.`,
+  );
+  const dos = os !== undefined && /dos/i.test(os);
 
   return {
     titleParts: [cpuShortName, discrete ? gpuShortName : undefined, ram && `${tight(ram)}`, ssd && `SSD ${tight(ssd)}`, screen],
     intro,
     sections: [
-      { heading: gaming ? "Hiệu năng chơi game và sáng tạo" : "Hiệu năng cho học tập và làm việc", paragraphs: [performance] },
+      { heading: gaming ? "Hiệu năng chơi game và sáng tạo" : "Hiệu năng cho học tập và làm việc", paragraphs: [processorText, graphicsText] },
       {
         heading: "Màn hình hiển thị",
         paragraphs: [
           paragraph(
             size && `Màn hình ${size}${res ? `, độ phân giải ${res}` : ""}${panel ? `, tấm nền ${panel}` : ""}${hz ? `, tần số quét ${hz}` : ""}.`,
-            hz && firstNumber(hz) !== undefined && (firstNumber(hz) as number) >= 120 && "Tần số quét cao cho chuyển động mượt, giảm nhòe hình khi di chuột nhanh, chơi game hay cuộn trang.",
             brightness && `Độ sáng ${brightness}${gamut ? `, ${lower(gamut)}` : ""}.`,
             !brightness && gamut && `Độ phủ màu: ${gamut}.`,
           ),
+          paragraph(...screenNotes(size, res, hz, panel)),
         ],
       },
       {
@@ -128,6 +141,7 @@ function laptop(ctx: Ctx, gaming: boolean): Draft {
             ssdMaxGb && `Bạn có thể nâng cấp ổ cứng tới ${formatCapacity(ssdMaxGb)} khi cần thêm chỗ chứa.`,
             ramMax && `Bộ nhớ RAM hỗ trợ nâng tới ${ramMax}.`,
           ),
+          paragraph(storageNote(ssd), memoryNote(ram)),
         ],
       },
       {
@@ -139,8 +153,13 @@ function laptop(ctx: Ctx, gaming: boolean): Draft {
             keyboard && `Đèn nền bàn phím: ${keyboard}.`,
             webcam && `Webcam ${webcam}.`,
             wifi && `Kết nối không dây ${noDot(wifi)}${bluetooth ? `, ${bluetooth}` : ""}.`,
-            os && `Máy cài sẵn ${os}.`,
+            os && (dos ? `Máy chưa kèm Windows (${os}): bạn cần cài hệ điều hành trước khi sử dụng.` : `Máy cài sẵn ${os}.`),
           ),
+          // Tên sản phẩm không ghi cân nặng và pin: nhắc người mua đối chiếu số công bố của hãng
+          !weight && !battery && !batteryWh ? paragraph(
+            "Trọng lượng, dung lượng pin và danh sách cổng kết nối chi tiết của từng phiên bản nằm ở trang thông số của hãng; hãy đối chiếu trước khi mua nếu bạn thường xuyên mang máy đi học, đi làm.",
+            gaming && "Laptop gaming công suất cao thường nặng hơn và hao pin nhanh hơn khi chơi game, nên nhiều người mang theo bộ sạc.",
+          ) : "",
         ],
         bullets: ports ? [`Cổng kết nối: ${noDot(ports)}`] : undefined,
       },
@@ -494,7 +513,7 @@ export function keyboard({ name, brand, a, seed }: Ctx): Draft {
         ],
       },
     ],
-    audience: `${name} phù hợp với ${usage ? lower(noDot(usage)).replace(/,\s*/g, ", ") : "game thủ và người làm việc văn phòng"} — những ai coi trọng cảm giác gõ và muốn một bàn phím bền, đẹp trên bàn làm việc.`,
+    audience: `${name} phù hợp với ${usage ? lowerList(usage) : "game thủ và người làm việc văn phòng"} — những ai coi trọng cảm giác gõ và muốn một bàn phím bền, đẹp trên bàn làm việc.`,
     specs: [
       ["Loại bàn phím", type],
       ["Layout", layout],
@@ -621,13 +640,21 @@ export function mouse({ name, brand, a, seed }: Ctx): Draft {
       ["Đèn LED", led],
       ["Phần mềm", software],
     ],
-    // Tên cảm biến đầy đủ ("Razer Focus Pro 45K Optical Sensor Gen-2") quá dài cho chip: rút gọn, bản đầy đủ đứng sau
-    chips: [
-      sensor?.replace(/^razer\s+/i, "").replace(/\s*(optical\s+)?sensor.*$/i, ""),
-      dpi,
-      weight && tight(weight),
-      sensor && /sensor/i.test(sensor) ? `Cảm biến ${sensor}` : undefined,
-    ],
+    // Tên cảm biến đầy đủ ("Razer Focus Pro 45K Optical Sensor Gen-2", "Quang Học Focus Pro 50K Gen- 3") quá dài cho
+    // chip: rút gọn. Bản đầy đủ chỉ thêm vào cuối khi đã đủ ba chip ngắn, để nó không lọt vào ba chip đầu trên thẻ.
+    chips: (() => {
+      const short = compact([
+        sensor
+          ?.replace(/^(razer|quang\s*học|optical|cảm biến)\s+/gi, "")
+          .replace(/\s*(optical\s+)?sensor.*$/i, "")
+          .replace(/\s*Gen-?\s*(\d)/i, " Gen $1")
+          .trim(),
+        dpi,
+        weight && tight(weight),
+        connection && firstPart(connection)?.split(/,\s*/)[0],
+      ]).filter((chip) => chip.length <= 24);
+      return short.length >= 3 && sensor && /sensor/i.test(sensor) ? [...short, `Cảm biến ${sensor}`] : short;
+    })(),
     summary: [sensor, dpi, weight, connection && firstPart(connection)?.split(/,\s*/)[0]],
     warrantyMonths: warrantyMonths(a.get(/^Bảo hành$/), 12),
   };

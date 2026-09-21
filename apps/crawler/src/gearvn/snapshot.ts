@@ -33,6 +33,12 @@ export interface CatalogItem {
   images: string[];
   /** Bảng thông số đầy đủ theo thứ tự của nguồn */
   attributes: ProductAttribute[];
+  /**
+   * Nơi các thông số trên đến từ. Mặc định (không ghi) là bảng thông số ở trang sản phẩm; "title" là
+   * các thông số đọc ra từ tên sản phẩm (laptop GEARVN ghi CPU/GPU/RAM/SSD/màn hình ngay trong tên)
+   * khi trang sản phẩm không có bảng thông số.
+   */
+  attributesFrom?: "title";
   /** Thông số nổi bật ngắn ở trang danh sách, dùng khi bảng đầy đủ thiếu */
   highlights: string[];
 }
@@ -74,7 +80,13 @@ export async function readCatalog(): Promise<Catalog> {
   }
 }
 
+/**
+ * Ghi qua file tạm rồi đổi tên: bộ thu thập chạy hàng chục phút và ghi nhiều lần, nên nếu bị ngắt giữa
+ * chừng thì file cũ vẫn nguyên vẹn thay vì để lại một file JSON cụt.
+ */
 export async function writeCatalog(catalog: Catalog): Promise<void> {
   await fs.mkdir(new URL("../../data/", import.meta.url), { recursive: true });
-  await fs.writeFile(SNAPSHOT_PATH, `${JSON.stringify(catalog, null, 2)}\n`, "utf8");
+  const temporary = `${SNAPSHOT_PATH}.tmp`;
+  await fs.writeFile(temporary, `${JSON.stringify(catalog, null, 2)}\n`, "utf8");
+  await fs.rename(temporary, SNAPSHOT_PATH);
 }

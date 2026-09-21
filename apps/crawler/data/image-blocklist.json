@@ -1,5 +1,5 @@
 {
-  "note": "Ảnh đã được xem bằng mắt và loại khỏi bộ demo. Khớp theo địa chỉ ảnh gốc, áp dụng khi nạp (npm run demo-data) nên chạy lại collect-demo không làm ảnh xấu quay lại. Sau khi sửa file này, chạy `npm run demo-data -- --force-images --only=<danh-mục>` để nạp lại ảnh.",
+  "note": "Ảnh đã được xem bằng mắt và loại khỏi bộ demo. Khớp theo địa chỉ ảnh gốc, áp dụng khi nạp (npm run demo-data) nên chạy lại collect-demo không làm ảnh xấu quay lại. Sau khi sửa file này, chạy lại `npm run demo-data`: sản phẩm nào đang dùng ảnh vừa bị loại sẽ được nạp lại ảnh.",
   "entries": [
     {
       "product": "Vỏ máy tính Corsair 6500X TG Mid-Tower White (CC-9011258-WW)",
@@ -95,6 +95,186 @@
       "product": "PC Workstation PCZone Core Ultra 7 265F RTX 5080",
       "url": "https://cdn.hstatic.net/products/200000722513/pc_msi_gerforce_4500rs__2_of_107__6fe7cc943f4f4c8bbc58868d3a0d8b59.jpg",
       "why": "có logo GEARVN dạng màu trên nền sáng hoặc biển hiệu GEARVN trong phông ảnh (bộ nhận diện chỉ bắt logo trắng, xem watermark.ts)"
+    },
+    {
+      "product": "Chuột ASUS ROG Strix Impact III Wireless White",
+      "url": "https://cdn.hstatic.net/products/200000722513/rog-strix-impact-iii-wireless-wt_56673cb03c4b4d6ca4bb483c76def37f.png",
+      "why": "ảnh ghép của nhà phân phối: huy hiệu bảo hành 2 năm tiếng Việt và dải biểu tượng đè lên ảnh sản phẩm"
+    },
+    {
+      "product": "Tai nghe ASUS ROG Kithara Gaming",
+      "url": "https://cdn.hstatic.net/products/200000722513/rog-kithara-01_bae42e65d47d4e39b48df89f564524bc.jpg",
+      "why": "ảnh ghép của nhà phân phối: huy hiệu bảo hành 2 năm tiếng Việt và dải biểu tượng đè lên ảnh sản phẩm"
+    },
+    {
+      "product": "Tai nghe ASUS ROG Pelta WL RGB Black",
+      "url": "https://cdn.hstatic.net/products/200000722513/rog-pelta-01_d946a172a0f84731a4e4951299ed623b.jpg",
+      "why": "ảnh ghép của nhà phân phối: huy hiệu bảo hành 2 năm tiếng Việt và dải biểu tượng đè lên ảnh sản phẩm"
+    },
+    {
+      "product": "Tai nghe ASUS ROG Cetra II Core",
+      "url": "https://product.hstatic.net/200000722513/product/rog-cetra-ii-core-07_00ee357bf55a4cb7acab9c8a274c59ff.jpg",
+      "why": "ảnh ghép của nhà phân phối: huy hiệu bảo hành 2 năm tiếng Việt và dải biểu tượng đè lên ảnh sản phẩm"
+    },
+    {
+      "product": "Laptop gaming Acer Nitro ProPanel ANV16-72-71T9",
+      "url": "https://cdn.hstatic.net/products/200000722513/anv16-72_3c351d8ed5af43f9b2428c3719af5bfb.png",
+      "why": "ảnh ghép khuyến mãi của cửa hàng bán lẻ (biển 'Tặng màn Acer 200Hz trị giá 2.500.000đ') đè lên ảnh sản phẩm"
+    },
+    {
+      "product": "Laptop gaming Acer Nitro ProPanel ANV16S-71-58WQ",
+      "url": "https://cdn.hstatic.net/products/200000722513/anv16s-71__1__b7f76ae1f18e4d69bfb906e1cf5e4d9b.png",
+      "why": "ảnh ghép khuyến mãi của cửa hàng bán lẻ (biển 'Tặng màn Acer 200Hz trị giá 2.500.000đ') đè lên ảnh sản phẩm"
+    },
+    {
+      "product": "Laptop gaming Acer Nitro ProPanel ANV16S-61-R9ZV",
+      "url": "https://cdn.hstatic.net/products/200000722513/anv16s-61__1__add2edd0382246c99b766dfa1cd5526c.png",
+      "why": "ảnh ghép khuyến mãi của cửa hàng bán lẻ (biển 'Tặng màn Acer 200Hz trị giá 2.500.000đ') đè lên ảnh sản phẩm"
+    },
+    {
+      "product": "Laptop gaming Acer Nitro ProPanel ANV16S-41-R337",
+      "url": "https://cdn.hstatic.net/products/200000722513/anv16s-41__1__1f0a17bcc69146628a27fc6e6f9b8add.png",
+      "why": "ảnh ghép khuyến mãi của cửa hàng bán lẻ (biển 'Tặng màn Acer 200Hz trị giá 2.500.000đ') đè lên ảnh sản phẩm"
+    },
+    {
+      "product": "Laptop gaming Acer Nitro ProPanel ANV16S-61-R7KQ",
+      "url": "https://cdn.hstatic.net/products/200000722513/anv16s-61__1__63aeaf37f6b04410840779bcc94d85e6.png",
+      "why": "ảnh ghép khuyến mãi của cửa hàng bán lẻ (biển 'Tặng màn Acer 200Hz trị giá 2.500.000đ') đè lên ảnh sản phẩm"
+    },
+    {
+      "product": "Laptop gaming Acer Nitro ProPanel ANV16S-61-R0B8",
+      "url": "https://cdn.hstatic.net/products/200000722513/anv16s-61__1__fc15c1eb5a7d4e3a89bb718ca433e626.png",
+      "why": "ảnh ghép khuyến mãi của cửa hàng bán lẻ (biển 'Tặng màn Acer 200Hz trị giá 2.500.000đ') đè lên ảnh sản phẩm"
+    },
+    {
+      "product": "Laptop gaming Acer Nitro ProPanel AN16S-61-R9CN",
+      "url": "https://cdn.hstatic.net/products/200000722513/an16s-61__2__0e5095db651d47ac951ec747a7cc7138.png",
+      "why": "ảnh ghép khuyến mãi của cửa hàng bán lẻ (biển 'Tặng màn Acer 200Hz trị giá 2.500.000đ') đè lên ảnh sản phẩm"
+    },
+    {
+      "product": "Laptop gaming Acer Nitro ProPanel AN16S-61-R193",
+      "url": "https://cdn.hstatic.net/products/200000722513/an16s-61__2__5b0b233b67b14791ae6eec5123687c0d.png",
+      "why": "ảnh ghép khuyến mãi của cửa hàng bán lẻ (biển 'Tặng màn Acer 200Hz trị giá 2.500.000đ') đè lên ảnh sản phẩm"
+    },
+    {
+      "product": "Tai nghe ASUS ROG Cetra II Core",
+      "url": "https://product.hstatic.net/200000722513/product/rog-cetra-ii-core-03_72ce1a95f207491cba8fa94ecdf350c5.jpg",
+      "why": "ảnh ghép của nhà phân phối: huy hiệu bảo hành 2 năm tiếng Việt và dải biểu tượng đè lên ảnh sản phẩm"
+    },
+    {
+      "product": "Tai nghe ASUS ROG Cetra II Core",
+      "url": "https://product.hstatic.net/200000722513/product/rog-cetra-ii-core-01_6f945600c74742de909c50d6ecfad240.jpg",
+      "why": "ảnh ghép của nhà phân phối: huy hiệu bảo hành 2 năm tiếng Việt và dải biểu tượng đè lên ảnh sản phẩm"
+    },
+    {
+      "product": "Tai nghe ASUS ROG Cetra II Core",
+      "url": "https://product.hstatic.net/200000722513/product/rog-cetra-ii-core-06_7dc58572665e491ab1631d3c034aa949.jpg",
+      "why": "ảnh ghép của nhà phân phối: huy hiệu bảo hành 2 năm tiếng Việt và dải biểu tượng đè lên ảnh sản phẩm"
+    },
+    {
+      "product": "Ghế Corsair T3 RUSH Gray/Charcoal 2023",
+      "url": "https://product.hstatic.net/200000722513/product/wx2toafk_340163d61ba7460ba85b4fdb78a3dffd.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Ghế Corsair T3 RUSH Gray/Charcoal 2023",
+      "url": "https://product.hstatic.net/200000722513/product/jbtd8u1t_d7142a23ac394474a51753b2b991caca.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Ghế Corsair T3 RUSH Gray/Charcoal 2023",
+      "url": "https://product.hstatic.net/200000722513/product/z5vaqdmi_4a784524ec2243a18a98db13a572d633.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Ghế Corsair T3 RUSH Gray/White 2023",
+      "url": "https://product.hstatic.net/200000722513/product/wx2toafk_86a33bdf29fb447d8eaaae73688af050.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Ghế Corsair T3 RUSH Gray/White 2023",
+      "url": "https://product.hstatic.net/200000722513/product/ejah3eul_da7e2f71d7dd4e17a4c14ea2e5034918.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Ghế Corsair T3 RUSH Gray/White 2023",
+      "url": "https://product.hstatic.net/200000722513/product/z5vaqdmi_f023dcd5236741729f90dea17d61a338.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Loa di động kháng nước IPX6 SOUNARC R2 Portable Speaker - Purple Red",
+      "url": "https://product.hstatic.net/200000722513/product/5_a760963f-8837-4d11-8659-3d892f2dda5d_9c95a0a4dc3c45b3aa637c5446c50056.jpg",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Loa di động kháng nước IPX6 SOUNARC R2 Portable Speaker - Purple Red",
+      "url": "https://product.hstatic.net/200000722513/product/6_4c4fb507-5660-4ed8-810e-c34c11c15f8d_a7c61616de24451f8baa391bd56af04a.jpg",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Loa di động kháng nước IPX6 SOUNARC R2 Portable Speaker - Purple Red",
+      "url": "https://product.hstatic.net/200000722513/product/7_dfa6677d-c02a-40cd-a13f-22e27de4006f_19334a0ab9ab493da02d93c461635e8a.jpg",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Loa di động kháng nước IPX6 SOUNARC R1 Portable Speaker - Purple Red",
+      "url": "https://product.hstatic.net/200000722513/product/11_9b73d819-2ed9-46b6-8e80-4a7ca3435343_78cd958c6c4b4cf3be5ad93f7beb6e67.jpg",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Nguồn máy tính Corsair CX650 - 80 Plus Bronze (650W) CP-9020278-NA",
+      "url": "https://product.hstatic.net/200000722513/product/gearvn-nguon-may-tinh-corsair-cx650-80-plus-bronze-650w-2_64e5bd4bfdce4ea495f63229591c1712.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Nguồn máy tính Corsair CX650 - 80 Plus Bronze (650W) CP-9020278-NA",
+      "url": "https://product.hstatic.net/200000722513/product/gearvn-nguon-may-tinh-corsair-cx650-80-plus-bronze-650w-3_03584e3a24744f90be9ed7f6706b7ab2.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Nguồn máy tính Corsair CX650 - 80 Plus Bronze (650W) CP-9020278-NA",
+      "url": "https://product.hstatic.net/200000722513/product/gearvn-nguon-may-tinh-corsair-cx650-80-plus-bronze-650w-4_bf476e127c874666800e99e7c6d0e3af.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "RAM Corsair Vengeance RGB 32GB (2x16GB) 5600 DDR5",
+      "url": "https://product.hstatic.net/200000722513/product/gearvn-corsair-vengeance-rgb-ddr-5600-ddr5-1_0e571601b6f34326805ddc6969837940.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Ổ cứng SSD Corsair MP600 CORE XT 1TB PCIe 4.0 Gen4",
+      "url": "https://product.hstatic.net/200000722513/product/mp600_core_xt_03_b53367cf470a4e32ad1fa379e97b0c22.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Tai nghe Logitech G Pro X SE",
+      "url": "https://cdn.hstatic.net/products/200000722513/download__1__4efe070ce020492a8a14ae4c1e075c74.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Ghế Corsair T3 RUSH Gray/Charcoal 2023",
+      "url": "https://product.hstatic.net/200000722513/product/ejah3eul_ede100a76292402f99c795afd11639e3.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Ghế Corsair T3 RUSH Gray/White 2023",
+      "url": "https://product.hstatic.net/200000722513/product/jbtd8u1t_c77b7802d61a4b0498e2bd757d1ca188.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "RAM Corsair Vengeance RGB 32GB (2x16GB) 5600 DDR5",
+      "url": "https://product.hstatic.net/200000722513/product/gearvn-corsair-vengeance-rgb-ddr-5600-ddr5-3_7cfccb481f1d4a45abd28678a9c654b2.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Chuột ASUS TUF Gaming M3 Gen II",
+      "url": "https://product.hstatic.net/200000722513/product/1_7c8fb33f317a498a8bf440d4e1cfe7e1.jpg",
+      "why": "ảnh khuyến mãi của cửa hàng bán lẻ (chữ 'Miễn phí giao hàng toàn quốc') đè lên ảnh sản phẩm"
+    },
+    {
+      "product": "RAM Corsair Vengeance RGB 32GB (2x16GB) 5600 DDR5",
+      "url": "https://product.hstatic.net/200000722513/product/gearvn-corsair-vengeance-rgb-ddr-5600-ddr5-4_3a57a8c561dc4c2d87e8edbc1c154ef2.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
     }
   ]
 }

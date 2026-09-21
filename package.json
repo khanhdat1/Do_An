@@ -17,6 +17,7 @@
     "db:migrate": "npm run migrate -w @pczone/db",
     "db:seed": "npm run db:seed:data && npm run seed-images && npm run demo-data",
     "db:seed:data": "npm run seed -w @pczone/db",
+    "db:seed:categories": "npm run seed -w @pczone/db -- --categories",
     "db:studio": "npm run studio -w @pczone/db",
 
     "dev:api": "npm run db:build && npm run dev -w @pczone/api",

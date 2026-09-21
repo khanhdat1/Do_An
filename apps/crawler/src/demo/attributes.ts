@@ -12,6 +12,8 @@ export function cleanValue(raw: string): string {
     .normalize("NFC")
     .replace(/[®™]/g, "")
     .replace(/\s+/g, " ")
+    // "Nintendo Switch..." → "Nintendo Switch": dấu ba chấm của nguồn chỉ là chữ thừa và làm câu ghép thành ".."
+    .replace(/\s*\.{2,}/g, "")
     .replace(/(\d)\s*ghz\b/gi, "$1 GHz")
     .replace(/(\d)\s*mhz\b/gi, "$1 MHz")
     .replace(/(\d)\s*w\b/g, "$1 W")

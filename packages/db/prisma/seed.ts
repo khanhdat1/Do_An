@@ -1,7 +1,8 @@
 /**
  * Seed dữ liệu mẫu cho PCZone.
  *
- * Chạy:  npm run db:seed   (từ thư mục gốc monorepo)
+ * Chạy:  npm run db:seed              (từ thư mục gốc monorepo)
+ *        npm run db:seed:categories   chỉ cập nhật cây danh mục, không đụng tới sản phẩm
  *
  * Idempotent: chạy lại nhiều lần không tạo bản ghi trùng, vì mọi thứ đều
  * dùng `upsert` theo slug / sku.
@@ -81,8 +82,12 @@ const categoryTree: CategorySeed[] = [
     name: "Gaming Gear",
     icon: "Keyboard",
     children: [
-      { slug: "ban-phim", name: "Bàn phím cơ", icon: "Keyboard", componentType: ComponentType.KEYBOARD },
-      { slug: "chuot", name: "Chuột gaming", icon: "Mouse", componentType: ComponentType.MOUSE },
+      { slug: "ban-phim", name: "Bàn phím", icon: "Keyboard", componentType: ComponentType.KEYBOARD },
+      { slug: "chuot", name: "Chuột", icon: "Mouse", componentType: ComponentType.MOUSE },
+      { slug: "tai-nghe", name: "Tai nghe", icon: "Headphones" },
+      { slug: "loa", name: "Loa", icon: "Speaker" },
+      { slug: "ghe", name: "Ghế", icon: "Armchair" },
+      { slug: "ban", name: "Bàn", icon: "LampDesk" },
     ],
   },
 ];
@@ -757,6 +762,14 @@ async function seedAdmin() {
 async function main() {
   console.log("Bắt đầu seed dữ liệu PCZone...\n");
   await seedCategories();
+
+  // `--categories`: chỉ cập nhật cây danh mục (thêm danh mục mới vào DB đang chạy mà không đụng tới
+  // sản phẩm, thương hiệu, tài khoản)
+  if (process.argv.includes("--categories")) {
+    console.log("\nXong (chỉ danh mục).");
+    return;
+  }
+
   await seedBrands();
   await seedProducts();
   await seedAdmin();
