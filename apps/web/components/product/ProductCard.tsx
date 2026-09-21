@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Gift, Star, Trophy } from "lucide-react";
 import BuyNowButton from "@/components/cart/BuyNowButton";
+import Highlight from "@/components/search/Highlight";
 import ProductThumb from "./ProductThumb";
 import type { Product, Tone } from "@/types";
 import { discountPercent, formatPrice } from "@/lib/format";
@@ -15,6 +16,8 @@ interface ProductCardProps {
   variant?: "default" | "flash";
   /** Thứ hạng cho khối "Top bán chạy" (1, 2, 3...) */
   rank?: number;
+  /** Từ khoá tìm kiếm để tô sáng trong tên (chỉ trang kết quả tìm kiếm truyền) */
+  highlight?: string[];
   className?: string;
 }
 
@@ -34,6 +37,7 @@ export default function ProductCard({
   product,
   variant = "default",
   rank,
+  highlight,
   className,
 }: ProductCardProps) {
   const discount = discountPercent(product.price, product.oldPrice);
@@ -108,7 +112,9 @@ export default function ProductCard({
         </div>
 
         <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-slate-800 transition group-hover:text-brand-600">
-          <Link href={`/san-pham/${product.slug}`}>{product.name}</Link>
+          <Link href={`/san-pham/${product.slug}`}>
+            {highlight && highlight.length > 0 ? <Highlight text={product.name} terms={highlight} /> : product.name}
+          </Link>
         </h3>
 
         {product.summary ? (

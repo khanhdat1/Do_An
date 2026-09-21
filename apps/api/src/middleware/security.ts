@@ -85,3 +85,10 @@ export const cartWriteLimiter = limiter({
   limit: 200,
   message: "Bạn thao tác với giỏ hàng quá nhanh. Vui lòng thử lại sau ít phút.",
 });
+
+/** Ô tìm kiếm gọi gợi ý sau mỗi lần dừng gõ: cho phép nhiều, nhưng vẫn có trần theo IP */
+export const searchLimiter = limiter({
+  windowMs: 60 * 1000,
+  limit: 120,
+  message: "Bạn tìm kiếm quá nhanh. Vui lòng thử lại sau ít giây.",
+});

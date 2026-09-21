@@ -153,6 +153,71 @@ export interface Paginated<T> {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Tìm kiếm                                                                  */
+/* -------------------------------------------------------------------------- */
+
+/** Một danh mục ở bộ lọc của trang tìm kiếm, kèm số kết quả nằm trong danh mục đó */
+export interface CategoryFacet {
+  slug: string;
+  name: string;
+  count: number;
+}
+
+/**
+ * `GET /api/search` — kết quả tìm kiếm và cách API đã hiểu câu tìm kiếm (từ khoá đã dùng, lỗi gõ đã sửa,
+ * từ bị bỏ qua, cụm giá) cùng các thành phần của bộ lọc.
+ */
+export interface SearchResult extends Paginated<Product> {
+  query: string;
+  /** Từ khoá thực sự dùng để khớp (không dấu, đã sửa lỗi gõ) — dùng để tô sáng */
+  terms: string[];
+  /** Từ gõ sai đã được tự sửa: "razr" → "razer" */
+  corrections: { from: string; to: string }[];
+  /** Từ bị bỏ qua vì không sản phẩm nào chứa */
+  ignoredTerms: string[];
+  /** true = không sản phẩm nào chứa đủ mọi từ khoá, đây là các sản phẩm khớp nhiều từ nhất */
+  relaxed: boolean;
+  /** Bộ lọc giá suy ra từ câu tìm kiếm ("dưới 30 triệu") */
+  priceIntent?: {
+    label: string;
+    minPrice?: number;
+    maxPrice?: number;
+    /** Câu tìm kiếm khi bỏ cụm giá đi */
+    queryWithoutPrice: string;
+  };
+  facets: {
+    categories: CategoryFacet[];
+    brands: BrandFacet[];
+    priceRange: { min: number; max: number } | null;
+  };
+}
+
+/** Một sản phẩm trong hộp gợi ý khi gõ ở ô tìm kiếm */
+export interface SuggestProduct {
+  slug: string;
+  name: string;
+  price: number;
+  oldPrice?: number;
+  image?: string;
+  categoryName: string;
+  brand?: string;
+  categoryPath: string[];
+  inStock: boolean;
+}
+
+/** `GET /api/search/suggest` */
+export interface SearchSuggestions {
+  query: string;
+  /** Tổng số sản phẩm khớp (không chỉ các sản phẩm được liệt kê) */
+  total: number;
+  /** Từ khoá thực sự dùng để khớp (không dấu, đã sửa lỗi gõ) — dùng để tô sáng */
+  terms: string[];
+  products: SuggestProduct[];
+  categories: CategoryFacet[];
+  brands: CategoryFacet[];
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Xác thực                                                                  */
 /* -------------------------------------------------------------------------- */
 

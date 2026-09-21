@@ -6,19 +6,9 @@ import {
   listProducts,
 } from "../services/product.service.js";
 import { NotFoundError } from "../middleware/errors.js";
+import { boolQuery } from "../utils/query.js";
 
 export const productsRouter = Router();
-
-/**
- * Boolean trong query string.
- *
- * KHÔNG dùng z.coerce.boolean(): nó chạy Boolean("false") = true, nên
- * `?featured=false` sẽ bị hiểu thành true. Phải so khớp chuỗi tường minh.
- */
-const boolQuery = z
-  .enum(["true", "false", "1", "0"])
-  .transform((value) => value === "true" || value === "1")
-  .optional();
 
 /** Query string luôn là chuỗi, nên dùng coerce để đổi sang số */
 const listQuerySchema = z.object({

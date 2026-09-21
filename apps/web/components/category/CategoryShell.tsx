@@ -13,7 +13,7 @@ import {
 } from "@/lib/category-query";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { BrandFacet } from "@/types";
+import type { BrandFacet, CategoryFacet } from "@/types";
 
 interface CategoryShellProps {
   brands: BrandFacet[];
@@ -22,6 +22,12 @@ interface CategoryShellProps {
   total: number;
   /** Lưới sản phẩm + phân trang, render ở server */
   children: React.ReactNode;
+  /** Các kiểu sắp xếp. Mặc định là của trang danh mục; trang tìm kiếm thêm "Liên quan nhất". */
+  sortOptions?: readonly { value: string; label: string }[];
+  /** Kiểu sắp xếp khi URL không ghi `sort` */
+  defaultSort?: string;
+  /** Trang tìm kiếm: có thì hiện thêm bộ lọc danh mục (tham số `category` trên URL) */
+  categories?: CategoryFacet[];
 }
 
 /** "Từ 3.000.000đ", "Đến 9.000.000đ" hoặc "3.000.000đ – 9.000.000đ" */
@@ -38,7 +44,15 @@ function describePrice(min?: number, max?: number): string {
  * Mọi thay đổi bộ lọc chỉ đổi URL rồi để Next render lại phần server; trạng thái thật luôn nằm
  * trên URL (xem lib/category-query.ts). Trên mobile cột lọc là ngăn kéo mở bằng nút "Bộ lọc".
  */
-export default function CategoryShell({ brands, priceRange, total, children }: CategoryShellProps) {
+export default function CategoryShell({
+  brands,
+  priceRange,
+  total,
+  children,
+  sortOptions = SORT_OPTIONS,
+  defaultSort = DEFAULT_SORT,
+  categories,
+}: CategoryShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -46,8 +60,12 @@ export default function CategoryShell({ brands, priceRange, total, children }: C
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const query = useMemo(() => parseCategoryQuery(Object.fromEntries(searchParams)), [searchParams]);
-  const activeCount = countActiveFilters(query);
+  // `parseCategoryQuery` chỉ biết các kiểu sắp xếp của trang danh mục: kiểu sắp xếp đang chọn đọc riêng theo danh sách của trang này
+  const sort = sortOptions.find((option) => option.value === searchParams.get("sort"))?.value ?? defaultSort;
+  const selectedCategory = categories ? (searchParams.get("category") ?? undefined) : undefined;
+  const activeCount = countActiveFilters(query) + (selectedCategory ? 1 : 0);
   const brandName = useMemo(() => new Map(brands.map((brand) => [brand.slug, brand.name])), [brands]);
+  const categoryName = useMemo(() => new Map((categories ?? []).map((category) => [category.slug, category.name])), [categories]);
 
   /** Đổi URL: sửa tham số rồi luôn về trang 1, vì bộ lọc mới có thể ít kết quả hơn trang đang xem */
   const navigate = (change: (params: URLSearchParams) => void) => {
@@ -82,13 +100,20 @@ export default function CategoryShell({ brands, priceRange, total, children }: C
 
   const setSort = (value: string) =>
     navigate((params) => {
-      if (value === DEFAULT_SORT) params.delete("sort");
+      if (value === defaultSort) params.delete("sort");
       else params.set("sort", value);
+    });
+
+  const selectCategory = (slug?: string) =>
+    navigate((params) => {
+      if (slug) params.set("category", slug);
+      else params.delete("category");
     });
 
   const clearAll = () =>
     navigate((params) => {
       for (const key of FILTER_PARAMS) params.delete(key);
+      if (categories) params.delete("category");
     });
 
   const hasPrice = query.minPrice !== undefined || query.maxPrice !== undefined;
@@ -104,6 +129,9 @@ export default function CategoryShell({ brands, priceRange, total, children }: C
       onInStock={setInStock}
       onClear={clearAll}
       onClose={onClose}
+      categories={categories}
+      selectedCategory={selectedCategory}
+      onSelectCategory={categories ? selectCategory : undefined}
     />
   );
 
@@ -166,11 +194,11 @@ export default function CategoryShell({ brands, priceRange, total, children }: C
             <label className="flex items-center gap-2 text-sm text-slate-500">
               <span className="hidden sm:inline">Sắp xếp</span>
               <select
-                value={query.sort}
+                value={sort}
                 onChange={(event) => setSort(event.target.value)}
                 className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
               >
-                {SORT_OPTIONS.map((option) => (
+                {sortOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -183,6 +211,14 @@ export default function CategoryShell({ brands, priceRange, total, children }: C
         {/* Chip bộ lọc đang bật: bấm để bỏ từng cái */}
         {activeCount > 0 ? (
           <ul className="mt-3 flex flex-wrap items-center gap-2">
+            {selectedCategory ? (
+              <li>
+                <button type="button" onClick={() => selectCategory()} className={chip}>
+                  {categoryName.get(selectedCategory) ?? selectedCategory}
+                  <X className="size-3.5" aria-label="Bỏ lọc danh mục" />
+                </button>
+              </li>
+            ) : null}
             {query.inStock ? (
               <li>
                 <button type="button" onClick={() => setInStock(false)} className={chip}>

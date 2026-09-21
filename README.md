@@ -49,15 +49,17 @@ pczone/
 │       ├── env.ts              đọc & kiểm tra biến môi trường
 │       ├── routes/             định nghĩa endpoint + kiểm tra tham số (zod)
 │       ├── services/           truy vấn Prisma, logic nghiệp vụ (sản phẩm, xác thực, giỏ hàng)
+│       ├── search/             bộ máy tìm kiếm: chuẩn hoá chữ, từ đồng nghĩa, lỗi gõ, mức giá, xếp hạng (có test: `npm test -w @pczone/api`)
 │       ├── mappers/            Prisma model → DTO cho frontend
 │       ├── middleware/         lỗi tập trung, nhận diện JWT, chống CSRF, giới hạn tần suất
 │       ├── utils/              cookie, trần số lượng giỏ hàng
 │       └── types/dto.ts        hợp đồng dữ liệu với frontend
 │
 ├── apps/web/               Next.js 16 + TypeScript + Tailwind 4
-│   ├── app/                    trang chủ, danh mục (/danh-muc, /danh-muc/[slug]), chi tiết sản phẩm, giỏ hàng, đăng nhập / đăng ký, tài khoản
-│   ├── components/             layout / home / category / product / cart / auth / providers / ui
+│   ├── app/                    trang chủ, danh mục (/danh-muc, /danh-muc/[slug]), tìm kiếm (/tim-kiem), chi tiết sản phẩm, giỏ hàng, đăng nhập / đăng ký, tài khoản
+│   ├── components/             layout / home / category / search / product / cart / auth / providers / ui
 │   ├── lib/category-query.ts   đọc / dựng bộ lọc trên URL của trang danh mục
+│   ├── lib/search-*.ts         câu tìm kiếm trên URL, gọi API gợi ý + lịch sử tìm kiếm ở trình duyệt, tô sáng từ khoá
 │   ├── lib/api.ts              gọi API từ server (cache ISR, có fallback khi API chưa chạy)
 │   ├── lib/api-client.ts       gọi API từ trình duyệt (cookie, tự refresh token)
 │   ├── lib/data/               dữ liệu dự phòng
@@ -256,6 +258,8 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | GET | `/api/categories` | Cây danh mục đầy đủ |
 | GET | `/api/categories/featured?limit=6` | Danh mục nổi bật ở trang chủ |
 | GET | `/api/categories/:slug` | Một danh mục cho trang danh mục: breadcrumb, danh mục con (kèm số sản phẩm cả nhánh), các hãng và khoảng giá để dựng bộ lọc. 404 nếu không có |
+| GET | `/api/search` | Tìm kiếm sản phẩm: hiểu không dấu, từ đồng nghĩa, lỗi gõ và mức giá viết trong câu; trả kết quả đã xếp hạng, cách API hiểu câu tìm và các thành phần bộ lọc (danh mục, hãng, khoảng giá) |
+| GET | `/api/search/suggest?q=&limit=5` | Gợi ý khi gõ: vài sản phẩm khớp nhất, danh mục và hãng có tên khớp câu đang gõ |
 | POST | `/api/auth/register` | Đăng ký, đăng nhập luôn, gộp giỏ hàng khách |
 | POST | `/api/auth/login` | `{ email, password, remember? }` — đăng nhập, gộp giỏ hàng khách vào tài khoản |
 | POST | `/api/auth/refresh` | Đổi refresh token (cookie) lấy cặp token mới |
@@ -284,6 +288,8 @@ Tham số của `/api/products`:
 ?page=1&pageSize=20        tối đa 60
 ```
 
+`?search=` dùng chung bộ máy với `/api/search` (mục "Tìm kiếm" bên dưới): cũng hiểu không dấu, từ đồng nghĩa và lỗi gõ.
+
 Mọi kiểu sắp xếp đều kèm khoá phụ `id`, nên sản phẩm bằng nhau ở khoá chính (cùng giá, cùng số đã bán)
 vẫn có thứ tự cố định giữa hai lần gọi: bấm sang trang 2 không gặp lại sản phẩm đã thấy ở trang 1.
 
@@ -295,6 +301,49 @@ dựng ở server. Bộ lọc có: hãng (kèm số sản phẩm), khoảng giá
 + ô nhập tay), chỉ hàng còn; sắp xếp; phân trang 12 sản phẩm / trang. Trên mobile bộ lọc là ngăn kéo mở bằng
 nút "Bộ lọc". Danh mục cha (`/danh-muc/linh-kien`) hiện thêm ô chọn nhanh các danh mục con; `/danh-muc` liệt
 kê mọi danh mục.
+
+### Tìm kiếm (`/tim-kiem`)
+
+Trang `/tim-kiem` cũng để mọi bộ lọc trên URL như trang danh mục, ví dụ
+`/tim-kiem?q=laptop+gaming&category=laptop-gaming&brand=asus&sort=price-asc&page=2`. `GET /api/search` nhận:
+
+```
+?q=laptop gaming dưới 30 triệu    câu tìm kiếm (tối đa 200 ký tự)
+?category=laptop-gaming           danh mục (lá hoặc cha)
+?brand=asus,msi  ?minPrice=  ?maxPrice=  ?inStock=true
+?sort=relevance | best-selling | newest | price-asc | price-desc
+?page=1&pageSize=20               tối đa 60
+```
+
+Ngoài danh sách sản phẩm, kết quả cho biết API đã hiểu câu tìm thế nào (từ khoá dùng để khớp, lỗi gõ đã sửa, từ bị
+bỏ qua, mức giá suy ra) và các thành phần của bộ lọc (danh mục, hãng, khoảng giá). Hộp gợi ý khi gõ gọi
+`GET /api/search/suggest?q=&limit=5` (cache 30 giây).
+
+Bộ máy nằm ở `apps/api/src/search/`, chạy ngay trong tiến trình API, không cần Elasticsearch và không đổi schema:
+
+- **Chỉ mục trong bộ nhớ**, dựng từ mọi sản phẩm `ACTIVE` (tên, hãng, chuỗi danh mục, mô tả ngắn, giá trị thông số)
+  khi API khởi động và làm mới mỗi 60 giây. Thẻ sản phẩm, giá và tồn kho của trang kết quả luôn đọc lại từ DB theo
+  id nên không bao giờ cũ; bộ lọc "chỉ hàng còn" cũng hỏi lại DB.
+- **Tiếng Việt**: bỏ dấu (`đ` thành `d`) và khớp theo **đầu từ**: "lap" khớp "Laptop" nhưng "top" thì không. Gõ có dấu
+  thì ưu tiên đúng dấu ("cơ" đứng trước "có"). Mã hàng viết liền hay tách đều khớp ("rtx5070ti" = "rtx 5070 ti",
+  "32 gb" = "32gb").
+- **Từ đồng nghĩa**: mouse / chuột, keyboard / bàn phím, headphone / tai nghe, monitor / màn hình, vga / card màn hình,
+  chair / ghế... (`synonyms.ts`).
+- **Mức giá trong câu**: "dưới 30 triệu", "từ 10 đến 20 triệu", "khoảng 15tr", "15 triệu" thành khoảng giá và hiện
+  thành nhãn có thể bấm bỏ. Khoảng giá chọn ở bộ lọc thì thắng mức giá gõ trong câu.
+- **Lỗi gõ**: "razr" thành "razer" (sửa theo từ vựng của chính cửa hàng; số và mã hàng không bao giờ bị sửa). Từ không
+  sản phẩm nào chứa thì bị bỏ qua và báo trên trang kết quả; không sản phẩm nào chứa đủ mọi từ thì hiện các sản phẩm
+  khớp nhiều từ nhất.
+- **Xếp hạng**: khớp ở tên hơn hãng, hãng hơn danh mục, danh mục hơn thông số; cụm từ liền nhau, khớp nguyên từ, còn
+  hàng và bán chạy được cộng điểm. Từ chỉ loại hàng hoặc tên hãng ("chuột", "laptop", "asus"...) phải khớp ở tên / hãng /
+  danh mục chứ không tính khi chỉ nằm trong thông số, nên "loa" không ra các sản phẩm ghi "loại...".
+- **Giao diện**: ô tìm ở header có hộp gợi ý (sản phẩm, danh mục, hãng; điều khiển bằng mũi tên / Enter / Esc, tương
+  thích bộ gõ tiếng Việt; câu đã tìm gần đây lưu ở trình duyệt). Trang kết quả lọc thêm theo danh mục, tô sáng từ khoá
+  trong tên sản phẩm. Nút "AI Search" hiện chạy đúng tìm kiếm từ khoá này, chưa gọi AI.
+- **Giới hạn**: chỉ mục nằm trong bộ nhớ của **một** tiến trình API, hợp cho vài nghìn sản phẩm. Nhiều máy chủ hoặc hàng
+  chục nghìn sản phẩm thì chuyển sang Meilisearch / Elasticsearch, giữ nguyên hợp đồng của `/api/search`.
+
+`npm test -w @pczone/api` chạy bộ kiểm tra của bộ máy tìm kiếm (chuẩn hoá chữ, mức giá, đồng nghĩa, lỗi gõ, xếp hạng, bộ lọc).
 
 ## 6. Quy ước dữ liệu
 
@@ -452,7 +501,7 @@ Chưa có nút *Hủy liên kết*.
 
 - [x] Trang danh sách sản phẩm theo danh mục (`/danh-muc/[slug]`, `/danh-muc`): lọc hãng / giá / còn hàng, sắp xếp, phân trang
 - [x] ~420 sản phẩm demo có ảnh thật, thông số và mô tả dài; nhóm Laptop và nhóm Gaming Gear (bàn phím, chuột, tai nghe, loa, ghế, bàn) đều 150 sản phẩm (xem "Dữ liệu demo" ở mục 4)
-- [ ] Tìm kiếm (`/tim-kiem`): ô tìm ở header chưa có trang kết quả
+- [x] Tìm kiếm (`/tim-kiem`): ô tìm ở header có gợi ý khi gõ; trang kết quả hiểu không dấu, đồng nghĩa, lỗi gõ, mức giá trong câu; lọc danh mục / hãng / giá / còn hàng, sắp xếp, phân trang
 - [x] Trang chi tiết sản phẩm (`/san-pham/[slug]`)
 - [x] Đăng ký / đăng nhập (JWT + bcrypt), ghi nhớ đăng nhập, đăng nhập Google / Facebook, liên kết tài khoản mạng xã hội, trang tài khoản
 - [ ] Hủy liên kết tài khoản mạng xã hội (phải chặn hủy liên kết cuối cùng của tài khoản không có mật khẩu, kẻo mất đường đăng nhập)
