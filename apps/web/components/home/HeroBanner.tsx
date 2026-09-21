@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   Bot,
@@ -105,11 +106,21 @@ export default function HeroBanner() {
             </div>
           </div>
 
-          {/* Cột ảnh sản phẩm + nhãn thông số */}
-          <div className="relative aspect-4/3 w-full overflow-hidden rounded-xl bg-linear-to-br from-slate-200 to-slate-400 ring-1 ring-white/10">
-            <div className="absolute inset-0 grid place-items-center">
-              <Monitor className="size-24 text-white/50" strokeWidth={1} />
-            </div>
+          {/*
+            Cột ảnh + nhãn thông số. Ảnh chụp thật (không phải ảnh AI) từ Unsplash, dùng
+            theo giấy phép Unsplash: https://unsplash.com/photos/gaming-computer-setup-in-purple-light-2rQoMZLVXHc
+          */}
+          <div className="relative aspect-4/3 w-full overflow-hidden rounded-xl bg-ink-950 ring-1 ring-white/10">
+            <Image
+              src="/images/hero/gaming-setup.webp"
+              alt="Bộ PC gaming tản nhiệt nước, đèn RGB, màn hình và bàn phím cơ"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover"
+            />
+            {/* Lớp tối nhẹ ở đáy để nhãn thông số luôn đọc được */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-ink-950/60 to-transparent" />
 
             {specPills.map((pill) => (
               <span

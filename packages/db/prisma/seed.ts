@@ -19,6 +19,7 @@ import {
 } from "@prisma/client";
 import { createHash } from "node:crypto";
 import bcrypt from "bcryptjs";
+import { productDescriptions } from "./seed-descriptions.js";
 
 const prisma = new PrismaClient();
 
@@ -263,7 +264,7 @@ const products: ProductSeed[] = [
     name: "Màn hình Samsung Odyssey OLED G8",
     categorySlug: "man-hinh",
     brandSlug: "samsung",
-    shortDescription: "Tấm nền QD-OLED • HDR10+ • USB-C 65W",
+    shortDescription: "Tấm nền QD-OLED • HDR10+ Gaming • Smart Monitor",
     shortSpecs: ['34" OLED UWQHD', "175Hz 0.03ms"],
     sellingPrice: 23_990_000,
     originalPrice: 28_990_000,
@@ -426,7 +427,7 @@ const products: ProductSeed[] = [
     name: "RAM Corsair Vengeance RGB DDR5 32GB 6000MHz",
     categorySlug: "ram",
     brandSlug: "corsair",
-    shortDescription: "Tương thích Intel XMP 3.0 & AMD EXPO • Led RGB",
+    shortDescription: "Hỗ trợ Intel XMP 3.0 • LED RGB 10 vùng • iCUE",
     shortSpecs: ["32GB (2x16GB)", "6000MHz CL36"],
     sellingPrice: 2_890_000,
     originalPrice: 3_990_000,
@@ -443,33 +444,33 @@ const products: ProductSeed[] = [
 /* -------------------------------------------------------------------------- */
 
 interface ProductDetailSeed {
-  /** Văn bản thuần, các đoạn cách nhau bằng dòng trống */
-  description: string;
   /** [nhãn, giá trị] — lưu dạng mảng để giữ đúng thứ tự hiển thị */
   specifications: [label: string, value: string][];
 }
 
 /**
- * Chỉ ghi các thông số đã nêu trong shortDescription / shortSpecs hoặc là thông
- * số công bố chính thức của hãng. Dữ liệu thật do crawler và admin nhập sau này.
+ * Bảng thông số kỹ thuật. Chỉ ghi thông số công bố chính thức của hãng (đã đối chiếu với trang
+ * sản phẩm của hãng lúc viết) hoặc thông số nêu trong shortDescription / shortSpecs. Bài mô tả dài
+ * của từng sản phẩm nằm ở seed-descriptions.ts. Dữ liệu thật do crawler và admin nhập sau này.
  */
 const productDetails: Record<string, ProductDetailSeed> = {
   "laptop-asus-rog-strix-g16-g614jir": {
-    description:
-      "ASUS ROG Strix G16 G614JIR là laptop gaming 16 inch dành cho người cần hiệu năng cao nhất trong tầm giá: CPU Intel Core i9-14900HX đi cùng card đồ họa RTX 4070, RAM 32GB DDR5 và SSD 1TB NVMe PCIe 4.0.\n\nMàn hình QHD+ tần số quét 240Hz cho hình ảnh mượt và sắc nét, phù hợp cả game eSports lẫn game AAA. Cấu hình này cũng đáp ứng tốt công việc dựng video, đồ họa 3D và livestream.",
     specifications: [
       ["CPU", "Intel Core i9-14900HX (24 nhân, 32 luồng, xung nhịp tối đa 5.8GHz)"],
-      ["Card đồ họa", "NVIDIA GeForce RTX 4070 Laptop GPU 8GB GDDR6"],
+      ["Card đồ họa", "NVIDIA GeForce RTX 4070 Laptop GPU 8GB GDDR6 (tối đa 140W)"],
       ["RAM", "32GB DDR5"],
       ["Ổ cứng", "1TB SSD NVMe PCIe 4.0"],
-      ["Màn hình", '16" QHD+ (2560 x 1600), tần số quét 240Hz'],
+      ["Màn hình", '16" QHD+ (2560 x 1600), tỷ lệ 16:10, tần số quét 240Hz'],
+      ["Bàn phím", "Chiclet có đèn nền RGB 4 vùng"],
+      ["Cổng kết nối", "Thunderbolt 4, USB-C 3.2 Gen 2, 2 x USB-A 3.2 Gen 2, HDMI 2.1, LAN RJ45, jack 3.5mm"],
+      ["Không dây", "Wi-Fi 6E, Bluetooth 5.3"],
+      ["Pin", "90Wh"],
+      ["Khối lượng", "Khoảng 2,5kg"],
       ["Hệ điều hành", "Windows 11 Home"],
       ["Bảo hành", "24 tháng"],
     ],
   },
   "pc-gaming-pczone-ultra-master-g7": {
-    description:
-      "PC Gaming PCZone Ultra Master G7 do PCZone lắp ráp, hướng tới game thủ muốn chơi mọi tựa game ở độ phân giải cao với khung hình ổn định. Ryzen 7 7800X3D với bộ nhớ đệm 3D V-Cache cho hiệu năng chơi game hàng đầu, kết hợp RTX 4080 Super.\n\nTản nhiệt nước AIO 360mm ARGB giữ CPU mát khi chạy tải nặng, nguồn 1000W 80 Plus Gold dư công suất để nâng cấp về sau. Bảo hành 36 tháng.",
     specifications: [
       ["CPU", "AMD Ryzen 7 7800X3D (8 nhân, 16 luồng, 96MB 3D V-Cache)"],
       ["Card đồ họa", "NVIDIA GeForce RTX 4080 SUPER"],
@@ -480,63 +481,66 @@ const productDetails: Record<string, ProductDetailSeed> = {
     ],
   },
   "card-man-hinh-asus-tuf-rtx-4070-ti-super": {
-    description:
-      "ASUS TUF Gaming GeForce RTX 4070 Ti SUPER trang bị 16GB GDDR6X, hỗ trợ DLSS 3.5 và Ray Tracing, đủ mạnh để chơi game 2K ở mức thiết lập cao và nhiều tựa game 4K.\n\nHệ thống tản nhiệt 3 quạt Axial-tech cùng khung kim loại chắc chắn giúp card vận hành mát và êm trong thời gian dài.",
     specifications: [
       ["GPU", "NVIDIA GeForce RTX 4070 Ti SUPER"],
-      ["Bộ nhớ", "16GB GDDR6X, bus 256-bit"],
+      ["Nhân CUDA", "8448"],
+      ["Xung nhịp boost", "2670MHz (chế độ OC) / 2640MHz (mặc định)"],
+      ["Bộ nhớ", "16GB GDDR6X, 21 Gbps, bus 256-bit"],
       ["Chuẩn giao tiếp", "PCIe 4.0 x16"],
       ["Công nghệ", "DLSS 3.5, Ray Tracing"],
       ["Làm mát", "3 quạt Axial-tech"],
-      ["Nguồn khuyến nghị", "700W trở lên"],
+      ["Kích thước", "305 x 138 x 65mm (chiếm 3.25 khe)"],
+      ["Nguồn cấp", "1 x 16-pin"],
+      ["Nguồn khuyến nghị", "750W trở lên"],
       ["Bảo hành", "36 tháng"],
     ],
   },
   "cpu-amd-ryzen-7-9700x": {
-    description:
-      "AMD Ryzen 7 9700X thuộc thế hệ Zen 5 trên socket AM5, cho hiệu năng đơn nhân cao ở mức tiêu thụ điện chỉ 65W. Vi xử lý hỗ trợ RAM DDR5 và PCIe 5.0, phù hợp cho cả chơi game lẫn làm việc sáng tạo.",
     specifications: [
       ["Socket", "AM5"],
       ["Kiến trúc", "Zen 5"],
       ["Số nhân / luồng", "8 nhân, 16 luồng"],
       ["Xung nhịp", "Cơ bản 3.8GHz, tối đa 5.5GHz"],
-      ["Bộ nhớ đệm L3", "32MB"],
+      ["Bộ nhớ đệm", "L2 8MB + L3 32MB"],
+      ["Tiến trình", "TSMC 4nm"],
       ["TDP", "65W"],
-      ["Bộ nhớ hỗ trợ", "DDR5"],
-      ["PCIe", "PCIe 5.0"],
+      ["Bộ nhớ hỗ trợ", "DDR5-5600, tối đa 256GB"],
+      ["PCIe", "PCIe 5.0 (28 làn, 24 làn khả dụng)"],
+      ["Đồ họa tích hợp", "AMD Radeon (2 nhân)"],
+      ["Tản nhiệt kèm theo", "Không (cần mua riêng)"],
       ["Bảo hành", "36 tháng"],
     ],
   },
   "man-hinh-samsung-odyssey-oled-g8": {
-    description:
-      "Samsung Odyssey OLED G8 sử dụng tấm nền QD-OLED 34 inch cong, độ phân giải UWQHD, tần số quét 175Hz và thời gian phản hồi 0.03ms. Màu đen sâu, độ tương phản cao cùng HDR10+ mang lại trải nghiệm chơi game và xem phim sống động.\n\nCổng USB-C sạc 65W cho phép kết nối và cấp nguồn cho laptop chỉ với một sợi cáp.",
     specifications: [
-      ["Kích thước", '34" màn hình cong, tỷ lệ 21:9'],
+      ["Kích thước", '34" màn hình cong 1800R, tỷ lệ 21:9'],
       ["Tấm nền", "QD-OLED"],
       ["Độ phân giải", "3440 x 1440 (UWQHD)"],
       ["Tần số quét", "175Hz"],
       ["Thời gian phản hồi", "0.03ms (GtG)"],
-      ["HDR", "HDR10+"],
-      ["Cổng kết nối", "USB-C sạc ngược 65W"],
+      ["Độ tương phản", "1.000.000:1 (tĩnh)"],
+      ["Độ phủ màu", "99% DCI-P3"],
+      ["HDR", "HDR10+ Gaming"],
+      ["Đồng bộ hình ảnh", "G-Sync Compatible, AMD FreeSync Premium Pro"],
+      ["Cổng kết nối", "1 x DisplayPort, 2 x HDMI 2.1, hub USB 3.0 (2 x USB-A, 1 x USB-B)"],
+      ["Không dây", "Wi-Fi 5, Bluetooth 5.2"],
       ["Bảo hành", "24 tháng"],
     ],
   },
   "laptop-lenovo-legion-pro-7i-gen-9": {
-    description:
-      "Lenovo Legion Pro 7i Gen 9 là mẫu laptop gaming cao cấp với Intel Core i9-14900HX và RTX 4080, 32GB DDR5, SSD 1TB NVMe PCIe 4.0. Màn hình 16 inch WQXGA tần số quét 240Hz cho khung hình mượt, kết hợp hệ thống tản nhiệt lớn để duy trì hiệu năng khi chơi lâu.\n\nĐây là lựa chọn cho game thủ và người làm đồ họa, dựng phim cần một chiếc máy mạnh thay thế PC để bàn.",
     specifications: [
       ["CPU", "Intel Core i9-14900HX (24 nhân, 32 luồng)"],
-      ["Card đồ họa", "NVIDIA GeForce RTX 4080 Laptop GPU 12GB GDDR6"],
+      ["Card đồ họa", "NVIDIA GeForce RTX 4080 Laptop GPU 12GB GDDR6 (175W)"],
       ["RAM", "32GB DDR5"],
       ["Ổ cứng", "1TB SSD NVMe PCIe 4.0"],
-      ["Màn hình", '16" WQXGA (2560 x 1600), tần số quét 240Hz'],
+      ["Màn hình", '16" WQXGA (2560 x 1600), IPS, 240Hz, 500 nit, 100% DCI-P3'],
+      ["Pin", "99,99Wh, sạc nhanh 0-80% trong khoảng 30 phút"],
+      ["Cổng kết nối", "Thunderbolt 4, USB-C 3.2 Gen 2 (sạc PD 140W), 2 x USB-A 3.2 Gen 1, HDMI 2.1, LAN RJ45"],
       ["Hệ điều hành", "Windows 11 Home"],
       ["Bảo hành", "24 tháng"],
     ],
   },
   "pc-gaming-pczone-dragon-knight": {
-    description:
-      "PC Gaming PCZone Dragon Knight kết hợp Intel Core i7-14700K với RTX 4070 Ti Super cho hiệu năng mạnh ở độ phân giải 2K, đủ sức xử lý cả streaming và các tác vụ đa nhiệm nặng.\n\nTản nhiệt nước AIO 360mm ARGB và nguồn 850W 80 Plus Gold giúp hệ thống hoạt động ổn định. Máy do PCZone lắp ráp và bảo hành 36 tháng.",
     specifications: [
       ["CPU", "Intel Core i7-14700K (20 nhân, 28 luồng, xung nhịp tối đa 5.6GHz)"],
       ["Card đồ họa", "NVIDIA GeForce RTX 4070 Ti SUPER 16GB"],
@@ -547,95 +551,101 @@ const productDetails: Record<string, ProductDetailSeed> = {
     ],
   },
   "gigabyte-rtx-4080-super-gaming-oc-16gb": {
-    description:
-      "GIGABYTE GeForce RTX 4080 SUPER Gaming OC 16GB sử dụng tản nhiệt WINDFORCE 3 quạt, hỗ trợ Dual BIOS và các công nghệ AI của RTX như DLSS 3, Ray Tracing. Đủ mạnh cho game 4K ở thiết lập cao và các tác vụ AI, dựng phim.",
     specifications: [
       ["GPU", "NVIDIA GeForce RTX 4080 SUPER"],
-      ["Bộ nhớ", "16GB GDDR6X, bus 256-bit"],
-      ["Chuẩn giao tiếp", "PCIe 4.0 x16"],
+      ["Nhân CUDA", "10240"],
+      ["Xung nhịp boost", "2595MHz (chế độ OC)"],
+      ["Bộ nhớ", "16GB GDDR6X, 23 Gbps, bus 256-bit"],
+      ["Chuẩn giao tiếp", "PCIe 4.0"],
       ["Làm mát", "WINDFORCE 3 quạt"],
       ["BIOS", "Dual BIOS"],
       ["Cổng xuất hình", "3 x DisplayPort 1.4a, 1 x HDMI 2.1a"],
-      ["Nguồn khuyến nghị", "750W trở lên"],
+      ["Kích thước", "342 x 150 x 75mm"],
+      ["Nguồn cấp", "1 x 16-pin"],
+      ["Nguồn khuyến nghị", "850W trở lên"],
       ["Bảo hành", "36 tháng"],
     ],
   },
   "asus-rog-swift-oled-pg32ucdm": {
-    description:
-      "ASUS ROG Swift OLED PG32UCDM là màn hình QD-OLED 32 inch độ phân giải 4K, tần số quét 240Hz và thời gian phản hồi 0.03ms, hỗ trợ G-Sync Compatible. Dải màu rộng và độ tương phản của tấm nền OLED phù hợp cho cả game thủ lẫn người làm đồ họa.",
     specifications: [
-      ["Kích thước", '32"'],
-      ["Tấm nền", "QD-OLED"],
+      ["Kích thước", '32" (31,5")'],
+      ["Tấm nền", "QD-OLED thế hệ 3"],
       ["Độ phân giải", "3840 x 2160 (4K)"],
       ["Tần số quét", "240Hz"],
       ["Thời gian phản hồi", "0.03ms (GTG)"],
-      ["Đồng bộ hình ảnh", "G-Sync Compatible"],
-      ["Bảo hành", "36 tháng, đổi mới tại nhà"],
+      ["Độ sáng đỉnh HDR", "1.000 nit"],
+      ["Độ phủ màu", "99% DCI-P3"],
+      ["HDR", "HDR10, Dolby Vision"],
+      ["Đồng bộ hình ảnh", "G-Sync Compatible (Adaptive-Sync)"],
+      ["Cổng kết nối", "1 x DisplayPort 1.4, 2 x HDMI 2.1, USB-C (DisplayPort Alt Mode, sạc tới 90W), 3 x USB-A, SPDIF quang, jack tai nghe"],
+      ["Bảo hành", "36 tháng, đổi mới tại nhà, bao gồm burn-in tấm nền"],
     ],
   },
   "logitech-g-pro-x-superlight-2": {
-    description:
-      "Logitech G Pro X Superlight 2 là chuột gaming không dây siêu nhẹ dưới 60g, dùng cảm biến HERO 2 độ nhạy tối đa 32.000 DPI và switch quang từ LIGHTFORCE. Pin dùng liên tục tới khoảng 95 giờ, sạc qua cổng USB-C.",
     specifications: [
       ["Cảm biến", "HERO 2, tối đa 32.000 DPI"],
       ["Switch", "LIGHTFORCE lai quang – cơ"],
-      ["Trọng lượng", "Dưới 60g"],
+      ["Trọng lượng", "Khoảng 60g"],
       ["Kết nối", "LIGHTSPEED không dây 2.4GHz"],
       ["Thời lượng pin", "Tới khoảng 95 giờ"],
       ["Cổng sạc", "USB-C"],
+      ["Chân chuột", "PTFE không phụ gia"],
+      ["Phần mềm", "Logitech G HUB"],
       ["Bảo hành", "24 tháng"],
     ],
   },
   "laptop-asus-tuf-gaming-a15-fa507nv": {
-    description:
-      "ASUS TUF Gaming A15 FA507NV là laptop gaming bền bỉ theo chuẩn quân đội, dùng Ryzen 7 7735HS và RTX 4060 công suất tới 140W, RAM 16GB DDR5 và SSD 512GB PCIe 4.0. Đây là lựa chọn cân bằng giữa giá và hiệu năng cho sinh viên và game thủ.",
     specifications: [
-      ["CPU", "AMD Ryzen 7 7735HS (8 nhân, 16 luồng, xung nhịp tối đa 4.75GHz)"],
+      ["CPU", "AMD Ryzen 7 7735HS (8 nhân, 16 luồng, xung nhịp tối đa 4.7GHz)"],
       ["Card đồ họa", "NVIDIA GeForce RTX 4060 Laptop GPU 8GB GDDR6 (tối đa 140W)"],
-      ["RAM", "16GB DDR5 4800MHz"],
+      ["RAM", "16GB DDR5 4800MHz (2 x 8GB, nâng cấp tối đa 32GB)"],
       ["Ổ cứng", "512GB SSD NVMe PCIe 4.0"],
-      ["Màn hình", '15.6" Full HD (1920 x 1080), tần số quét 144Hz'],
+      ["Màn hình", '15.6" Full HD (1920 x 1080), 144Hz, IPS-level chống chói, 100% sRGB'],
+      ["Cổng kết nối", "HDMI 2.1, USB-C 3.2 Gen 2, USB4 Type-C, 2 x USB-A 3.2 Gen 1, LAN RJ45, jack 3.5mm"],
+      ["Pin", "90Wh"],
+      ["Khối lượng", "Khoảng 2,2kg"],
       ["Hệ điều hành", "Windows 11 Home"],
       ["Bảo hành", "24 tháng"],
     ],
   },
   "cpu-amd-ryzen-7-7800x3d-box": {
-    description:
-      "AMD Ryzen 7 7800X3D là vi xử lý chơi game hàng đầu nhờ 96MB bộ nhớ đệm 3D V-Cache, giúp tăng mạnh số khung hình ở nhiều tựa game so với CPU cùng phân khúc. Sản phẩm nguyên hộp chính hãng, socket AM5, hỗ trợ RAM DDR5.",
     specifications: [
       ["Socket", "AM5"],
       ["Số nhân / luồng", "8 nhân, 16 luồng"],
       ["Xung nhịp", "Cơ bản 4.2GHz, tối đa 5.0GHz"],
-      ["Bộ nhớ đệm L3", "96MB (3D V-Cache)"],
+      ["Bộ nhớ đệm", "L3 96MB (3D V-Cache) + L2 8MB"],
+      ["Tiến trình", "TSMC 5nm"],
       ["TDP", "120W"],
-      ["Bộ nhớ hỗ trợ", "DDR5"],
+      ["Bộ nhớ hỗ trợ", "DDR5-5200, tối đa 128GB"],
+      ["PCIe", "PCIe 5.0 (28 làn, 24 làn khả dụng)"],
+      ["Đồ họa tích hợp", "AMD Radeon (2 nhân)"],
       ["Tản nhiệt kèm theo", "Không (cần mua riêng)"],
       ["Bảo hành", "36 tháng"],
     ],
   },
   "ssd-samsung-990-pro-2tb": {
-    description:
-      "Samsung 990 Pro 2TB là SSD NVMe PCIe 4.0 hiệu năng cao với tốc độ đọc tuần tự tới 7.450MB/s và ghi tới 6.900MB/s, phù hợp cho máy chơi game, dựng phim và workstation. Bảo hành 5 năm từ nhà sản xuất.",
     specifications: [
       ["Dung lượng", "2TB"],
-      ["Chuẩn kết nối", "M.2 2280, NVMe PCIe 4.0 x4"],
+      ["Chuẩn kết nối", "M.2 2280, NVMe 2.0 PCIe 4.0 x4"],
       ["Tốc độ đọc tuần tự", "Tới 7.450MB/s"],
       ["Tốc độ ghi tuần tự", "Tới 6.900MB/s"],
+      ["IOPS ngẫu nhiên 4KB (QD32)", "Đọc tới 1.400.000, ghi tới 1.550.000"],
+      ["Bộ nhớ NAND", "Samsung V-NAND TLC"],
+      ["Mã hoá", "AES 256-bit, TCG Opal, IEEE 1667"],
       ["Độ bền (TBW)", "1.200TB"],
       ["Bảo hành", "60 tháng"],
     ],
   },
   "ram-corsair-vengeance-rgb-ddr5-32gb": {
-    description:
-      "Corsair Vengeance RGB DDR5 32GB (2 x 16GB) bus 6000MHz CL36, hỗ trợ cả Intel XMP 3.0 và AMD EXPO nên bật cấu hình ép xung sẵn chỉ với một lần chọn trong BIOS. Đèn LED RGB có thể tuỳ chỉnh.",
     specifications: [
       ["Dung lượng", "32GB (2 x 16GB)"],
       ["Loại RAM", "DDR5"],
-      ["Tốc độ", "6000MHz"],
+      ["Tốc độ", "6000MT/s (PC5-48000)"],
       ["Độ trễ", "CL36"],
       ["Điện áp", "1.35V"],
-      ["Cấu hình sẵn", "Intel XMP 3.0, AMD EXPO"],
-      ["Đèn LED", "RGB"],
+      ["Cấu hình sẵn", "Intel XMP 3.0"],
+      ["Tương thích", "Bo mạch chủ Intel 600 / 700 / 800 series"],
+      ["Đèn LED", "RGB 10 vùng mỗi thanh, điều khiển bằng iCUE"],
       ["Bảo hành", "60 tháng"],
     ],
   },
@@ -681,7 +691,7 @@ async function seedProducts() {
       brandId: brand?.id ?? null,
       shortDescription: item.shortDescription,
       shortSpecs: item.shortSpecs,
-      description: detail?.description,
+      description: productDescriptions[item.slug],
       specifications: detail?.specifications.map(([label, value]) => ({ label, value })),
       sellingPrice: item.sellingPrice,
       originalPrice: item.originalPrice ?? null,

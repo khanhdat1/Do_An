@@ -1,47 +1,123 @@
-"use client";
+import Image from "next/image";
+import { parseDescription } from "@/lib/description";
+import type { ProductImage } from "@/types";
 
-import { useState } from "react";
-import { cn } from "@/lib/utils";
-
-/** Quá ngưỡng này thì mô tả được thu gọn kèm nút "Xem thêm" */
-const COLLAPSE_AFTER_CHARS = 700;
+/** Cùng số với thanh trên cùng (TopBar) và chân trang (Footer) */
+const HOTLINE = "1800 8888";
+const SUPPORT_EMAIL = "support@pczone.vn";
 
 interface ProductDescriptionProps {
-  /** Văn bản thuần; các đoạn cách nhau bằng dòng trống. Được render qua React nên không có nguy cơ XSS. */
+  /** Văn bản thuần kèm quy ước nhẹ (tiêu đề, mục, gạch đầu dòng, ảnh) — xem lib/description.ts */
   text: string;
+  /** Thư viện ảnh của sản phẩm; `[ảnh N]` trong mô tả lấy ảnh thứ N ở đây */
+  images: ProductImage[];
+  productName: string;
+  categoryName?: string;
 }
 
-export default function ProductDescription({ text }: ProductDescriptionProps) {
-  const [expanded, setExpanded] = useState(false);
-
-  const paragraphs = text.split(/\n{2,}/).map((paragraph) => paragraph.trim()).filter(Boolean);
-  const collapsible = text.length > COLLAPSE_AFTER_CHARS;
-  const collapsed = collapsible && !expanded;
+/**
+ * Bài mô tả sản phẩm: tiêu đề, các mục có tiêu đề nhỏ, ảnh xen giữa, rồi đoạn giới
+ * thiệu PCZone ở cuối. Toàn bộ dựng bằng React từ chữ thuần nên không có nguy cơ XSS.
+ */
+export default function ProductDescription({
+  text,
+  images,
+  productName,
+  categoryName,
+}: ProductDescriptionProps) {
+  const blocks = parseDescription(text);
 
   return (
-    <div>
-      <div className={cn("relative space-y-3 text-sm leading-relaxed text-slate-700", collapsed && "max-h-56 overflow-hidden")}>
-        {paragraphs.map((paragraph, position) => (
-          <p key={position} className="whitespace-pre-line">
-            {paragraph}
-          </p>
-        ))}
+    <div className="text-sm leading-relaxed text-slate-700">
+      <div className="space-y-4">
+        {blocks.map((block, position) => {
+          switch (block.type) {
+            case "title":
+              return (
+                <h3
+                  key={position}
+                  className="text-base font-bold leading-snug text-slate-900 sm:text-lg"
+                >
+                  {block.text}
+                </h3>
+              );
 
-        {collapsed ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-white to-transparent" />
-        ) : null}
+            case "heading":
+              return (
+                <h4
+                  key={position}
+                  className="flex items-center gap-2 pt-3 text-[15px] font-bold text-slate-900 before:h-4 before:w-1 before:shrink-0 before:rounded-full before:bg-brand-500"
+                >
+                  {block.text}
+                </h4>
+              );
+
+            case "list":
+              return (
+                <ul key={position} className="list-disc space-y-1.5 pl-5 marker:text-brand-500">
+                  {block.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              );
+
+            case "image": {
+              const image = images[block.index];
+              if (!image) return null;
+
+              return (
+                <figure
+                  key={position}
+                  className="mx-auto max-w-xl overflow-hidden rounded-xl border border-slate-200 bg-white"
+                >
+                  <div className="relative aspect-4/3 w-full">
+                    <Image
+                      src={image.url}
+                      alt={image.alt}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 576px"
+                      className="object-contain p-3"
+                    />
+                  </div>
+                  <figcaption className="border-t border-slate-100 px-3 py-2 text-center text-xs text-slate-500">
+                    {block.caption ?? `PCZone - ${productName}`}
+                  </figcaption>
+                </figure>
+              );
+            }
+
+            default:
+              return (
+                <p key={position} className="whitespace-pre-line">
+                  {block.text}
+                </p>
+              );
+          }
+        })}
       </div>
 
-      {collapsible ? (
-        <button
-          type="button"
-          onClick={() => setExpanded((current) => !current)}
-          aria-expanded={expanded}
-          className="mt-3 text-sm font-semibold text-brand-600 hover:underline"
-        >
-          {expanded ? "Thu gọn" : "Xem thêm"}
-        </button>
-      ) : null}
+      <aside className="mt-6 rounded-xl bg-slate-50 p-4 text-[13px] leading-relaxed text-slate-600 ring-1 ring-slate-200">
+        <p>
+          <strong className="font-semibold text-slate-800">PCZone</strong> là nhà cung cấp Laptop
+          Gaming, PC Gaming, linh kiện máy tính, màn hình và gaming gear chính hãng với giá cả hợp
+          lý, chất lượng đặt lên hàng đầu. Với phương châm luôn đặt sự hài lòng của khách hàng
+          lên trên hết, chúng tôi mong muốn mang đến những trải nghiệm mua sắm tuyệt vời nhất.
+          Ngoài <strong className="font-semibold text-slate-800">{productName}</strong>, PCZone còn
+          có rất nhiều sản phẩm{" "}
+          {categoryName ? (
+            <strong className="font-semibold text-slate-800">{categoryName}</strong>
+          ) : null}{" "}
+          chính hãng khác. Hãy liên hệ Hotline{" "}
+          <strong className="font-semibold text-slate-800">{HOTLINE}</strong> (miễn phí) hoặc email{" "}
+          <a
+            href={`mailto:${SUPPORT_EMAIL}`}
+            className="font-semibold text-brand-600 hover:underline"
+          >
+            {SUPPORT_EMAIL}
+          </a>{" "}
+          để được tư vấn và chọn sản phẩm ưng ý với giá tốt nhất.
+        </p>
+      </aside>
     </div>
   );
 }

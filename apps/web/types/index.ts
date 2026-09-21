@@ -99,6 +99,37 @@ export interface Category {
   children?: Category[];
 }
 
+/** Một hãng ở bộ lọc của trang danh mục, kèm số sản phẩm của hãng trong danh mục đó */
+export interface BrandFacet {
+  slug: string;
+  name: string;
+  count: number;
+}
+
+/** Danh mục con hiện thành ô chọn nhanh ở đầu trang danh mục */
+export interface CategoryLink {
+  slug: string;
+  name: string;
+  icon: string;
+  /** Đã gồm các nhánh con của chính nó */
+  productCount: number;
+}
+
+/** `GET /api/categories/:slug` — mọi thứ trang danh mục cần ngoài danh sách sản phẩm */
+export interface CategoryDetail {
+  slug: string;
+  name: string;
+  icon: string;
+  /** Từ gốc tới chính danh mục này (chưa gồm "Trang chủ") */
+  breadcrumb: Breadcrumb[];
+  children: CategoryLink[];
+  /** Số sản phẩm đang bán trong cả nhánh, chưa áp bộ lọc */
+  productCount: number;
+  brands: BrandFacet[];
+  /** null khi danh mục chưa có sản phẩm nào */
+  priceRange: { min: number; max: number } | null;
+}
+
 export interface NavItem {
   label: string;
   href: string;

@@ -86,7 +86,9 @@ export default function ProductThumb({
   return (
     <div
       className={cn(
-        "relative aspect-4/3 w-full overflow-hidden rounded-lg bg-slate-100",
+        "relative aspect-4/3 w-full overflow-hidden rounded-lg",
+        // Ảnh hãng nền trắng: ô trắng cho liền mạch; ô xám chỉ dành cho ảnh giả
+        image ? "bg-white" : "bg-slate-100",
         className,
       )}
     >

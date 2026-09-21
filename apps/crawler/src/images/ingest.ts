@@ -83,17 +83,27 @@ async function download(url: string): Promise<Buffer> {
   return Buffer.from(response.data);
 }
 
+export interface IngestOptions {
+  /**
+   * Kiểm tra thêm trên nội dung ảnh sau khi qua các ngưỡng kích thước; trả về lý do để loại ảnh,
+   * hoặc null nếu ảnh ổn. Dùng để chặn ảnh dính logo shop khác (xem watermark.ts).
+   */
+  reject?: (image: Buffer) => Promise<string | null>;
+}
+
 /**
  * Tải một ảnh, kiểm tra chất lượng, chuyển sang WebP 3 cỡ và ghi ra đĩa.
  *
  * @param sku         mã sản phẩm, dùng làm tên thư mục
  * @param remoteUrl   URL ảnh gốc trên CDN của hãng
  * @param seenHashes  các checksum đã gặp ở sản phẩm này, để bỏ ảnh trùng nội dung
+ * @param options     kiểm tra bổ sung tuỳ nguồn ảnh
  */
 export async function ingestImage(
   sku: string,
   remoteUrl: string,
-  seenHashes: Set<string>
+  seenHashes: Set<string>,
+  options: IngestOptions = {}
 ): Promise<IngestOutcome> {
   let buffer: Buffer;
 
@@ -147,6 +157,11 @@ export async function ingestImage(
       status: "REJECTED",
       reason: `tỷ lệ bất thường ${aspect.toFixed(2)} — có thể là biểu ngữ`,
     };
+  }
+
+  if (options.reject) {
+    const reason = await options.reject(buffer);
+    if (reason) return { status: "REJECTED", reason };
   }
 
   // Tên file lấy từ checksum nên chạy lại nhiều lần không sinh rác

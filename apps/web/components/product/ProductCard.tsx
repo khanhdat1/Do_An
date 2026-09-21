@@ -117,13 +117,20 @@ export default function ProductCard({
           </p>
         ) : null}
 
-        {/* Đánh giá */}
+        {/* Đánh giá — sản phẩm chưa có lượt nào thì nói thẳng, không hiện "0.0 (0 đánh giá)" như thật */}
         <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
-          <Star className="size-3.5 fill-gold-400 text-gold-400" />
-          <span className="font-semibold text-slate-700">
-            {product.rating.toFixed(1)}
-          </span>
-          <span>({product.reviewCount} đánh giá)</span>
+          {product.reviewCount > 0 ? (
+            <>
+              <Star className="size-3.5 fill-gold-400 text-gold-400" />
+              <span className="font-semibold text-slate-700">{product.rating.toFixed(1)}</span>
+              <span>({product.reviewCount} đánh giá)</span>
+            </>
+          ) : (
+            <>
+              <Star className="size-3.5 text-slate-300" />
+              <span className="text-slate-400">Chưa có đánh giá</span>
+            </>
+          )}
         </div>
 
         {/* Giá */}

@@ -60,7 +60,7 @@ Bổ sung so với schema crawler:
 | Trường | Ý nghĩa |
 |---|---|
 | `sku` | Mã nội bộ PCZone, duy nhất. VD `PCZ-MB-ASR-B760M`. Đây mới là mã dùng trong vận hành, không phải `id` |
-| `source` | `MANUAL` \| `KCCSHOP` \| `ASROCK` \| `GIGABYTE`. Phân biệt hàng tự nhập và hàng do crawler sinh |
+| `source` | `MANUAL` \| `SEED` (14 sản phẩm mẫu) \| `KCCSHOP` (crawler cũ, nằm ở DRAFT chờ duyệt) \| `GEARVN` (bộ demo ~120 sản phẩm, nạp thẳng ACTIVE). Phân biệt hàng tự nhập và hàng do crawler sinh |
 | `sourceUrl` | URL gốc, duy nhất và cho phép `null` (hàng tự nhập không có) |
 
 **Bốn mức giá** — đây là điểm quan trọng trong báo cáo:
@@ -106,6 +106,12 @@ Bốn index đặt trên `ProductSpec` (`componentType + socket`, `+ ramType`, `
 Giữ nguyên `source` / `sourceUrl` để phân biệt ảnh KCCShop và ảnh chính hãng — logic "ưu tiên giữ ảnh chính hãng" trong `db.ts` phụ thuộc vào hai trường này.
 
 Hai sửa lỗi so với schema hiện tại, đã giải thích ở mục 5.
+
+**Ảnh của sản phẩm mẫu (seed):** `npm run seed-images` (`apps/crawler/src/images/attach.ts`) gắn ảnh thật cho 14 sản phẩm trong `seed.ts` theo danh sách chọn tay ở `seed-manifest.ts`. Mỗi ảnh đi qua tầng ingest chung (kiểm tra kích thước, chuyển WebP ba cỡ, lưu checksum) rồi thành một dòng `ProductImage` với `source` là tên hãng (ASUS, AMD, SAMSUNG, CORSAIR, LOGITECH, GIGABYTE, LENOVO) hoặc `UNSPLASH` cho hai bộ PC lắp ráp của PCZone (không hãng nào có ảnh), `sourceUrl` là trang chứa ảnh và `remoteUrl` là URL gốc. Cả bộ ảnh của một sản phẩm được thay trong một giao dịch, và nếu không tải được ảnh nào thì giữ nguyên ảnh cũ. Chỉ dùng ảnh chụp / ảnh studio thật, không dùng ảnh do AI sinh.
+
+**Bộ dữ liệu demo (`source = 'GEARVN'`):** `npm run demo-data` (`apps/crawler/src/demo/load.ts`) nạp ~120 sản phẩm thật ở 14 danh mục từ bản chụp `apps/crawler/data/demo-catalog.json` (thu thập bằng `npm run collect-demo`). Mỗi sản phẩm được tạo trong `Product` với `sourceUrl` là trang gốc (khoá chống trùng), `sellingPrice` = giá tham khảo tại ngày thu thập, `refPrice` cùng giá đó, `originalPrice` là giá niêm yết nếu đang giảm, `status = ACTIVE`. `shortSpecs`, `specifications` (mảng `[{label, value}]`), `shortDescription` và `description` do PCZone tự viết từ thông số (`src/demo/content/`), không lấy chữ của nguồn. Tồn kho (`inventoryQuantity`), `soldCount` và `publishedAt` là số giả lập ổn định theo sản phẩm, chỉ đặt lúc tạo mới để chạy lại không đè lên tồn kho đã giảm vì đơn hàng; `ratingAvg` và `ratingCount` để 0. Bộ PC lắp ráp mang thương hiệu `PCZone`. `Brand` được tạo khi chưa có (khớp theo slug hoặc tên), không sửa hãng đã có.
+
+Ảnh của bộ demo cũng đi qua tầng ingest chung, `ProductImage.source = 'GEARVN'`, `sourceUrl` là trang sản phẩm và `remoteUrl` là URL gốc; tối đa 4 ảnh mỗi sản phẩm. Ảnh dính logo GEARVN bị bỏ tự động (`src/images/watermark.ts` so khớp hình dạng logo trắng ở bốn góc); ảnh đã xem mắt và loại thủ công (ảnh quảng cáo nhiều chữ, logo dạng màu, biển hiệu trong phông ảnh) nằm ở `apps/crawler/data/image-blocklist.json`. Không xoá hay cắt logo khỏi ảnh của người khác.
 
 ---
 

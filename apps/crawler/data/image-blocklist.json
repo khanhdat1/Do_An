@@ -1,0 +1,100 @@
+{
+  "note": "Ảnh đã được xem bằng mắt và loại khỏi bộ demo. Khớp theo địa chỉ ảnh gốc, áp dụng khi nạp (npm run demo-data) nên chạy lại collect-demo không làm ảnh xấu quay lại. Sau khi sửa file này, chạy `npm run demo-data -- --force-images --only=<danh-mục>` để nạp lại ảnh.",
+  "entries": [
+    {
+      "product": "Vỏ máy tính Corsair 6500X TG Mid-Tower White (CC-9011258-WW)",
+      "url": "https://product.hstatic.net/200000722513/product/6500x_white_render_02_eef1e0fa676a48458942d10ceb5eb195.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Vỏ máy tính Corsair 6500X TG Mid-Tower White (CC-9011258-WW)",
+      "url": "https://product.hstatic.net/200000722513/product/6500x_white_render_03_3d27740e975c4a7c9d812a2d90a77d48.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Vỏ máy tính Corsair 6500X TG Mid-Tower White (CC-9011258-WW)",
+      "url": "https://product.hstatic.net/200000722513/product/6500x_white_render_04_ec23fed031204d988d8887c975aa5da6.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Vỏ máy tính Corsair 6500X TG Mid-Tower White (CC-9011258-WW)",
+      "url": "https://product.hstatic.net/200000722513/product/6500x_white_render_06_4cb0059abd104fb7858e082d0ea05f7b.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Vỏ máy tính Corsair 6500X TG Mid-Tower White (CC-9011258-WW)",
+      "url": "https://product.hstatic.net/200000722513/product/6500x_white_render_07_e662ef9c938f4d42948b2aa2413b107a.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Vỏ máy tính Corsair 6500X TG Mid-Tower White (CC-9011258-WW)",
+      "url": "https://product.hstatic.net/200000722513/product/6500x_white_render_08_1016e10212cc4a048ea1d0fa0a86939d.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "RAM Corsair Dominator Titanium Black 64GB (2x32GB) RGB 6000 DDR5 (CMP64GX5M2B6000C30)",
+      "url": "https://product.hstatic.net/200000722513/product/dominator_titanium_rgb_ddr5_blac__3__cdbe38ffcc734a86ba7eb1e6e40d9ec9.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "RAM Corsair Dominator Titanium Black 64GB (2x32GB) RGB 6000 DDR5 (CMP64GX5M2B6000C30)",
+      "url": "https://product.hstatic.net/200000722513/product/dominator_titanium_rgb_ddr5_blac__2__31d3bbeb4b46427b967691c7967c72e5.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "RAM Corsair Dominator Titanium Black 64GB (2x32GB) RGB 6000 DDR5 (CMP64GX5M2B6000C30)",
+      "url": "https://product.hstatic.net/200000722513/product/dominator_titanium_rgb_ddr5_blac__1__bf933ca2e1dc42bd91a05334508485fd.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "RAM Corsair Dominator Titanium White 64GB (2x32GB) RGB 6600 DDR5 (CMP64GX5M2X6600C32W)",
+      "url": "https://product.hstatic.net/200000722513/product/dominator_titanium_rgb_ddr5_whit__3__2d3e91a863224b5da80e1e077c9222c6.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "RAM Corsair Dominator Titanium White 64GB (2x32GB) RGB 6600 DDR5 (CMP64GX5M2X6600C32W)",
+      "url": "https://product.hstatic.net/200000722513/product/dominator_titanium_rgb_ddr5_whit__2__0ad3b7788ede44b0ab6125abf1d5f4df.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "RAM Corsair Dominator Titanium White 64GB (2x32GB) RGB 6600 DDR5 (CMP64GX5M2X6600C32W)",
+      "url": "https://product.hstatic.net/200000722513/product/dominator_titanium_rgb_ddr5_whit__1__32cd237bd73548ca919ebe1e9195cd63.png",
+      "why": "ảnh quảng cáo của hãng, nhiều chữ tiếng Anh, không phải ảnh sản phẩm"
+    },
+    {
+      "product": "Chuột ASUS P723 ROG Harpe II Ace Wireless Black",
+      "url": "https://cdn.hstatic.net/products/200000722513/rog-harpe-ii-ace-black-01_470859dcf28844f08fcb9609572c680c.jpg",
+      "why": "ảnh ghép huy hiệu bảo hành và dải icon tính năng đè lên chuột, không hợp làm ảnh chính"
+    },
+    {
+      "product": "PC Gaming PCZone i5-12400F RTX 5060",
+      "url": "https://product.hstatic.net/200000722513/product/web__76_of_80__78b8f0f56a0c479eaef4274620cf1ee4.jpg",
+      "why": "có logo GEARVN trên nền sáng (bộ nhận diện chỉ bắt được logo trên nền tối, xem watermark.ts)"
+    },
+    {
+      "product": "PC Workstation PCZone i7-14700F RTX 5080",
+      "url": "https://cdn.hstatic.net/products/200000722513/web__33_of_86__eabc17840f554b32a78b1076b83156b6.jpg",
+      "why": "có logo GEARVN trên nền sáng (bộ nhận diện chỉ bắt được logo trên nền tối, xem watermark.ts)"
+    },
+    {
+      "product": "PC Workstation PCZone i7-14700F RTX 5080",
+      "url": "https://cdn.hstatic.net/products/200000722513/web__25_of_86__14806faf579440b38cbd0e030abf96b0.jpg",
+      "why": "có logo GEARVN trên nền sáng (bộ nhận diện chỉ bắt được logo trên nền tối, xem watermark.ts)"
+    },
+    {
+      "product": "PC Gaming PCZone i5-12400F RTX 5060 Ti",
+      "url": "https://product.hstatic.net/200000722513/product/post-19_d806b7fd584f4d14bbcea484f1e588b2.jpg",
+      "why": "có logo GEARVN dạng màu trên nền sáng hoặc biển hiệu GEARVN trong phông ảnh (bộ nhận diện chỉ bắt logo trắng, xem watermark.ts)"
+    },
+    {
+      "product": "PC Workstation PCZone i7-14700F RTX 5070 Ti",
+      "url": "https://cdn.hstatic.net/products/200000722513/post-12_76f0d2a1bc0f4d2c9f160ad049664362.jpg",
+      "why": "có logo GEARVN dạng màu trên nền sáng hoặc biển hiệu GEARVN trong phông ảnh (bộ nhận diện chỉ bắt logo trắng, xem watermark.ts)"
+    },
+    {
+      "product": "PC Workstation PCZone Core Ultra 7 265F RTX 5080",
+      "url": "https://cdn.hstatic.net/products/200000722513/pc_msi_gerforce_4500rs__2_of_107__6fe7cc943f4f4c8bbc58868d3a0d8b59.jpg",
+      "why": "có logo GEARVN dạng màu trên nền sáng hoặc biển hiệu GEARVN trong phông ảnh (bộ nhận diện chỉ bắt logo trắng, xem watermark.ts)"
+    }
+  ]
+}

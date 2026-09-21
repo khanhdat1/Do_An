@@ -5,12 +5,12 @@ import type { NavItem } from "@/types";
  * `icon` là tên icon của lucide-react, được map trong components/layout/Navbar.tsx
  */
 export const mainNav: NavItem[] = [
-  { label: "Laptop Hi-End", href: "/laptop", icon: "Laptop" },
-  { label: "PC Gaming", href: "/pc-gaming", icon: "Monitor" },
-  { label: "CPU & GPU", href: "/linh-kien", icon: "Cpu" },
-  { label: "Mainboard & RAM", href: "/mainboard-ram", icon: "CircuitBoard" },
-  { label: "Màn hình", href: "/man-hinh", icon: "MonitorSmartphone" },
-  { label: "Gaming Gear", href: "/gaming-gear", icon: "Keyboard" },
+  { label: "Laptop", href: "/danh-muc/laptop", icon: "Laptop" },
+  { label: "PC Lắp ráp", href: "/danh-muc/pc", icon: "Monitor" },
+  // Trang cha: chọn tiếp CPU, VGA, Mainboard, RAM, SSD, Nguồn, Case bằng ô danh mục con ở đầu trang
+  { label: "Linh kiện PC", href: "/danh-muc/linh-kien", icon: "Cpu" },
+  { label: "Màn hình", href: "/danh-muc/man-hinh", icon: "MonitorSmartphone" },
+  { label: "Gaming Gear", href: "/danh-muc/gaming-gear", icon: "Keyboard" },
 ];
 
 /** Các link nhỏ ở thanh trên cùng (top bar) */
