@@ -94,6 +94,41 @@ export interface CategoryDto {
   children?: CategoryDto[];
 }
 
+/** Một hãng ở bộ lọc của trang danh mục, kèm số sản phẩm của hãng trong danh mục đó */
+export interface BrandFacetDto {
+  slug: string;
+  name: string;
+  count: number;
+}
+
+/** Danh mục con hiện thành ô chọn nhanh ở đầu trang danh mục */
+export interface CategoryLinkDto {
+  slug: string;
+  name: string;
+  icon: string;
+  /** Tính cả các nhánh con của chính nó */
+  productCount: number;
+}
+
+/**
+ * `GET /api/categories/:slug` — mọi thứ trang danh mục cần ngoài danh sách sản phẩm:
+ * đường dẫn, danh mục con, và các giá trị để dựng bộ lọc (hãng, khoảng giá).
+ * Số liệu tính trên toàn bộ nhánh danh mục, chưa áp bộ lọc nào.
+ */
+export interface CategoryDetailDto {
+  slug: string;
+  name: string;
+  icon: string;
+  /** Từ gốc tới chính danh mục này (chưa gồm "Trang chủ") */
+  breadcrumb: BreadcrumbDto[];
+  children: CategoryLinkDto[];
+  /** Số sản phẩm đang bán trong cả nhánh */
+  productCount: number;
+  brands: BrandFacetDto[];
+  /** null khi danh mục chưa có sản phẩm nào */
+  priceRange: { min: number; max: number } | null;
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Xác thực                                                                  */
 /* -------------------------------------------------------------------------- */

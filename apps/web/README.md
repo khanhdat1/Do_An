@@ -36,6 +36,9 @@ app/                      # App Router
   globals.css             # design token (màu, font) + class dùng chung
   not-found.tsx           # trang 404
   san-pham/[slug]/        # chi tiết sản phẩm (Server Component, cache ISR 60s)
+  danh-muc/               # tổng hợp mọi danh mục
+  danh-muc/[slug]/        # danh sách sản phẩm của một danh mục: lọc hãng / giá / còn hàng, sắp xếp, phân trang
+                          # (bộ lọc nằm trên URL, xem lib/category-query.ts)
   gio-hang/               # giỏ hàng
   dang-nhap/  dang-ky/    # đăng nhập / đăng ký (?next= để quay lại trang đang xem dở)
   tai-khoan/              # hồ sơ, tài khoản liên kết (Google / Facebook), đăng xuất (yêu cầu đăng nhập)
@@ -64,6 +67,10 @@ components/
     AiBuildSection.tsx    # công cụ AI Build PC + cấu hình mẫu
     CommunityBar.tsx      # thống kê cộng đồng
     BrandStrip.tsx        # logo các hãng
+  category/               # trang danh mục
+    CategoryShell.tsx     # khung: cột lọc + thanh sắp xếp + chip lọc đang bật (client, đổi URL rồi để server dựng lại)
+    FilterPanel.tsx       # nội dung bộ lọc: còn hàng, hãng (kèm số sản phẩm), khoảng giá gợi ý + nhập tay
+    Pagination.tsx        # phân trang bằng liên kết thật
   product/
     ProductCard.tsx       # thẻ sản phẩm dùng chung toàn site
     ProductThumb.tsx      # khung ảnh sản phẩm (có placeholder)
@@ -71,6 +78,7 @@ components/
     ProductPurchasePanel.tsx  # chọn số lượng, Thêm vào giỏ, Mua ngay
     ProductDescription.tsx / SpecTable.tsx / Breadcrumb.tsx
   ui/
+    CategoryIcon.tsx      # tên icon lưu trong DB (Category.icon) → icon lucide-react
     SectionHeading.tsx    # tiêu đề section dùng chung
     Countdown.tsx         # đồng hồ đếm ngược
     TextField.tsx         # ô nhập liệu (nhãn, icon, dấu *, gợi ý, lỗi nối bằng aria)

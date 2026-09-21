@@ -170,7 +170,7 @@ model Product {
 
   // --- Mã hàng & nguồn dữ liệu -------------------------------------------
   sku       String  @unique // mã nội bộ PCZone, VD: PCZ-MB-ASR-B760M
-  source    String  @default("MANUAL") // MANUAL | KCCSHOP | ASROCK | GIGABYTE...
+  source    String  @default("MANUAL") // MANUAL | SEED | KCCSHOP | GEARVN | ASROCK | GIGABYTE...
   sourceUrl String? @unique @db.VarChar(500) // URL gốc khi dữ liệu do crawler sinh
 
   // --- Giá (VNĐ, không có phần thập phân) ---------------------------------
@@ -267,7 +267,8 @@ model ProductImage {
   isPrimary Boolean @default(false)
 
   // --- Truy vết nguồn gốc --------------------------------------------------
-  /// ASROCK | GIGABYTE | KCCSHOP | MANUAL
+  /// Tên hãng hoặc nguồn ảnh, viết hoa: ASUS | AMD | SAMSUNG | CORSAIR | LOGITECH | GIGABYTE |
+  /// LENOVO | ASROCK | KCCSHOP | GEARVN (bộ demo) | UNSPLASH (ảnh chụp miễn phí cho PC lắp ráp) | MANUAL
   source    String? @db.VarChar(50)
   /// Trang sản phẩm nơi tìm ra ảnh
   sourceUrl String? @db.VarChar(500)

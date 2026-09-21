@@ -109,11 +109,18 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </h1>
 
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-              <span className="flex items-center gap-1.5 text-slate-500">
-                <Star className="size-4 fill-gold-400 text-gold-400" />
-                <span className="font-semibold text-slate-700">{product.rating.toFixed(1)}</span>
-                ({product.reviewCount} đánh giá)
-              </span>
+              {product.reviewCount > 0 ? (
+                <span className="flex items-center gap-1.5 text-slate-500">
+                  <Star className="size-4 fill-gold-400 text-gold-400" />
+                  <span className="font-semibold text-slate-700">{product.rating.toFixed(1)}</span>
+                  ({product.reviewCount} đánh giá)
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-slate-400">
+                  <Star className="size-4 text-slate-300" />
+                  Chưa có đánh giá
+                </span>
+              )}
 
               {product.inStock === false ? (
                 <span className="flex items-center gap-1.5 font-semibold text-sale-600">
@@ -211,7 +218,12 @@ export default async function ProductDetailPage({ params }: PageProps) {
               )}
             >
               <SectionHeading title="Mô tả sản phẩm" className="mb-4" />
-              <ProductDescription text={description} />
+              <ProductDescription
+                text={description}
+                images={product.images}
+                productName={product.name}
+                categoryName={product.categoryName}
+              />
             </section>
           ) : null}
 
@@ -219,7 +231,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
             <section
               className={cn(
                 "surface-card p-4 sm:p-6",
-                hasDescription ? "lg:col-span-1" : "lg:col-span-3",
+                // Mô tả dài hơn bảng thông số nhiều: giữ bảng đứng yên trong lúc đọc mô tả (chừa chỗ cho thanh menu dính đầu trang)
+                hasDescription ? "lg:sticky lg:top-44 lg:col-span-1" : "lg:col-span-3",
               )}
             >
               <SectionHeading title="Thông số kỹ thuật" className="mb-4" />

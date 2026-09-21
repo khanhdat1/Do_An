@@ -23,10 +23,12 @@ const boolQuery = z
 /** Query string luôn là chuỗi, nên dùng coerce để đổi sang số */
 const listQuerySchema = z.object({
   category: z.string().trim().min(1).optional(),
-  brand: z.string().trim().min(1).optional(),
+  // Nhiều hãng cách nhau dấu phẩy: ?brand=asus,msi
+  brand: z.string().trim().min(1).max(300).optional(),
   search: z.string().trim().min(1).max(200).optional(),
   minPrice: z.coerce.number().int().nonnegative().optional(),
   maxPrice: z.coerce.number().int().nonnegative().optional(),
+  inStock: boolQuery,
   featured: boolQuery,
   flashSale: boolQuery,
   sort: z
@@ -42,6 +44,7 @@ const listQuerySchema = z.object({
  *   /api/products?featured=true&pageSize=5
  *   /api/products?flashSale=true
  *   /api/products?category=linh-kien&sort=price-asc&page=2
+ *   /api/products?category=man-hinh&brand=asus,lg&minPrice=3000000&inStock=true
  */
 productsRouter.get("/", async (req, res, next) => {
   try {

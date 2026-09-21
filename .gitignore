@@ -16,3 +16,6 @@ npm-debug.log*
 
 # Ảnh sản phẩm tải về từ crawler – không commit vào git
 apps/web/public/images/products/
+
+# Tệp cache của trình biên dịch TypeScript
+*.tsbuildinfo

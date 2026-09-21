@@ -10,10 +10,13 @@ import type { Paginated, ProductDetailDto, ProductDto } from "../types/dto.js";
 export interface ListProductsParams {
   /** Slug danh mục (lá hoặc cha — cha sẽ lấy cả danh mục con) */
   category?: string;
+  /** Slug thương hiệu; nhiều hãng cách nhau dấu phẩy: "asus,msi" */
   brand?: string;
   search?: string;
   minPrice?: number;
   maxPrice?: number;
+  /** true = chỉ sản phẩm còn hàng (tồn kho trừ số đang giữ chỗ vẫn dương) */
+  inStock?: boolean;
   featured?: boolean;
   flashSale?: boolean;
   sort?: "newest" | "price-asc" | "price-desc" | "best-selling" | "rating";
@@ -22,18 +25,28 @@ export interface ListProductsParams {
 }
 
 /** Chỉ sản phẩm ACTIVE mới được hiện ra ngoài. DRAFT là hàng crawler chờ duyệt. */
-const PUBLIC_FILTER = { status: ProductStatus.ACTIVE } satisfies Prisma.ProductWhereInput;
+export const PUBLIC_FILTER = { status: ProductStatus.ACTIVE } satisfies Prisma.ProductWhereInput;
 
+/**
+ * Mỗi kiểu sắp xếp kèm khoá phụ `id`. Thiếu nó, các sản phẩm bằng nhau ở khoá chính (vd cùng
+ * soldCount = 0, cùng giá) có thứ tự tuỳ ý giữa hai truy vấn, nên khi bấm sang trang 2 có thể
+ * gặp lại sản phẩm đã thấy ở trang 1 và bỏ sót sản phẩm khác.
+ */
 const SORT_MAP: Record<
   NonNullable<ListProductsParams["sort"]>,
-  Prisma.ProductOrderByWithRelationInput
+  Prisma.ProductOrderByWithRelationInput[]
 > = {
-  newest: { publishedAt: "desc" },
-  "price-asc": { sellingPrice: "asc" },
-  "price-desc": { sellingPrice: "desc" },
-  "best-selling": { soldCount: "desc" },
-  rating: { ratingAvg: "desc" },
+  newest: [{ publishedAt: "desc" }, { id: "asc" }],
+  "price-asc": [{ sellingPrice: "asc" }, { id: "asc" }],
+  "price-desc": [{ sellingPrice: "desc" }, { id: "asc" }],
+  "best-selling": [{ soldCount: "desc" }, { id: "asc" }],
+  rating: [{ ratingAvg: "desc" }, { ratingCount: "desc" }, { id: "asc" }],
 };
+
+/** "asus, msi,," -> ["asus", "msi"] */
+function splitSlugs(value: string): string[] {
+  return [...new Set(value.split(",").map((slug) => slug.trim()).filter(Boolean))];
+}
 
 /**
  * Trả về slug của danh mục và toàn bộ danh mục con của nó.
@@ -69,7 +82,13 @@ async function buildWhere(
   }
 
   if (params.brand) {
-    where.brand = { slug: params.brand };
+    const brands = splitSlugs(params.brand);
+    if (brands.length > 0) where.brand = { slug: { in: brands } };
+  }
+
+  // available > 0  <=>  reservedQuantity < inventoryQuantity (so sánh hai cột bằng field reference)
+  if (params.inStock) {
+    where.reservedQuantity = { lt: prisma.product.fields.inventoryQuantity };
   }
 
   if (params.featured) where.isFeatured = true;

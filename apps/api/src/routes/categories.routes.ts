@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
+import { NotFoundError } from "../middleware/errors.js";
 import {
+  getCategoryDetail,
   getFeaturedCategories,
   listCategories,
 } from "../services/category.service.js";
@@ -23,6 +25,20 @@ categoriesRouter.get("/featured", async (req, res, next) => {
       .object({ limit: z.coerce.number().int().min(1).max(12).default(6) })
       .parse(req.query);
     res.json({ items: await getFeaturedCategories(limit) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/categories/:slug — đường dẫn, danh mục con, hãng và khoảng giá của một danh mục.
+ * Khai báo SAU `/featured`: nếu đặt trước, Express sẽ hiểu "featured" là một slug.
+ */
+categoriesRouter.get("/:slug", async (req, res, next) => {
+  try {
+    const category = await getCategoryDetail(req.params.slug);
+    if (!category) throw new NotFoundError("Không tìm thấy danh mục");
+    res.json(category);
   } catch (error) {
     next(error);
   }

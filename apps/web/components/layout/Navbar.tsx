@@ -57,7 +57,9 @@ export default function Navbar() {
           {mainNav.map((item, index) => {
             const Icon = navIcons[item.icon as keyof typeof navIcons];
             const active =
-              pathname === item.href || (index === 0 && pathname === "/");
+              pathname === item.href ||
+              pathname.startsWith(`${item.href}/`) ||
+              (index === 0 && pathname === "/");
 
             return (
               <li key={item.href}>

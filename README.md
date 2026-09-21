@@ -39,6 +39,7 @@ pczone/
 │   ├── prisma/schema.prisma    26 bảng, 4 tầng: catalog / người dùng / thương mại / AI
 │   ├── prisma/migrations/      lịch sử migration
 │   ├── prisma/seed.ts          dữ liệu mẫu: danh mục, thương hiệu, 14 sản phẩm, admin
+│   ├── prisma/seed-descriptions.ts  bài mô tả dài của 14 sản phẩm mẫu
 │   └── src/index.ts            Prisma Client singleton + re-export type
 │
 ├── apps/api/               Express 5 + TypeScript
@@ -54,14 +55,20 @@ pczone/
 │       └── types/dto.ts        hợp đồng dữ liệu với frontend
 │
 ├── apps/web/               Next.js 16 + TypeScript + Tailwind 4
-│   ├── app/                    trang chủ, chi tiết sản phẩm, giỏ hàng, đăng nhập / đăng ký, tài khoản
-│   ├── components/             layout / home / product / cart / auth / providers / ui
+│   ├── app/                    trang chủ, danh mục (/danh-muc, /danh-muc/[slug]), chi tiết sản phẩm, giỏ hàng, đăng nhập / đăng ký, tài khoản
+│   ├── components/             layout / home / category / product / cart / auth / providers / ui
+│   ├── lib/category-query.ts   đọc / dựng bộ lọc trên URL của trang danh mục
 │   ├── lib/api.ts              gọi API từ server (cache ISR, có fallback khi API chưa chạy)
 │   ├── lib/api-client.ts       gọi API từ trình duyệt (cookie, tự refresh token)
 │   ├── lib/data/               dữ liệu dự phòng
 │   └── types/index.ts          khớp với apps/api/src/types/dto.ts
 │
-└── apps/crawler/           Thu thập dữ liệu từ KCCShop + ảnh chính hãng
+└── apps/crawler/           Thu thập dữ liệu tham khảo + nạp ảnh thật
+    ├── data/demo-catalog.json  bản chụp ~120 sản phẩm demo (đưa vào git, xem "Dữ liệu demo" ở mục 4)
+    └── src/
+        ├── gearvn/             thu thập bản chụp từ GEARVN (collect.ts, kế hoạch plan.ts, đọc dữ liệu nhúng rsc.ts)
+        ├── demo/               nạp bản chụp vào DB (load.ts) + viết thông số, mô tả (content/)
+        └── images/             tải ảnh thật, chuyển WebP, chặn ảnh có logo shop khác (attach.ts, ingest.ts, watermark.ts)
 ```
 
 ## 3. Chạy lần đầu
@@ -81,9 +88,12 @@ npm run db:up
 # 3. Tạo bảng trong database
 npm run db:migrate
 
-# 4. Nạp dữ liệu mẫu để trang chủ có nội dung
+# 4. Nạp dữ liệu mẫu, ~120 sản phẩm demo VÀ tải ảnh thật cho tất cả (cần internet, khoảng 10 phút lần đầu)
 npm run db:seed
 ```
+
+> Muốn thử nhanh trước: `npm run db:seed:data` chỉ nạp 14 sản phẩm mẫu, không tải ảnh, mất vài giây
+> và chạy được khi không có mạng. Phần còn lại nạp sau bằng `npm run seed-images` và `npm run demo-data`.
 
 Sau đó mở **hai terminal**:
 
@@ -107,12 +117,117 @@ Kiểm tra API sống chưa: mở <http://localhost:4000/health>
 | ---- | -------- |
 | `npm run db:up` / `db:down` | Bật / tắt MySQL trong Docker |
 | `npm run db:migrate` | Tạo & áp dụng migration mới sau khi sửa schema |
-| `npm run db:seed` | Nạp lại dữ liệu mẫu (chạy nhiều lần vẫn an toàn) |
+| `npm run db:seed` | Nạp **tất cả**: dữ liệu mẫu, ảnh của 14 sản phẩm mẫu, ~120 sản phẩm demo kèm ảnh (chạy nhiều lần vẫn an toàn) |
+| `npm run db:seed:data` | Chỉ nạp dữ liệu mẫu (danh mục, hãng, 14 sản phẩm), không tải ảnh, chạy được khi không có mạng |
+| `npm run seed-images` | Chỉ tải ảnh cho sản phẩm mẫu chưa có ảnh (thêm `-- --force` để tải lại) |
+| `npm run demo-data` | Nạp ~120 sản phẩm demo từ `data/demo-catalog.json` kèm ảnh (xem "Dữ liệu demo") |
+| `npm run collect-demo` | Thu thập lại bản chụp demo từ GEARVN (cần mạng, ~8 phút; chỉ cần khi muốn cập nhật giá / mẫu mới) |
 | `npm run db:studio` | Mở Prisma Studio xem dữ liệu bằng giao diện |
 | `npm run dev:api` | Chạy API ở chế độ watch |
 | `npm run dev:web` | Chạy web ở chế độ dev |
 | `npm run crawl` | Chạy crawler lấy dữ liệu tham khảo |
 | `npm run build` | Build cả db + api + web |
+
+### Ảnh sản phẩm
+
+`npm run db:seed` nạp sản phẩm mẫu **và** tải ảnh thật cho chúng trong cùng một lệnh (cần
+internet, khoảng 1 phút; lần chạy sau tự bỏ qua sản phẩm đã có ảnh).
+
+- **Chỉ dùng ảnh thật, không dùng ảnh do AI sinh.** Sản phẩm của hãng lấy ảnh studio nhiều góc
+  từ chính trang sản phẩm của hãng (ASUS, AMD, Samsung, Corsair, Logitech, Gigabyte, Lenovo). Hai
+  bộ PC lắp ráp của PCZone (không hãng nào chụp) và ảnh nền ở banner trang chủ dùng ảnh chụp
+  thật miễn phí bản quyền từ Unsplash.
+- Danh sách ảnh của từng sản phẩm nằm ở `apps/crawler/src/images/seed-manifest.ts`, đã chọn tay
+  sau khi xem thử và ghi rõ trang nguồn. Thêm sản phẩm mới thì thêm một khối vào file này rồi
+  chạy `npm run seed-images`. `npm test -w @pczone/crawler` kiểm tra file không sai slug và mọi
+  ảnh đều nằm trên CDN của hãng hoặc Unsplash.
+- Ảnh được tải về, kiểm tra kích thước, chuyển WebP ba cỡ (300 / 800 / 1600 px) vào
+  `apps/web/public/images/products/<mã SKU>/` rồi ghi bảng `ProductImage` (kèm nguồn, trang gốc,
+  checksum). Web phục vụ ảnh từ chính máy mình nên không chết khi hãng đổi đường dẫn. Thư mục này
+  **không commit lên git**, mỗi máy tự tải bằng lệnh trên. Ảnh banner nằm ở `public/images/hero/`
+  và có commit.
+- Mất mạng thì sản phẩm vẫn hiện bình thường (ảnh tạm theo danh mục), có mạng chạy lại
+  `npm run seed-images`.
+
+| Lệnh | Tác dụng |
+| ---- | -------- |
+| `npm run seed-images` | Chỉ tải ảnh cho sản phẩm chưa có ảnh |
+| `npm run seed-images -- --force` | Tải lại và thay toàn bộ ảnh trong danh sách |
+| `npm run seed-images -- --dry-run` | Xem trước, không tải, không ghi DB |
+| `npm run seed-images -- --only=asus` | Chỉ các sản phẩm có slug chứa "asus" |
+| `npm run sync-images` | Với hàng crawl từ KCCShop: tự dò ảnh chính hãng ASRock / Gigabyte rồi so khớp model |
+
+> Bản quyền ảnh thuộc về các hãng; dự án dùng cho mục đích học tập / demo. Bán hàng thật thì
+> phải thay bằng ảnh có giấy phép của nhà phân phối. Ảnh Unsplash dùng theo giấy phép Unsplash.
+
+### Dữ liệu demo (~120 sản phẩm)
+
+Để trang danh mục có nhiều thứ để lọc, sắp xếp và phân trang, dự án kèm ~120 sản phẩm thật ở đủ 14
+danh mục (CPU, mainboard, RAM, VGA, SSD, nguồn, case, laptop gaming / văn phòng, PC gaming / workstation,
+màn hình, bàn phím, chuột), cộng 14 sản phẩm mẫu là khoảng 136. Tách làm hai bước:
+
+```
+npm run collect-demo   →   apps/crawler/data/demo-catalog.json   →   npm run demo-data
+(cần mạng, ~8 phút)        (đưa vào git)                            (nạp DB + tải ảnh, chạy lại thoải mái)
+```
+
+- **Nguồn:** [gearvn.com](https://gearvn.com) (robots.txt cho phép đọc `/collections` và `/products`).
+  Crawler tự khai báo là crawler học tập, đọc tuần tự, cách nhau 1,5 giây. Kế hoạch (danh mục nào lấy
+  bao nhiêu, từ bộ sưu tập nào) nằm ở `apps/crawler/src/gearvn/plan.ts`; tên sản phẩm, giá, thông số và địa
+  chỉ ảnh được chụp lại vào `demo-catalog.json`, nên clone repo về chỉ cần `npm run demo-data`, không phải
+  cào lại. GEARVN đổi giao diện cũng không ảnh hưởng dữ liệu đã chụp.
+- **Chữ do PCZone tự viết.** Bảng thông số, các chip, dòng mô tả ngắn và bài mô tả dài (khoảng 2.000–3.500
+  ký tự, có tiêu đề mục, ảnh xen giữa, lưu ý khi mua, hỏi đáp) được dựng từ thông số kỹ thuật bằng các mẫu ở
+  `apps/crawler/src/demo/content/`, không chép văn bản của nguồn. Câu nào thiếu thông số thì bị bỏ, không đoán.
+- **Ảnh thật, chặn logo shop khác.** Ảnh do GEARVN tự chụp (nhiều nhất ở bộ PC) đóng logo "GEARVN.COM" ở góc;
+  `apps/crawler/src/images/watermark.ts` nhận ra logo trắng ở bốn góc bằng cách so khớp hình dạng rồi **bỏ hẳn
+  tấm đó** (không cắt hay xoá logo vì đó là sửa ảnh của người khác để giấu nguồn). Mỗi sản phẩm giữ tối đa 4 ảnh.
+- **Đã xem mắt toàn bộ ảnh chính và các bộ ảnh rủi ro.** Bộ nhận diện chỉ bắt logo trắng, nên những gì nó bỏ sót
+  (logo dạng màu trên nền sáng, biển hiệu GEARVN trong phông ảnh, ảnh quảng cáo tiếng Anh nhiều chữ của hãng) được
+  ghi tay vào `apps/crawler/data/image-blocklist.json` (mỗi dòng có lý do). Muốn loại thêm một ảnh: thêm địa chỉ
+  ảnh gốc vào file rồi chạy `npm run demo-data -- --force-images --only=<danh-mục>`. `npm test -w @pczone/crawler`
+  kiểm tra mọi địa chỉ trong file vẫn còn trong bản chụp và không sản phẩm nào bị loại hết ảnh.
+- **Giá là giá tham khảo tại ngày thu thập** (ghi trong `demo-catalog.json`). Bộ PC được bán dưới tên "PCZone".
+- **Số liệu vận hành là giả lập**, đặt một lần khi tạo sản phẩm và chạy lại không đè: tồn kho, số đã bán,
+  ngày đăng. **Đánh giá để 0** (thẻ sản phẩm hiện "Chưa có đánh giá"), không bịa lượt đánh giá.
+- Sản phẩm demo vào thẳng trạng thái `ACTIVE` (khác hàng crawl từ KCCShop nằm ở `DRAFT` chờ duyệt) vì đây là
+  dữ liệu đã chọn lọc, cần bán được ngay trong giỏ hàng.
+
+| Lệnh | Tác dụng |
+| ---- | -------- |
+| `npm run demo-data` | Nạp tất cả (bỏ qua ảnh sản phẩm đã có) |
+| `npm run demo-data -- --no-images` | Chỉ dữ liệu, chưa tải ảnh |
+| `npm run demo-data -- --only=cpu,ssd` | Chỉ vài danh mục |
+| `npm run demo-data -- --force-images` | Tải lại ảnh của mọi sản phẩm |
+| `npm run demo-data -- --dry-run` | Xem trước, không ghi DB, không tải ảnh |
+| `npm run collect-demo -- --only=ssd` | Thu thập lại riêng một danh mục (ghép vào file đã có) |
+| `npm run collect-demo -- --dry-run` | Chỉ đọc trang danh sách, in số ứng viên |
+
+> Chạy lại `collect-demo` sẽ ghi đè `demo-catalog.json`; sau đó nên xem lại ảnh (mở trang danh mục và trang
+> chi tiết) trước khi commit.
+
+### Mô tả sản phẩm
+
+Mục "Mô tả sản phẩm" ở trang chi tiết là một bài viết dài: tiêu đề kèm thông số, đoạn mở đầu, các
+mục có tiêu đề nhỏ, ảnh xen giữa, rồi đoạn giới thiệu PCZone ở cuối (giao diện tự thêm, kèm hotline
+và email). Bảng thông số kỹ thuật nằm bên cạnh và đứng yên khi bạn cuộn đọc.
+
+- Bài mô tả của 14 sản phẩm mẫu nằm ở `packages/db/prisma/seed-descriptions.ts`, bảng thông số ở
+  `packages/db/prisma/seed.ts`. Số liệu kỹ thuật đã đối chiếu với trang sản phẩm chính hãng; chỗ nào
+  hãng không công bố thì không viết. Sửa xong chạy `npm run db:seed:data` để cập nhật vào DB (web giữ
+  cache tối đa 1 phút nên có thể phải tải lại trang một hai lần).
+- Viết bằng chữ thuần kèm vài ký hiệu (xem `apps/web/lib/description.ts`), nên không có chỗ nào để
+  chèn mã HTML vào trang:
+
+| Viết | Hiển thị |
+| ---- | -------- |
+| `# Tiêu đề` | Tiêu đề chính của bài (tên sản phẩm + thông số nổi bật) |
+| `## Tên mục` | Tiêu đề của một mục |
+| `- ý ngắn` | Gạch đầu dòng (các dòng liền nhau gộp thành một danh sách) |
+| `[ảnh 2]` hoặc `[ảnh 2: chú thích]` | Chèn ảnh thứ 2 của thư viện ảnh sản phẩm, chú thích mặc định "PCZone - tên sản phẩm" |
+| dòng trống | Ngăn cách các đoạn |
+
+Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu nào vẫn hiển thị bình thường.
 
 ## 5. Danh sách API hiện có
 
@@ -124,6 +239,7 @@ Kiểm tra API sống chưa: mở <http://localhost:4000/health>
 | GET | `/api/products/:slug` | Chi tiết một sản phẩm: ảnh, thông số, mô tả, breadcrumb |
 | GET | `/api/categories` | Cây danh mục đầy đủ |
 | GET | `/api/categories/featured?limit=6` | Danh mục nổi bật ở trang chủ |
+| GET | `/api/categories/:slug` | Một danh mục cho trang danh mục: breadcrumb, danh mục con (kèm số sản phẩm cả nhánh), các hãng và khoảng giá để dựng bộ lọc. 404 nếu không có |
 | POST | `/api/auth/register` | Đăng ký, đăng nhập luôn, gộp giỏ hàng khách |
 | POST | `/api/auth/login` | `{ email, password, remember? }` — đăng nhập, gộp giỏ hàng khách vào tài khoản |
 | POST | `/api/auth/refresh` | Đổi refresh token (cookie) lấy cặp token mới |
@@ -142,14 +258,27 @@ Tham số của `/api/products`:
 
 ```
 ?category=linh-kien        lấy cả danh mục con (cpu, vga, ram...)
-?brand=asus
+?brand=asus                một hãng; nhiều hãng cách nhau dấu phẩy: ?brand=asus,msi
 ?search=rtx
 ?minPrice=10000000&maxPrice=30000000
+?inStock=true              chỉ sản phẩm còn hàng (tồn kho trừ số đang giữ chỗ còn dương)
 ?featured=true
 ?flashSale=true
 ?sort=newest | price-asc | price-desc | best-selling | rating
-?page=1&pageSize=20
+?page=1&pageSize=20        tối đa 60
 ```
+
+Mọi kiểu sắp xếp đều kèm khoá phụ `id`, nên sản phẩm bằng nhau ở khoá chính (cùng giá, cùng số đã bán)
+vẫn có thứ tự cố định giữa hai lần gọi: bấm sang trang 2 không gặp lại sản phẩm đã thấy ở trang 1.
+
+### Trang danh mục (`/danh-muc/[slug]`)
+
+Toàn bộ bộ lọc nằm trên URL, ví dụ `/danh-muc/man-hinh?brand=asus,lg&minPrice=3000000&inStock=true&sort=price-asc&page=2`:
+gửi link là người nhận thấy đúng kết quả đang xem, bấm Back quay lại đúng bộ lọc trước, và trang vẫn được
+dựng ở server. Bộ lọc có: hãng (kèm số sản phẩm), khoảng giá (mức gợi ý tự chia theo giá của danh mục
++ ô nhập tay), chỉ hàng còn; sắp xếp; phân trang 12 sản phẩm / trang. Trên mobile bộ lọc là ngăn kéo mở bằng
+nút "Bộ lọc". Danh mục cha (`/danh-muc/linh-kien`) hiện thêm ô chọn nhanh các danh mục con; `/danh-muc` liệt
+kê mọi danh mục.
 
 ## 6. Quy ước dữ liệu
 
@@ -305,7 +434,9 @@ Chưa có nút *Hủy liên kết*.
 
 ## 10. Việc còn lại
 
-- [ ] Trang danh sách sản phẩm theo danh mục (`/danh-muc/[slug]`) — breadcrumb ở trang chi tiết đã trỏ tới đây
+- [x] Trang danh sách sản phẩm theo danh mục (`/danh-muc/[slug]`, `/danh-muc`): lọc hãng / giá / còn hàng, sắp xếp, phân trang
+- [x] ~120 sản phẩm demo có ảnh thật, thông số và mô tả dài (xem "Dữ liệu demo" ở mục 4)
+- [ ] Tìm kiếm (`/tim-kiem`): ô tìm ở header chưa có trang kết quả
 - [x] Trang chi tiết sản phẩm (`/san-pham/[slug]`)
 - [x] Đăng ký / đăng nhập (JWT + bcrypt), ghi nhớ đăng nhập, đăng nhập Google / Facebook, liên kết tài khoản mạng xã hội, trang tài khoản
 - [ ] Hủy liên kết tài khoản mạng xã hội (phải chặn hủy liên kết cuối cùng của tài khoản không có mật khẩu, kẻo mất đường đăng nhập)

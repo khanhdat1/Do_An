@@ -101,7 +101,9 @@ function toDecimal(value: number | null): Prisma.Decimal | null {
 export async function upsertProduct(data: ScrapedProduct) {
   const category = await prisma.category.upsert({
     where: { slug: data.category.slug },
-    update: { name: data.category.name },
+    // Danh mục đã có (do seed tạo, tên hiển thị như "CPU – Vi xử lý") thì giữ nguyên: đổi tên theo
+    // nguồn crawl sẽ làm menu và trang danh mục đổi chữ mỗi lần chạy crawler
+    update: {},
     create: {
       name: data.category.name,
       slug: data.category.slug,

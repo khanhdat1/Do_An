@@ -15,7 +15,8 @@
     "db:generate": "npm run generate -w @pczone/db",
     "db:build": "npm run build -w @pczone/db",
     "db:migrate": "npm run migrate -w @pczone/db",
-    "db:seed": "npm run seed -w @pczone/db",
+    "db:seed": "npm run db:seed:data && npm run seed-images && npm run demo-data",
+    "db:seed:data": "npm run seed -w @pczone/db",
     "db:studio": "npm run studio -w @pczone/db",
 
     "dev:api": "npm run db:build && npm run dev -w @pczone/api",
@@ -23,6 +24,9 @@
 
     "crawl": "npm run crawl -w @pczone/crawler",
     "sync-images": "npm run sync-images -w @pczone/crawler",
+    "seed-images": "npm run seed-images -w @pczone/crawler --",
+    "demo-data": "npm run demo-data -w @pczone/crawler --",
+    "collect-demo": "npm run collect-demo -w @pczone/crawler --",
 
     "build": "npm run db:build && npm run build -w @pczone/api && npm run build -w @pczone/web",
     "typecheck": "npm run db:build && npm run typecheck -w @pczone/api"

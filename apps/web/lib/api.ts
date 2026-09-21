@@ -1,4 +1,4 @@
-import type { Category, Paginated, Product, ProductDetail } from "@/types";
+import type { Category, CategoryDetail, Paginated, Product, ProductDetail } from "@/types";
 import {
   bestSellerProducts,
   featuredProducts,
@@ -91,14 +91,19 @@ export async function getBestSellers(limit = 4): Promise<Product[]> {
 
 export interface ProductQuery {
   category?: string;
+  /** Slug hãng; nhiều hãng cách nhau dấu phẩy: "asus,msi" */
   brand?: string;
   search?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  /** true = chỉ sản phẩm còn hàng */
+  inStock?: boolean;
   sort?: "newest" | "price-asc" | "price-desc" | "best-selling" | "rating";
   page?: number;
   pageSize?: number;
 }
 
-/** Danh sách sản phẩm có lọc + phân trang — dùng cho trang danh mục sau này */
+/** Danh sách sản phẩm có lọc + phân trang — dùng cho trang danh mục */
 export async function getProducts(
   query: ProductQuery = {},
 ): Promise<Paginated<Product>> {
@@ -207,6 +212,43 @@ export async function getFeaturedCategories(limit = 6): Promise<Category[]> {
     { items: featuredCategories },
   );
   return data.items;
+}
+
+/**
+ * Chi tiết một danh mục cho trang danh mục: đường dẫn, danh mục con, hãng và khoảng giá.
+ * Trả về `null` khi API xác nhận không có danh mục này (trang hiện 404); nếu API không trả lời
+ * được thì rơi về dữ liệu dự phòng của lưới trang chủ để trang vẫn dựng được khung.
+ */
+export async function getCategory(slug: string): Promise<CategoryDetail | null> {
+  const path = `/api/categories/${encodeURIComponent(slug)}`;
+
+  try {
+    const response = await fetch(`${API_BASE}${path}`, {
+      next: { revalidate: REVALIDATE_SECONDS },
+      headers: { Accept: "application/json" },
+    });
+
+    if (response.status === 404) return null;
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    return (await response.json()) as CategoryDetail;
+  } catch (error) {
+    warnOffline(path, error);
+
+    const fallback = featuredCategories.find((category) => category.slug === slug);
+    if (!fallback) return null;
+
+    return {
+      slug: fallback.slug,
+      name: fallback.name,
+      icon: fallback.icon,
+      breadcrumb: [{ slug: fallback.slug, name: fallback.name }],
+      children: [],
+      productCount: 0,
+      brands: [],
+      priceRange: null,
+    };
+  }
 }
 
 /** Cây danh mục đầy đủ */
