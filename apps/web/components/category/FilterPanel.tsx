@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 import { buildPriceBrackets, type CategoryQuery } from "@/lib/category-query";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { BrandFacet } from "@/types";
+import type { BrandFacet, CategoryFacet } from "@/types";
 
 interface FilterPanelProps {
   brands: BrandFacet[];
@@ -19,10 +19,15 @@ interface FilterPanelProps {
   onClear: () => void;
   /** Chỉ có trên mobile, nơi bảng lọc là ngăn kéo cần nút đóng */
   onClose?: () => void;
+  /** Trang tìm kiếm: kết quả nằm ở nhiều danh mục nên có thêm bộ lọc danh mục. Trang danh mục không truyền. */
+  categories?: CategoryFacet[];
+  selectedCategory?: string;
+  onSelectCategory?: (slug?: string) => void;
 }
 
 /** Số hãng hiện sẵn; phần còn lại nằm sau nút "Xem thêm" để cột lọc không dài quá màn hình */
 const BRANDS_SHOWN = 8;
+const CATEGORIES_SHOWN = 8;
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -101,10 +106,17 @@ export default function FilterPanel({
   onInStock,
   onClear,
   onClose,
+  categories = [],
+  selectedCategory,
+  onSelectCategory,
 }: FilterPanelProps) {
   const selectedBrands = new Set(query.brands);
   const hasHiddenSelected = brands.some((brand, index) => index >= BRANDS_SHOWN && selectedBrands.has(brand.slug));
   const [expanded, setExpanded] = useState(hasHiddenSelected);
+
+  const hiddenCategorySelected = categories.some((category, index) => index >= CATEGORIES_SHOWN && category.slug === selectedCategory);
+  const [categoriesExpanded, setCategoriesExpanded] = useState(hiddenCategorySelected);
+  const visibleCategories = categories.filter((_, index) => categoriesExpanded || index < CATEGORIES_SHOWN);
 
   const visibleBrands = brands.filter((_, index) => expanded || index < BRANDS_SHOWN);
   const brackets = buildPriceBrackets(priceRange);
@@ -135,6 +147,42 @@ export default function FilterPanel({
           ) : null}
         </div>
       </div>
+
+      {categories.length > 0 && onSelectCategory ? (
+        <Section title="Danh mục">
+          <ul className="space-y-1">
+            {visibleCategories.map((category) => {
+              const active = category.slug === selectedCategory;
+              return (
+                <li key={category.slug}>
+                  <button
+                    type="button"
+                    aria-pressed={active}
+                    // Bấm lại danh mục đang chọn thì bỏ chọn
+                    onClick={() => onSelectCategory(active ? undefined : category.slug)}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition",
+                      active ? "bg-brand-50 font-semibold text-brand-700" : "text-slate-700 hover:bg-slate-50",
+                    )}
+                  >
+                    <span className="flex-1">{category.name}</span>
+                    <span className={cn("text-xs", active ? "text-brand-600" : "text-slate-400")}>{category.count}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          {categories.length > CATEGORIES_SHOWN ? (
+            <button
+              type="button"
+              onClick={() => setCategoriesExpanded((open) => !open)}
+              className="mt-2.5 text-xs font-semibold text-blue-600 transition hover:text-blue-700"
+            >
+              {categoriesExpanded ? "Thu gọn" : `Xem thêm ${categories.length - CATEGORIES_SHOWN} danh mục`}
+            </button>
+          ) : null}
+        </Section>
+      ) : null}
 
       <Section title="Tình trạng">
         <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">

@@ -207,3 +207,70 @@ export interface Paginated<T> {
   total: number;
   totalPages: number;
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Tìm kiếm                                                                  */
+/* -------------------------------------------------------------------------- */
+
+/** Một danh mục ở bộ lọc của trang tìm kiếm, kèm số kết quả nằm trong danh mục đó */
+export interface CategoryFacetDto {
+  slug: string;
+  name: string;
+  count: number;
+}
+
+/**
+ * `GET /api/search` — kết quả tìm kiếm + mọi thứ trang kết quả cần ngoài danh sách sản phẩm:
+ * cách API hiểu câu tìm kiếm (từ khoá đã dùng, lỗi gõ đã sửa, từ bị bỏ, cụm giá) và các thành phần của bộ lọc.
+ */
+export interface SearchResultDto extends Paginated<ProductDto> {
+  /** Câu tìm kiếm người dùng gửi (đã cắt khoảng trắng đầu cuối) */
+  query: string;
+  /** Từ khoá thực sự dùng để khớp (không dấu, đã sửa lỗi gõ, đã bỏ từ không sản phẩm nào chứa) — dùng để tô sáng */
+  terms: string[];
+  /** Từ gõ sai đã được tự sửa: "razr" → "razer" */
+  corrections: { from: string; to: string }[];
+  /** Từ bị bỏ qua vì không sản phẩm nào chứa */
+  ignoredTerms: string[];
+  /** true = không sản phẩm nào chứa đủ mọi từ khoá; danh sách là các sản phẩm khớp nhiều từ nhất */
+  relaxed: boolean;
+  /** Bộ lọc giá suy ra từ câu tìm kiếm ("dưới 30 triệu"); không có khi người dùng đã tự chọn khoảng giá */
+  priceIntent?: {
+    label: string;
+    minPrice?: number;
+    maxPrice?: number;
+    /** Câu tìm kiếm khi bỏ cụm giá đi — để dựng nút "bỏ lọc giá" */
+    queryWithoutPrice: string;
+  };
+  facets: {
+    categories: CategoryFacetDto[];
+    brands: BrandFacetDto[];
+    priceRange: { min: number; max: number } | null;
+  };
+}
+
+/** Một sản phẩm trong hộp gợi ý khi gõ ở ô tìm kiếm (gọn hơn ProductDto) */
+export interface SuggestProductDto {
+  slug: string;
+  name: string;
+  price: number;
+  oldPrice?: number;
+  image?: string;
+  categoryName: string;
+  brand?: string;
+  categoryPath: string[];
+  inStock: boolean;
+}
+
+/** `GET /api/search/suggest` */
+export interface SearchSuggestDto {
+  query: string;
+  /** Tổng số sản phẩm khớp (không chỉ các sản phẩm được liệt kê) */
+  total: number;
+  /** Từ khoá thực sự dùng để khớp (không dấu, đã sửa lỗi gõ) — giao diện dùng để tô sáng tên sản phẩm */
+  terms: string[];
+  products: SuggestProductDto[];
+  /** Danh mục có tên khớp câu đang gõ: "ghe" → Ghế */
+  categories: { slug: string; name: string; count: number }[];
+  brands: { slug: string; name: string; count: number }[];
+}

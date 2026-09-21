@@ -1,4 +1,5 @@
-import type { Category, CategoryDetail, Paginated, Product, ProductDetail } from "@/types";
+import type { Category, CategoryDetail, Paginated, Product, ProductDetail, SearchResult } from "@/types";
+import type { SearchQuery } from "@/lib/search-query";
 import {
   bestSellerProducts,
   featuredProducts,
@@ -119,6 +120,30 @@ export async function getProducts(
     total: 0,
     totalPages: 1,
   });
+}
+
+/**
+ * Tìm kiếm sản phẩm (`GET /api/search`). Khác các hàm trên: không cache (mỗi câu tìm là một địa chỉ riêng, cache 60
+ * giây chỉ làm đầy bộ nhớ) và KHÔNG có dữ liệu dự phòng, vì kết quả rỗng giả sẽ bị hiểu nhầm là "không có sản phẩm".
+ * Trả về `null` khi API không trả lời được để trang báo lỗi thật.
+ */
+export async function searchProducts(query: SearchQuery, pageSize: number): Promise<SearchResult | null> {
+  const params = new URLSearchParams({ q: query.q, sort: query.sort, page: String(query.page), pageSize: String(pageSize) });
+  if (query.category) params.set("category", query.category);
+  if (query.brands.length > 0) params.set("brand", query.brands.join(","));
+  if (query.minPrice !== undefined) params.set("minPrice", String(query.minPrice));
+  if (query.maxPrice !== undefined) params.set("maxPrice", String(query.maxPrice));
+  if (query.inStock) params.set("inStock", "true");
+
+  const path = `/api/search?${params.toString()}`;
+  try {
+    const response = await fetch(`${API_BASE}${path}`, { cache: "no-store", headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return (await response.json()) as SearchResult;
+  } catch (error) {
+    warnOffline(path, error);
+    return null;
+  }
 }
 
 /**

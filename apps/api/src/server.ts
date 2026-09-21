@@ -1,6 +1,7 @@
 import { prisma } from "@pczone/db";
 import { createApp } from "./app.js";
 import { env } from "./env.js";
+import { warmSearchIndex } from "./search/index-store.js";
 import { getProvider, isConfigured, redirectUri } from "./services/oauth.providers.js";
 
 const app = createApp();
@@ -22,6 +23,14 @@ const server = app.listen(env.port, () => {
     );
   }
   console.log("");
+
+  // Dựng sẵn chỉ mục tìm kiếm để lượt tìm đầu tiên không phải chờ; DB chưa lên thì lượt tìm đầu sẽ tự dựng
+  warmSearchIndex()
+    .then((count) => console.log(`  Chỉ mục tìm kiếm:     ${count} sản phẩm\n`))
+    .catch((error) => {
+      const reason = error instanceof Error ? error.message : String(error);
+      console.warn(`  Chỉ mục tìm kiếm:     chưa dựng được (${reason})\n`);
+    });
 });
 
 /** Đóng kết nối gọn gàng khi dừng bằng Ctrl+C hoặc khi container bị kill */

@@ -5,6 +5,7 @@ import {
   toProductDetailDto,
   toProductDto,
 } from "../mappers/product.mapper.js";
+import { searchProductIds } from "../search/product-ids.js";
 import type { Paginated, ProductDetailDto, ProductDto } from "../types/dto.js";
 
 export interface ListProductsParams {
@@ -107,16 +108,10 @@ async function buildWhere(
   }
 
   if (params.search) {
-    // `contains` đủ dùng ở quy mô đồ án. Khi dữ liệu lớn, đổi sang
-    // fulltext search (schema đã khai báo @@fulltext trên name + shortDescription).
-    where.AND = [
-      {
-        OR: [
-          { name: { contains: params.search } },
-          { shortDescription: { contains: params.search } },
-        ],
-      },
-    ];
+    // Cùng bộ máy với trang tìm kiếm (không phân biệt dấu, từ đồng nghĩa...): xem search/engine.ts.
+    // Danh sách này vẫn tự sắp xếp theo `sort`; thứ tự theo độ liên quan chỉ có ở /api/search.
+    const ids = await searchProductIds(params.search);
+    where.id = { in: ids.length > 0 ? ids : ["__none__"] };
   }
 
   return where;

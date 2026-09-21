@@ -121,7 +121,7 @@ function buildStockInfo(product: ProductWithRelations): StockInfoDto | undefined
 }
 
 /** Lấy mảng shortSpecs từ cột JSON, lọc bỏ giá trị không phải chuỗi. */
-function readAllShortSpecs(value: Prisma.JsonValue | null): string[] {
+export function readAllShortSpecs(value: Prisma.JsonValue | null): string[] {
   if (!Array.isArray(value)) return [];
   return value
     .filter((item): item is string => typeof item === "string")
@@ -142,7 +142,7 @@ function readSpecs(value: Prisma.JsonValue | null): string[] {
  * - Object `{ "Chipset": "Intel B760" }` — crawler ghi dạng này. Lưu ý MySQL không giữ
  *   thứ tự khoá của kiểu JSON (nó tự sắp xếp), nên thứ tự với dạng này không kiểm soát được.
  */
-function readSpecifications(value: Prisma.JsonValue | null): SpecRowDto[] {
+export function readSpecifications(value: Prisma.JsonValue | null): SpecRowDto[] {
   const rows: SpecRowDto[] = [];
 
   const push = (label: unknown, raw: unknown) => {
