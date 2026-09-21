@@ -1,16 +1,20 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import {
+  Armchair,
   Box,
   Cpu,
   Gamepad2,
   HardDrive,
+  Headphones,
   Keyboard,
+  LampDesk,
   Laptop,
   MemoryStick,
   Monitor,
   Mouse,
   Plug,
+  Speaker,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +39,10 @@ const ICON_CLASS =
 const iconBySlug: Record<string, ReactNode> = {
   chuot: <Mouse className={ICON_CLASS} strokeWidth={1.4} />,
   "ban-phim": <Keyboard className={ICON_CLASS} strokeWidth={1.4} />,
+  "tai-nghe": <Headphones className={ICON_CLASS} strokeWidth={1.4} />,
+  loa: <Speaker className={ICON_CLASS} strokeWidth={1.4} />,
+  ghe: <Armchair className={ICON_CLASS} strokeWidth={1.4} />,
+  ban: <LampDesk className={ICON_CLASS} strokeWidth={1.4} />,
   "gaming-gear": <Keyboard className={ICON_CLASS} strokeWidth={1.4} />,
   vga: <MemoryStick className={ICON_CLASS} strokeWidth={1.4} />,
   ram: <MemoryStick className={ICON_CLASS} strokeWidth={1.4} />,

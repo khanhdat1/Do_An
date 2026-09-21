@@ -10,7 +10,9 @@ import fs from "node:fs";
 import { SNAPSHOT_PATH, readImageBlocklist, type Catalog, type CatalogItem } from "../gearvn/snapshot.js";
 import { toSlug } from "../utils.js";
 import { Attrs, cleanValue, firstNumber, formatCapacity, toGigabytes } from "./attributes.js";
+import { lowerList, warrantyMonths } from "./content/common.js";
 import { buildContent, hasBuilder } from "./content/index.js";
+import { cpuNote, gpuNote, memoryNote, screenNotes, storageNote } from "./content/laptop-notes.js";
 import { displayName, makeSku, pcParts, resolveBrand, stableFraction } from "./names.js";
 
 let passed = 0;
@@ -78,6 +80,13 @@ console.log("\n[2] Tên hiển thị");
     ["case", "Vỏ máy tính ASUS ROG Hyperion GR701", "Vỏ case ASUS ROG Hyperion GR701"],
     ["psu", "Nguồn ASUS ROG THOR 1600T3 ATX 3.1, PCIe 5.0, 80 Plus Titanium, Full Modular (1600W)", "Nguồn máy tính ASUS ROG THOR 1600T3 ATX 3.1, PCIe 5.0, 80 Plus Titanium, Full Modular (1600W)"],
     ["ssd", "Ổ Cứng SSD Samsung 990 PRO 4TB M.2 PCIe Gen4 NVMe (MZ-V9P4T0BW)", "Ổ cứng SSD Samsung 990 PRO 4TB M.2 PCIe Gen4 NVMe"],
+    ["tai-nghe", "Tai Nghe Gaming Không Dây Predator Galea 550 (PHR235)", "Tai nghe Gaming Không Dây Predator Galea 550"],
+    ["tai-nghe", "Tai nghe HP HYPERX Cloud Earbuds III S Black", "Tai nghe HyperX Cloud Earbuds III S Black"],
+    ["loa", "Loa máy tính Edifier MR5 White", "Loa máy tính Edifier MR5 White"],
+    ["ghe", "Ghế chơi game Warrior lmmortal Series WGC225 Xanh Navy", "Ghế chơi game Warrior Immortal Series WGC225 Xanh Navy"],
+    ["ghe", "Ghế gaming Razer Iskur V2 X NewGen Quartz (RZ38-05311000-R3CA)", "Ghế gaming Razer Iskur V2 X NewGen Quartz"],
+    ["ban", "Bàn CoolerMaster GD120 ARGB", "Bàn Cooler Master GD120 ARGB"],
+    ["ban", "Bàn nâng hạ WARRIOR Duke Series WWT801 Grove Brown", "Bàn nâng hạ Warrior Duke Series WWT801 Grove Brown"],
   ];
   for (const [category, source, expected] of cases) {
     check(`${category}: ${source.slice(0, 48)}…`, displayName(item(category, source)), expected);
@@ -123,6 +132,9 @@ console.log("\n[4] Thương hiệu");
   check("bộ PC bán dưới thương hiệu PCZone", brand("pc-gaming", "PC GVN Intel i5-12400F/ VGA RTX 3050", "GEARVN"), "PCZone");
   check("T-Group / TeamGroup gộp một hãng", [brand("ram", "Ram T-Group T-Force Delta 1x8GB"), brand("ram", "RAM TeamGroup Elite Plus")], ["TeamGroup", "TeamGroup"]);
   check("không nhận ra từ tên thì dùng hãng nguồn, trừ 'Không thương hiệu'", [brand("case", "Vỏ máy tính Foo Bar", "Foobar"), brand("case", "Vỏ máy tính Foo Bar", "Không thương hiệu")], ["Foobar", null]);
+  check("tai nghe 'HP HYPERX' bán dưới hãng HyperX chứ không phải HP", brand("tai-nghe", "Tai nghe HP HYPERX Cloud III Red", "HyperX"), "HyperX");
+  check("loa Acoustic Energy (nguồn ghi hãng AERO) và loa Mitchell (nguồn không ghi hãng)", [brand("loa", "Loa Acoustic Energy Aego BT2", "AERO"), brand("loa", "Loa Active Mitchell Acoustic - uStream One", "Không thương hiệu")], ["Acoustic Energy", "Mitchell Acoustics"]);
+  check("hãng ghế và bàn", [brand("ghe", "Ghế công thái học Sihoo M77C Xám"), brand("ghe", "Ghế chơi game Warrior Raider Series WGC207"), brand("ban", "Bàn CoolerMaster GD120 ARGB")], ["Sihoo", "Warrior", "Cooler Master"]);
 }
 
 console.log("\n[5] Số giả lập ổn định");
@@ -132,13 +144,98 @@ console.log("\n[5] Số giả lập ổn định");
   check("SKU cùng quy tắc seed: PCZ-<DANHMUC>-<HÃNG>-<HASH>", /^PCZ-CPU-AMD-[0-9A-F]{6}$/.test(makeSku("cpu", "amd", "cpu-amd-ryzen-7")), true);
 }
 
-console.log("\n[6] Duyệt toàn bộ bản chụp");
+console.log("\n[6] Mẫu nội dung mới: tai nghe, ghế, bàn và ghi chú laptop");
+{
+  const attr = (label: string, value: string) => ({ label, value, highlight: false });
+
+  // Tai nghe: bảo hành ghi số trần là số tháng; ô "Độ nhạy" điền nhầm dải tần bị bỏ; "40mm" → "40 mm"; dấu "..." bị bỏ
+  const headset = item("tai-nghe", "Tai nghe Foo X", {
+    attributes: [
+      attr("Bảo hành", "24"),
+      attr("Kiểu tai nghe", "Over-ear"),
+      attr("Phương thức kết nối", "Wireless 2.4Ghz (USB Receiver), Bluetooth"),
+      attr("Kích thước màng loa", "40mm"),
+      attr("Độ nhạy", "70 Hz-20 KHz dB"),
+      attr("Tương thích", "PC, PS5, Nintendo Switch..."),
+      attr("Micro", "Có"),
+      attr("Tính năng micro", "Micro thu âm đa hướng, Tháo rời"),
+      attr("Thời lượng pin", "Bluetooth (25 giờ), Dongle (20 giờ)"),
+    ],
+  });
+  const headsetContent = buildContent(headset, "Tai nghe Foo X", "Foo");
+  const spec = (content: ReturnType<typeof buildContent>, label: string) => content.specifications.find((row) => row.label === label)?.value;
+  check("tai nghe: bảo hành '24' là 24 tháng", headsetContent.warrantyMonths, 24);
+  check("tai nghe: ô Độ nhạy chứa dải tần không lọt vào thông số", spec(headsetContent, "Độ nhạy"), undefined);
+  check("tai nghe: '40mm' → '40 mm', bỏ dấu ba chấm", [spec(headsetContent, "Màng loa"), spec(headsetContent, "Tương thích")], ["40 mm", "PC, PS5, Nintendo Switch"]);
+  check("tai nghe: chip trên thẻ ngắn, không có chữ 'Micro micro'", [headsetContent.shortSpecs.slice(0, 3).every((chip) => chip.length <= 24), /micro micro/i.test(headsetContent.description)], [true, false]);
+
+  // Ghế: độ ngả lưng kèm lời quảng cáo chỉ giữ số độ; tay ghế 4D và trục Class 4 được giải thích
+  const chair = item("ghe", "Ghế Foo", {
+    attributes: [
+      attr("Bảo hành", "12 tháng"),
+      attr("Kiểu thiết kế", "Gaming"),
+      attr("Độ ngả lưng", "152 độ (Reactive Seat Tilt - ngả lưng phản hồi theo trọng lượng)"),
+      attr("Loại tay ghế", "4D"),
+      attr("Loại trụ thủy lực", "Class 4"),
+      attr("Tải trọng tối đa", "136 kg"),
+    ],
+  });
+  const chairContent = buildContent(chair, "Ghế Foo", "Foo");
+  check("ghế: độ ngả lưng chỉ còn số độ", spec(chairContent, "Độ ngả lưng"), "152°");
+  check("ghế: tay ghế 4D chỉnh đủ bốn hướng, trục Class 4 là cấp cao nhất", [/nâng hạ độ cao, tiến\/lùi, trái\/phải và xoay góc/.test(chairContent.description), /Class 4, cấp cao nhất/.test(chairContent.description)], [true, true]);
+
+  // Bàn: trang nguồn chỉ ghi vài dòng vẫn ra bài mô tả đủ dài, không có chữ "undefined"
+  const thinDesk = item("ban", "Bàn Gaming Foo", { attributes: [attr("Bảo hành", "24 tháng"), attr("Kiểu thiết kế", "Bàn Gaming / Văn phòng"), attr("Màu sắc", "Đen"), attr("Tính năng đặc biệt", "Đèn LED RGB")] });
+  const deskContent = buildContent(thinDesk, "Bàn Gaming Foo", "Foo");
+  check("bàn ít thông số vẫn ra mô tả ≥ 1500 ký tự, không lỗi chữ", [deskContent.description.length >= 1500, /undefined|NaN/.test(deskContent.description)], [true, false]);
+
+  const liftDesk = item("ban", "Bàn nâng hạ Foo", {
+    attributes: [attr("Bảo hành", "12 tháng"), attr("Loại bàn", "Bàn nâng hạ (Có motor)"), attr("Kích thước mặt bàn", "140 x 60 x 1.6 cm"), attr("Độ cao bàn (Tùy chỉnh)", "71 - 119 cm"), attr("Tải trọng tối đa mặt bàn", "60 kg")],
+  });
+  const liftContent = buildContent(liftDesk, "Bàn nâng hạ Foo", "Foo");
+  check("bàn nâng hạ: chip kích thước và độ cao", liftContent.shortSpecs.slice(0, 3), ["Nâng hạ điện", "140×60 cm", "Cao 71-119cm"]);
+
+  check("số bảo hành trần: 24 tháng, 2 năm, có đơn vị, không có", [warrantyMonths("24", 12), warrantyMonths("2", 12), warrantyMonths("36 tháng", 12), warrantyMonths("5 năm", 12), warrantyMonths(undefined, 12)], [24, 24, 36, 60, 12]);
+  check("lowerList hạ chữ đầu từng ý", lowerList("Gaming, Giải trí, Đàm thoại."), "gaming, giải trí, đàm thoại");
+  check("cleanValue bỏ dấu ba chấm của nguồn", cleanValue("PC, Nintendo Switch..."), "PC, Nintendo Switch");
+
+  const has = (text: string | undefined, pattern: RegExp) => pattern.test(text ?? "");
+  check("cpuNote: HX mạnh nhất, Core Ultra có NPU, hậu tố U tiết kiệm điện", [has(cpuNote("AMD Ryzen 9 8940HX"), /HX là nhóm chip laptop mạnh nhất/), has(cpuNote("Intel Core Ultra 7 255H"), /NPU/), has(cpuNote("Intel Core 5 120U"), /tiết kiệm điện/)], [true, true, true]);
+  check("cpuNote: chip không nhận ra → không bịa", cpuNote("Kirin X90"), undefined);
+  check("gpuNote: RTX 5060 8GB nêu đời, phân khúc, bộ nhớ", [has(gpuNote("NVIDIA GeForce RTX 5060 8GB"), /Blackwell/), has(gpuNote("NVIDIA GeForce RTX 5060 8GB"), /tầm trung/), has(gpuNote("NVIDIA GeForce RTX 5060 8GB"), /8 GB/)], [true, true, true]);
+  check("gpuNote: RTX 4050 là Ada Lovelace, đồ họa Radeon tích hợp thì không có ghi chú", [has(gpuNote("NVIDIA GeForce RTX 4050 6GB"), /Ada Lovelace/), gpuNote("AMD Radeon 780M")], [true, undefined]);
+  check("screenNotes: 16\" WUXGA 165 Hz OLED", screenNotes("16 inch", "WUXGA (1920x1200)", "165 Hz", "OLED").map((note) => note.slice(0, 22)), ["Cỡ 16 inch rộng rãi, x", "Tỷ lệ 16:10 hiển thị t", "Tần số quét 165 Hz cho", "Tấm nền OLED cho màu đ"]);
+  check("screenNotes: QHD+ không khẳng định tỷ lệ 16:10 vì nhãn này có cả 16:9", screenNotes(undefined, "QHD+", undefined, undefined).some((note) => note.includes("16:10")), false);
+  check("memoryNote và storageNote theo mức dung lượng", [has(memoryNote("8 GB"), /học tập, văn phòng/), has(memoryNote("16 GB"), /cân bằng/), has(memoryNote("32 GB"), /dư dả/), has(storageNote("256 GB"), /nhanh đầy/), has(storageNote("512 GB"), /vài tựa game lớn/), has(storageNote("1 TB"), /rộng rãi/)], [true, true, true, true, true, true]);
+}
+
+console.log("\n[7] Duyệt toàn bộ bản chụp");
 {
   const catalog = JSON.parse(fs.readFileSync(SNAPSHOT_PATH, "utf8")) as Catalog;
   const products = catalog.products;
 
   check("bản chụp từ GEARVN, có ngày thu thập", [catalog.source, /^\d{4}-\d{2}-\d{2}$/.test(catalog.collectedAt)], ["GEARVN", true]);
-  check("100–150 sản phẩm (cộng 14 mẫu seed ra khoảng 136)", products.length >= 100 && products.length <= 150, true);
+  check("400–450 sản phẩm (cộng 14 mẫu seed ra khoảng 436)", products.length >= 400 && products.length <= 450, true);
+
+  // Mục tiêu theo yêu cầu: nhóm Laptop 150 sản phẩm, nhóm Gaming Gear 150 sản phẩm (đã tính các mẫu trong seed.ts:
+  // 3 laptop gaming, 1 chuột)
+  const count = (...categories: string[]) => products.filter((p) => categories.includes(p.category)).length;
+  check("Laptop: 147 sản phẩm demo + 3 mẫu seed = 150", count("laptop-gaming", "laptop-van-phong") + 3, 150);
+  check("Gaming Gear: 149 sản phẩm demo + 1 mẫu seed = 150", count("ban-phim", "chuot", "tai-nghe", "loa", "ghe", "ban") + 1, 150);
+  check("bốn danh mục Gaming Gear mới đều có sản phẩm", [count("tai-nghe") > 0, count("loa") > 0, count("ghe") > 0, count("ban") > 0], [true, true, true, true]);
+  // Laptop đọc thông số từ tên phải có đủ CPU, RAM, ổ cứng; laptop gaming còn phải có card đồ họa
+  const laptopSpecs = (p: CatalogItem) => new Attrs(p.attributes);
+  check(
+    "mọi laptop có CPU, RAM, SSD; laptop gaming có card đồ họa",
+    products
+      .filter((p) => p.category.startsWith("laptop"))
+      .filter((p) => {
+        const a = laptopSpecs(p);
+        return !a.get(/^CPU$/) || !a.get(/^Dung lượng RAM$/, /^RAM$/) || !a.get(/^Dung lượng SSD$/, /^SSD$/) || (p.category === "laptop-gaming" && !a.get(/^Card đồ họa$/));
+      })
+      .map((p) => p.name),
+    [],
+  );
   check("mọi danh mục trong bản chụp đều có mẫu nội dung", products.every((p) => hasBuilder(p.category)), true);
   check("URL nguồn không trùng", new Set(products.map((p) => p.sourceUrl)).size, products.length);
   check("mỗi sản phẩm có giá dương, ít nhất một ảnh https, bảng thông số ≥ 4 dòng", products.every((p) => p.price > 0 && p.images.length > 0 && p.images.every((u) => u.startsWith("https://")) && p.attributes.length >= 4), true);

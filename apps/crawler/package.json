@@ -12,7 +12,7 @@
     "seed-images": "dotenv -e ../../.env -- tsx src/images/attach.ts",
     "collect-demo": "dotenv -e ../../.env -- tsx src/gearvn/collect.ts",
     "demo-data": "dotenv -e ../../.env -- tsx src/demo/load.ts",
-    "test": "tsx src/images/normalize.test.ts && tsx src/images/adapters.test.ts && tsx src/images/ingest.test.ts && tsx src/images/seed-manifest.test.ts && tsx src/images/watermark.test.ts && tsx src/gearvn/rsc.test.ts && tsx src/demo/demo.test.ts",
+    "test": "tsx src/images/normalize.test.ts && tsx src/images/adapters.test.ts && tsx src/images/ingest.test.ts && tsx src/images/seed-manifest.test.ts && tsx src/images/watermark.test.ts && tsx src/gearvn/rsc.test.ts && tsx src/gearvn/title-specs.test.ts && tsx src/demo/demo.test.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

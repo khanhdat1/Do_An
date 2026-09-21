@@ -78,11 +78,27 @@ export function listVi(items: string[]): string {
 /** Số nguyên ở dạng ngắn cho tiêu đề: 6 → "6" */
 export const n = (value: number | undefined): string | undefined => (value === undefined ? undefined : String(value));
 
+/** "Gaming, Giải trí" → "gaming, giải trí": hạ chữ đầu của từng ý khi nối vào giữa câu */
+export const lowerList = (value: string): string =>
+  value
+    .replace(/[.\s]+$/, "")
+    .split(/,\s*/)
+    .map((part) => part.charAt(0).toLowerCase() + part.slice(1))
+    .join(", ");
+
 /** Bỏ dấu chấm cuối câu để nối vào câu khác mà không bị "..": các giá trị nguồn đôi khi kết thúc bằng dấu chấm */
 export const noDot = (value: string): string => value.replace(/[.\s]+$/, "");
 
-/** Số tháng bảo hành từ "36 tháng", "5 năm" */
+/**
+ * Số tháng bảo hành từ "36 tháng", "5 năm". Nguồn có lúc chỉ ghi số trần: "24" là số tháng, còn số nhỏ như "2"
+ * chỉ có thể là số năm (không hãng nào bảo hành 2 tháng).
+ */
 export function warrantyMonths(text: string | undefined, fallback: number): number {
+  if (text && /^\d{1,3}$/.test(text.trim())) {
+    const value = Number(text.trim());
+    return value <= 5 ? value * 12 : value;
+  }
+
   const match = text?.match(/(\d+)\s*(tháng|năm)/i);
   if (!match) return fallback;
   const value = Number(match[1]);

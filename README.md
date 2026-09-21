@@ -64,7 +64,7 @@ pczone/
 │   └── types/index.ts          khớp với apps/api/src/types/dto.ts
 │
 └── apps/crawler/           Thu thập dữ liệu tham khảo + nạp ảnh thật
-    ├── data/demo-catalog.json  bản chụp ~120 sản phẩm demo (đưa vào git, xem "Dữ liệu demo" ở mục 4)
+    ├── data/demo-catalog.json  bản chụp ~420 sản phẩm demo (đưa vào git, xem "Dữ liệu demo" ở mục 4)
     └── src/
         ├── gearvn/             thu thập bản chụp từ GEARVN (collect.ts, kế hoạch plan.ts, đọc dữ liệu nhúng rsc.ts)
         ├── demo/               nạp bản chụp vào DB (load.ts) + viết thông số, mô tả (content/)
@@ -88,7 +88,7 @@ npm run db:up
 # 3. Tạo bảng trong database
 npm run db:migrate
 
-# 4. Nạp dữ liệu mẫu, ~120 sản phẩm demo VÀ tải ảnh thật cho tất cả (cần internet, khoảng 10 phút lần đầu)
+# 4. Nạp dữ liệu mẫu, ~420 sản phẩm demo VÀ tải ảnh thật cho tất cả (cần internet, khoảng 30 phút lần đầu)
 npm run db:seed
 ```
 
@@ -117,11 +117,12 @@ Kiểm tra API sống chưa: mở <http://localhost:4000/health>
 | ---- | -------- |
 | `npm run db:up` / `db:down` | Bật / tắt MySQL trong Docker |
 | `npm run db:migrate` | Tạo & áp dụng migration mới sau khi sửa schema |
-| `npm run db:seed` | Nạp **tất cả**: dữ liệu mẫu, ảnh của 14 sản phẩm mẫu, ~120 sản phẩm demo kèm ảnh (chạy nhiều lần vẫn an toàn) |
+| `npm run db:seed` | Nạp **tất cả**: dữ liệu mẫu, ảnh của 14 sản phẩm mẫu, ~420 sản phẩm demo kèm ảnh (chạy nhiều lần vẫn an toàn) |
 | `npm run db:seed:data` | Chỉ nạp dữ liệu mẫu (danh mục, hãng, 14 sản phẩm), không tải ảnh, chạy được khi không có mạng |
+| `npm run db:seed:categories` | Chỉ cập nhật cây danh mục (thêm danh mục mới vào DB đang có dữ liệu, không đụng tới sản phẩm) |
 | `npm run seed-images` | Chỉ tải ảnh cho sản phẩm mẫu chưa có ảnh (thêm `-- --force` để tải lại) |
-| `npm run demo-data` | Nạp ~120 sản phẩm demo từ `data/demo-catalog.json` kèm ảnh (xem "Dữ liệu demo") |
-| `npm run collect-demo` | Thu thập lại bản chụp demo từ GEARVN (cần mạng, ~8 phút; chỉ cần khi muốn cập nhật giá / mẫu mới) |
+| `npm run demo-data` | Nạp ~420 sản phẩm demo từ `data/demo-catalog.json` kèm ảnh (xem "Dữ liệu demo") |
+| `npm run collect-demo` | Thu thập bổ sung bản chụp demo từ GEARVN cho đủ số lượng trong `plan.ts` (cần mạng; từ đầu mất ~30 phút, chạy bổ sung chỉ lấy phần còn thiếu) |
 | `npm run db:studio` | Mở Prisma Studio xem dữ liệu bằng giao diện |
 | `npm run dev:api` | Chạy API ở chế độ watch |
 | `npm run dev:web` | Chạy web ở chế độ dev |
@@ -160,15 +161,17 @@ internet, khoảng 1 phút; lần chạy sau tự bỏ qua sản phẩm đã có
 > Bản quyền ảnh thuộc về các hãng; dự án dùng cho mục đích học tập / demo. Bán hàng thật thì
 > phải thay bằng ảnh có giấy phép của nhà phân phối. Ảnh Unsplash dùng theo giấy phép Unsplash.
 
-### Dữ liệu demo (~120 sản phẩm)
+### Dữ liệu demo (~420 sản phẩm)
 
-Để trang danh mục có nhiều thứ để lọc, sắp xếp và phân trang, dự án kèm ~120 sản phẩm thật ở đủ 14
-danh mục (CPU, mainboard, RAM, VGA, SSD, nguồn, case, laptop gaming / văn phòng, PC gaming / workstation,
-màn hình, bàn phím, chuột), cộng 14 sản phẩm mẫu là khoảng 136. Tách làm hai bước:
+Để trang danh mục có nhiều thứ để lọc, sắp xếp và phân trang, dự án kèm ~420 sản phẩm thật ở 18 danh mục
+(CPU, mainboard, RAM, VGA, SSD, nguồn, case, laptop gaming / văn phòng, PC gaming / workstation, màn hình,
+và Gaming Gear: bàn phím, chuột, tai nghe, loa, ghế, bàn), cộng 14 sản phẩm mẫu là khoảng 436. Hai nhóm lớn
+nhất được nạp dày để trang danh mục có nhiều trang: **Laptop 150 sản phẩm** (gaming 70, văn phòng 80) và
+**Gaming Gear 150 sản phẩm** (bàn phím 32, chuột 30, tai nghe 32, loa 16, ghế 32, bàn 8). Tách làm hai bước:
 
 ```
 npm run collect-demo   →   apps/crawler/data/demo-catalog.json   →   npm run demo-data
-(cần mạng, ~8 phút)        (đưa vào git)                            (nạp DB + tải ảnh, chạy lại thoải mái)
+(cần mạng)                 (đưa vào git)                            (nạp DB + tải ảnh, chạy lại thoải mái)
 ```
 
 - **Nguồn:** [gearvn.com](https://gearvn.com) (robots.txt cho phép đọc `/collections` và `/products`).
@@ -176,6 +179,15 @@ npm run collect-demo   →   apps/crawler/data/demo-catalog.json   →   npm run
   bao nhiêu, từ bộ sưu tập nào) nằm ở `apps/crawler/src/gearvn/plan.ts`; tên sản phẩm, giá, thông số và địa
   chỉ ảnh được chụp lại vào `demo-catalog.json`, nên clone repo về chỉ cần `npm run demo-data`, không phải
   cào lại. GEARVN đổi giao diện cũng không ảnh hưởng dữ liệu đã chụp.
+- **Chạy bổ sung.** `want` trong `plan.ts` là TỔNG số sản phẩm của danh mục. Nâng số đó rồi chạy lại
+  `npm run collect-demo` thì chỉ lấy phần còn thiếu (file được ghi lại sau mỗi sản phẩm, bị ngắt giữa chừng
+  thì chạy lại sẽ tiếp tục). Ứng viên được xếp để có nhiều hãng và nhiều **mẫu khác nhau** (không lấy mười ba
+  màu của cùng một chiếc ghế khi còn mẫu khác), hàng còn trước rồi mới tới hàng đang hết. Trang thiếu bảng
+  thông số bị bỏ để nhường chỗ ứng viên khác (mức tối thiểu chỉnh theo từng danh mục bằng `minAttributes`).
+- **Laptop đọc thông số từ tên.** Phần lớn trang laptop của GEARVN không có bảng thông số, nhưng tên luôn ghi
+  `(CPU/ card đồ họa/ RAM/ SSD/ màn hình/ hệ điều hành)`; `apps/crawler/src/gearvn/title-specs.ts` tách phần
+  đó thành thông số (không đoán những gì tên không ghi). Bài mô tả bù độ dài bằng vài câu kiến thức phổ thông
+  về từng thành phần (hậu tố HX/H/U của chip, RTX 50 khác RTX 40, màn OLED...) ở `content/laptop-notes.ts`.
 - **Chữ do PCZone tự viết.** Bảng thông số, các chip, dòng mô tả ngắn và bài mô tả dài (khoảng 2.000–3.500
   ký tự, có tiêu đề mục, ảnh xen giữa, lưu ý khi mua, hỏi đáp) được dựng từ thông số kỹ thuật bằng các mẫu ở
   `apps/crawler/src/demo/content/`, không chép văn bản của nguồn. Câu nào thiếu thông số thì bị bỏ, không đoán.
@@ -185,8 +197,11 @@ npm run collect-demo   →   apps/crawler/data/demo-catalog.json   →   npm run
 - **Đã xem mắt toàn bộ ảnh chính và các bộ ảnh rủi ro.** Bộ nhận diện chỉ bắt logo trắng, nên những gì nó bỏ sót
   (logo dạng màu trên nền sáng, biển hiệu GEARVN trong phông ảnh, ảnh quảng cáo tiếng Anh nhiều chữ của hãng) được
   ghi tay vào `apps/crawler/data/image-blocklist.json` (mỗi dòng có lý do). Muốn loại thêm một ảnh: thêm địa chỉ
-  ảnh gốc vào file rồi chạy `npm run demo-data -- --force-images --only=<danh-mục>`. `npm test -w @pczone/crawler`
-  kiểm tra mọi địa chỉ trong file vẫn còn trong bản chụp và không sản phẩm nào bị loại hết ảnh.
+  ảnh gốc vào file rồi chạy lại `npm run demo-data`; sản phẩm nào đang dùng ảnh đó sẽ được nạp lại ảnh (thay bằng
+  ảnh kế tiếp của nguồn), sản phẩm khác bỏ qua. `npm test -w @pczone/crawler` kiểm tra mọi địa chỉ trong file
+  vẫn còn trong bản chụp và không sản phẩm nào bị loại hết ảnh. Ảnh ghép của chính hãng (như huy hiệu "2 năm bảo
+  hành" của ASUS Việt Nam kèm dải biểu tượng) vẫn được giữ khi sản phẩm không còn ảnh nào khác; ảnh khuyến mãi của
+  cửa hàng bán lẻ và ảnh quảng cáo nhiều chữ tiếng Anh thì luôn bị loại.
 - **Giá là giá tham khảo tại ngày thu thập** (ghi trong `demo-catalog.json`). Bộ PC được bán dưới tên "PCZone".
 - **Số liệu vận hành là giả lập**, đặt một lần khi tạo sản phẩm và chạy lại không đè: tồn kho, số đã bán,
   ngày đăng. **Đánh giá để 0** (thẻ sản phẩm hiện "Chưa có đánh giá"), không bịa lượt đánh giá.
@@ -200,11 +215,12 @@ npm run collect-demo   →   apps/crawler/data/demo-catalog.json   →   npm run
 | `npm run demo-data -- --only=cpu,ssd` | Chỉ vài danh mục |
 | `npm run demo-data -- --force-images` | Tải lại ảnh của mọi sản phẩm |
 | `npm run demo-data -- --dry-run` | Xem trước, không ghi DB, không tải ảnh |
-| `npm run collect-demo -- --only=ssd` | Thu thập lại riêng một danh mục (ghép vào file đã có) |
+| `npm run collect-demo -- --only=ssd` | Chỉ bổ sung riêng một danh mục (các danh mục khác giữ nguyên) |
+| `npm run collect-demo -- --fresh --only=ssd` | Bỏ dữ liệu cũ của danh mục đó rồi thu thập lại từ đầu |
 | `npm run collect-demo -- --dry-run` | Chỉ đọc trang danh sách, in số ứng viên |
 
-> Chạy lại `collect-demo` sẽ ghi đè `demo-catalog.json`; sau đó nên xem lại ảnh (mở trang danh mục và trang
-> chi tiết) trước khi commit.
+> `collect-demo` chỉ thêm sản phẩm mới, không đổi giá của sản phẩm đã có (dùng `--fresh` khi muốn cập nhật giá).
+> Sau khi thu thập nên nạp DB rồi xem lại ảnh (mở trang danh mục và trang chi tiết) trước khi commit.
 
 ### Mô tả sản phẩm
 
@@ -435,7 +451,7 @@ Chưa có nút *Hủy liên kết*.
 ## 10. Việc còn lại
 
 - [x] Trang danh sách sản phẩm theo danh mục (`/danh-muc/[slug]`, `/danh-muc`): lọc hãng / giá / còn hàng, sắp xếp, phân trang
-- [x] ~120 sản phẩm demo có ảnh thật, thông số và mô tả dài (xem "Dữ liệu demo" ở mục 4)
+- [x] ~420 sản phẩm demo có ảnh thật, thông số và mô tả dài; nhóm Laptop và nhóm Gaming Gear (bàn phím, chuột, tai nghe, loa, ghế, bàn) đều 150 sản phẩm (xem "Dữ liệu demo" ở mục 4)
 - [ ] Tìm kiếm (`/tim-kiem`): ô tìm ở header chưa có trang kết quả
 - [x] Trang chi tiết sản phẩm (`/san-pham/[slug]`)
 - [x] Đăng ký / đăng nhập (JWT + bcrypt), ghi nhớ đăng nhập, đăng nhập Google / Facebook, liên kết tài khoản mạng xã hội, trang tài khoản

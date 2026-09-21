@@ -1,17 +1,21 @@
 import {
+  Armchair,
   Box,
   CircuitBoard,
   Cpu,
   Gamepad2,
   HardDrive,
+  Headphones,
   Keyboard,
   Laptop,
+  LampDesk,
   MemoryStick,
   Monitor,
   MonitorSmartphone,
   Mouse,
   Plug,
   Server,
+  Speaker,
   type LucideProps,
 } from "lucide-react";
 
@@ -30,6 +34,10 @@ const categoryIcons = {
   Mouse,
   Plug,
   Box,
+  Headphones,
+  Speaker,
+  Armchair,
+  LampDesk,
 } as const;
 
 interface CategoryIconProps extends LucideProps {

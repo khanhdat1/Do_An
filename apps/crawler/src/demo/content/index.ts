@@ -4,6 +4,7 @@ import { assemble, finishSpecs, compact, type Ctx, type Draft, type SpecRow } fr
 import { cpu, mainboard, pcCase, psu, ram, ssd, vga } from "./components.js";
 import { keyboard, laptopGaming, laptopOffice, monitor, mouse, pcGaming, pcWorkstation } from "./devices.js";
 import { buildExtras } from "./extras.js";
+import { chair, desk, headset, speaker } from "./gear.js";
 
 const BUILDERS: Record<string, (ctx: Ctx) => Draft> = {
   cpu,
@@ -20,6 +21,10 @@ const BUILDERS: Record<string, (ctx: Ctx) => Draft> = {
   "man-hinh": monitor,
   "ban-phim": keyboard,
   chuot: mouse,
+  "tai-nghe": headset,
+  loa: speaker,
+  ghe: chair,
+  ban: desk,
 };
 
 /** Mọi nội dung cần ghi vào bảng Product cho một sản phẩm demo */

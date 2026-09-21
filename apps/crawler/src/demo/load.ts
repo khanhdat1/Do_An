@@ -7,7 +7,8 @@
  *   npm run demo-data -- --force-images     tải lại ảnh của mọi sản phẩm (mặc định chỉ sản phẩm chưa có ảnh)
  *   npm run demo-data -- --dry-run          xem trước, không ghi DB, không tải ảnh
  *
- * Cần `npm run db:seed:data` chạy trước để có sẵn cây danh mục.
+ * Cần có sẵn cây danh mục: `npm run db:seed:data` (lần đầu) hoặc `npm run db:seed:categories` (DB đã có dữ liệu, chỉ
+ * thêm danh mục mới như Tai nghe, Loa, Ghế, Bàn).
  *
  * Quy tắc dữ liệu (khác luồng crawl KCCShop, nơi sản phẩm mới ở trạng thái DRAFT chờ duyệt):
  *   - Đây là dữ liệu DEMO đã được chọn lọc nên sản phẩm vào thẳng trạng thái ACTIVE, có giá bán và tồn
@@ -84,6 +85,13 @@ async function freeSlug(base: string, usedInRun: Set<string>, ownId?: string): P
 
 type ImageOutcome = "OK" | "SKIPPED" | "FAILED";
 
+/** Sản phẩm đang có ảnh mà địa chỉ gốc nằm trong danh sách ảnh đã loại */
+async function hasBlockedImage(productId: string, blocked: Set<string>): Promise<boolean> {
+  if (blocked.size === 0) return false;
+  const images = await prisma.productImage.findMany({ where: { productId }, select: { remoteUrl: true } });
+  return images.some((image) => image.remoteUrl !== null && blocked.has(image.remoteUrl));
+}
+
 /**
  * Tải ảnh, bỏ ảnh dính logo shop khác và ảnh trong danh sách loại (data/image-blocklist.json), ghi DB.
  * Không tải được ảnh nào thì giữ nguyên ảnh cũ.
@@ -93,7 +101,11 @@ async function attachImages(
   item: CatalogItem,
   blocked: Set<string>,
 ): Promise<{ outcome: ImageOutcome; detail: string }> {
-  if (!FORCE_IMAGES && (await hasUsableImages(product.id))) return { outcome: "SKIPPED", detail: "đã có ảnh" };
+  // Đã có ảnh thì thôi, trừ khi trong đó có ảnh vừa được thêm vào danh sách loại: thêm địa chỉ vào
+  // image-blocklist.json rồi chạy lại là đủ để thay ảnh đó, không cần --force-images cho cả danh mục
+  if (!FORCE_IMAGES && (await hasUsableImages(product.id)) && !(await hasBlockedImage(product.id, blocked))) {
+    return { outcome: "SKIPPED", detail: "đã có ảnh" };
+  }
 
   const seen = new Set<string>();
   const ingested: IngestedImage[] = [];
@@ -158,7 +170,7 @@ async function main() {
   const categories = new Map((await prisma.category.findMany({ select: { id: true, slug: true, name: true } })).map((category) => [category.slug, category]));
   const missing = [...new Set(items.map((item) => item.category))].filter((slug) => !categories.has(slug));
   if (missing.length > 0) {
-    throw new Error(`Thiếu danh mục: ${missing.join(", ")}. Chạy \`npm run db:seed:data\` trước.`);
+    throw new Error(`Thiếu danh mục: ${missing.join(", ")}. Chạy \`npm run db:seed:categories\` trước.`);
   }
 
   const usedSlugs = new Set<string>();

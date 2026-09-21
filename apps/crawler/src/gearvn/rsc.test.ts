@@ -4,7 +4,7 @@
  */
 import { CATEGORY_PLAN, type CategoryPlan } from "./plan.js";
 import { findObjects, parseCollectionPage, parseProductPage, readRscText } from "./rsc.js";
-import { rankCandidates } from "./select.js";
+import { modelKey, rankCandidates } from "./select.js";
 import type { ListingProduct } from "./rsc.js";
 
 let passed = 0;
@@ -138,10 +138,45 @@ console.log("\n[4] rankCandidates");
   check("xoay vòng theo hãng, hàng còn trước hàng hết", ranked, ["Màn hình A1", "Màn hình B1", "Màn hình C1", "Màn hình A2", "Màn hình A3", "Màn hình D1"]);
 }
 
-console.log("\n[5] Kế hoạch thu thập");
+console.log("\n[5] Mẫu sản phẩm và màu: lấy mẫu khác nhau trước, thêm màu sau");
+{
+  check("bỏ màu ở cuối tên", modelKey("Ghế công thái học HyperWork Cloud Chair OC03 Đen"), "ghế công thái học hyperwork cloud chair oc03");
+  check("nhiều từ màu liền nhau", modelKey("Tai nghe gaming không dây Akko Verge S9 Ultra Black Red"), "tai nghe gaming không dây akko verge s9 ultra");
+  check("bỏ phần trong ngoặc (mã hàng, phiên bản)", modelKey("Ghế gaming Razer Iskur V2 X NewGen Black Green (RZ38-05310700-R3CA)"), "ghế gaming razer iskur v2 x newgen");
+  check("màu ở giữa tên là một phần tên mẫu, giữ nguyên", modelKey("Razer BlackShark V3 Pro - NiKo Edition"), "razer blackshark v3 pro niko edition");
+  check("hai màu cùng mẫu cùng khoá", modelKey("Tai nghe HP HYPERX Cloud Earbuds III Red") === modelKey("Tai nghe HP HYPERX Cloud Earbuds III Black"), true);
+
+  const plan: CategoryPlan = { category: "tai-nghe", want: 3, collections: ["x"], pages: 1, nameMatches: /^tai nghe/i, minPrice: 100_000, maxPrice: 10_000_000 };
+  const make = (name: string, brand: string, inStock = true): ListingProduct => ({ name, slug: name, imageUrl: "https://x/y.jpg", price: 1_000_000, originalPrice: null, inStock, brand, highlights: [] });
+  const candidates = [
+    make("Tai nghe Razer Kraken White", "Razer"),
+    make("Tai nghe Razer Kraken Black", "Razer"),
+    make("Tai nghe Logitech G435 Blue", "Logitech"),
+    make("Tai nghe HyperX Cloud II Red", "HyperX", false),
+  ];
+  check(
+    "mẫu mới (kể cả đang hết hàng) đứng trước màu thêm của mẫu đã có",
+    rankCandidates(candidates, plan).map((p) => p.name),
+    ["Tai nghe Razer Kraken White", "Tai nghe Logitech G435 Blue", "Tai nghe HyperX Cloud II Red", "Tai nghe Razer Kraken Black"],
+  );
+  check(
+    "chạy bổ sung: mẫu đã có trong danh mục bị hạ xuống cuối",
+    rankCandidates(candidates, plan, new Set([modelKey("Tai nghe Razer Kraken Pink")])).map((p) => p.name),
+    ["Tai nghe Logitech G435 Blue", "Tai nghe HyperX Cloud II Red", "Tai nghe Razer Kraken White", "Tai nghe Razer Kraken Black"],
+  );
+}
+
+console.log("\n[6] Kế hoạch thu thập");
 {
   const total = CATEGORY_PLAN.reduce((sum, plan) => sum + plan.want, 0);
-  check("tổng số sản phẩm mục tiêu nằm trong 100–150 (chưa tính 14 mẫu seed)", total >= 100 && total <= 150, true);
+  check("tổng số sản phẩm mục tiêu nằm trong 400–450 (chưa tính 14 mẫu seed)", total >= 400 && total <= 450, true);
+  const wants = Object.fromEntries(CATEGORY_PLAN.map((plan) => [plan.category, plan.want]));
+  check("Laptop đạt 150 sản phẩm (cộng 3 mẫu seed Laptop Gaming)", wants["laptop-gaming"] + wants["laptop-van-phong"] + 3, 150);
+  check(
+    "Gaming Gear đạt 150 sản phẩm (cộng 1 mẫu seed Chuột)",
+    wants["ban-phim"] + wants.chuot + wants["tai-nghe"] + wants.loa + wants.ghe + wants.ban + 1,
+    150,
+  );
   check("mỗi danh mục có ít nhất một bộ sưu tập và khoảng giá hợp lệ", CATEGORY_PLAN.every((plan) => plan.collections.length > 0 && plan.minPrice < plan.maxPrice), true);
   check("không danh mục nào trùng slug", new Set(CATEGORY_PLAN.map((plan) => plan.category)).size, CATEGORY_PLAN.length);
 }
