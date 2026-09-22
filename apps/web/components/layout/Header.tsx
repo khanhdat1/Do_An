@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Bot } from "lucide-react";
 import CartButton from "./CartButton";
+import CompareIconButton from "./CompareIconButton";
 import Logo from "./Logo";
 import Navbar from "./Navbar";
 import SearchBar from "./SearchBar";
@@ -45,6 +46,8 @@ export default function Header() {
               <span className="text-[10px] text-slate-400">Tư vấn 24/7</span>
             </span>
           </Link>
+
+          <CompareIconButton />
 
           <WishlistIconButton />
 
