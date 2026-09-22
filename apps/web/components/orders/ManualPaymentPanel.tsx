@@ -55,7 +55,7 @@ export default function ManualPaymentPanel({ order }: { order: Order }) {
         <h2 className="mb-3 text-base font-bold text-slate-900">Quét mã để chuyển khoản</h2>
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
           {/* eslint-disable-next-line @next/next/no-img-element -- ảnh QR dựng động từ vietqr.io, không phải ảnh tĩnh trong repo */}
-          <img src={qrUrl} alt={`Mã QR chuyển khoản ${bankName}`} width={220} height={220} className="shrink-0 rounded-xl border border-slate-200" />
+          <img src={qrUrl} alt={`Mã QR chuyển khoản ${bankName}`} width={320} height={320} className="mx-auto shrink-0 rounded-xl border border-slate-200 sm:mx-0" />
           <div className="w-full min-w-0 divide-y divide-slate-100">
             <CopyRow label="Ngân hàng" value={bankName} />
             <CopyRow label="Số tài khoản" value={accountNumber} />
@@ -81,9 +81,9 @@ export default function ManualPaymentPanel({ order }: { order: Order }) {
           <Image
             src="/images/payments/momo-qr.png"
             alt="Mã QR nhận tiền MoMo"
-            width={220}
-            height={236}
-            className="shrink-0 rounded-xl border border-slate-200"
+            width={320}
+            height={343}
+            className="mx-auto shrink-0 rounded-xl border border-slate-200 sm:mx-0"
           />
           <div className="w-full min-w-0 divide-y divide-slate-100">
             <CopyRow label="Số điện thoại MoMo" value={order.momo.phone} />

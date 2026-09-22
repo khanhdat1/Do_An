@@ -58,11 +58,16 @@ function canRetryPaymentOf(order: Pick<Order, "status" | "paymentMethod" | "paym
   );
 }
 
-/** Chỉ đơn BANK_TRANSFER/MOMO còn chờ thanh toán mới cần hiện lại hướng dẫn chuyển khoản */
+/**
+ * Chỉ đơn BANK_TRANSFER/MOMO còn thật sự chờ thanh toán mới cần hiện lại hướng dẫn chuyển khoản —
+ * `paymentStatus` một mình không đủ: đơn tự huỷ vẫn giữ nguyên `paymentStatus: PENDING` (chưa từng
+ * trả tiền thành công) nên phải loại thêm cả CANCELLED, kẻo khách xem đơn đã huỷ vẫn thấy "hãy chuyển
+ * khoản số tiền này".
+ */
 function manualPaymentInfoOf(
-  order: Pick<Order, "paymentMethod" | "paymentStatus" | "orderCode" | "totalAmount">,
+  order: Pick<Order, "status" | "paymentMethod" | "paymentStatus" | "orderCode" | "totalAmount">,
 ): Pick<OrderDto, "bankTransfer" | "momo"> {
-  if (order.paymentStatus !== "PENDING") return {};
+  if (order.paymentStatus !== "PENDING" || order.status === "CANCELLED") return {};
 
   if (order.paymentMethod === "BANK_TRANSFER" && isBankTransferConfigured(env.bankTransfer)) {
     return {
