@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import CompareBar from "@/components/product/CompareBar";
 import AppProviders from "@/components/providers/AppProviders";
 
 export const metadata: Metadata = {
@@ -47,6 +48,7 @@ export default function RootLayout({
           <Header />
           <main className="min-h-screen pb-6">{children}</main>
           <Footer />
+          <CompareBar />
         </AppProviders>
       </body>
     </html>
