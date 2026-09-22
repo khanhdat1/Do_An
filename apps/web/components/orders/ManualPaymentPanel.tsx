@@ -53,9 +53,15 @@ export default function ManualPaymentPanel({ order }: { order: Order }) {
     return (
       <section className="surface-card p-4 sm:p-5">
         <h2 className="mb-3 text-base font-bold text-slate-900">Quét mã để chuyển khoản</h2>
-        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+        <div className="flex flex-col items-center gap-4 md:flex-row md:items-start">
           {/* eslint-disable-next-line @next/next/no-img-element -- ảnh QR dựng động từ vietqr.io, không phải ảnh tĩnh trong repo */}
-          <img src={qrUrl} alt={`Mã QR chuyển khoản ${bankName}`} width={320} height={320} className="mx-auto shrink-0 rounded-xl border border-slate-200 sm:mx-0" />
+          <img
+            src={qrUrl}
+            alt={`Mã QR chuyển khoản ${bankName}`}
+            width={360}
+            height={360}
+            className="mx-auto h-auto w-64 shrink-0 rounded-xl border border-slate-200 md:mx-0 md:w-80"
+          />
           <div className="w-full min-w-0 divide-y divide-slate-100">
             <CopyRow label="Ngân hàng" value={bankName} />
             <CopyRow label="Số tài khoản" value={accountNumber} />
@@ -77,13 +83,13 @@ export default function ManualPaymentPanel({ order }: { order: Order }) {
     return (
       <section className="surface-card p-4 sm:p-5">
         <h2 className="mb-3 text-base font-bold text-slate-900">Quét mã để chuyển khoản qua MoMo</h2>
-        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+        <div className="flex flex-col items-center gap-4 md:flex-row md:items-start">
           <Image
             src="/images/payments/momo-qr.png"
             alt="Mã QR nhận tiền MoMo"
-            width={320}
-            height={343}
-            className="mx-auto shrink-0 rounded-xl border border-slate-200 sm:mx-0"
+            width={360}
+            height={386}
+            className="mx-auto h-auto w-64 shrink-0 rounded-xl border border-slate-200 md:mx-0 md:w-80"
           />
           <div className="w-full min-w-0 divide-y divide-slate-100">
             <CopyRow label="Số điện thoại MoMo" value={order.momo.phone} />
