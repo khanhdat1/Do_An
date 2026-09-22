@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE `Order` MODIFY `paymentMethod` ENUM('COD', 'VNPAY', 'BANK_TRANSFER', 'MOMO') NOT NULL DEFAULT 'COD';
+
+-- AlterTable
+ALTER TABLE `Payment` MODIFY `method` ENUM('COD', 'VNPAY', 'BANK_TRANSFER', 'MOMO') NOT NULL;

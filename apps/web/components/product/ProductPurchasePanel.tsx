@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle, ShoppingCart, Zap } from "lucide-react";
 import QuantityStepper from "@/components/ui/QuantityStepper";
+import WishlistButton from "@/components/product/WishlistButton";
 import { useCart } from "@/components/providers/CartProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { errorMessage } from "@/lib/api-client";
@@ -62,11 +63,12 @@ export default function ProductPurchasePanel({
 
   if (!inStock) {
     return (
-      <div className="mt-5">
+      <div className="mt-5 flex items-stretch gap-3">
+        <WishlistButton productId={productId} name={name} variant="panel" />
         <button
           type="button"
           disabled
-          className="flex h-12 w-full cursor-not-allowed items-center justify-center rounded-xl bg-slate-200 text-sm font-bold uppercase tracking-wide text-slate-500"
+          className="flex h-12 flex-1 cursor-not-allowed items-center justify-center rounded-xl bg-slate-200 text-sm font-bold uppercase tracking-wide text-slate-500"
         >
           Tạm hết hàng
         </button>
@@ -96,7 +98,10 @@ export default function ProductPurchasePanel({
         </p>
       ) : null}
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="mt-4 flex items-stretch gap-3">
+        <WishlistButton productId={productId} name={name} variant="panel" />
+
+        <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
         <button
           type="button"
           onClick={() => add("cart")}
@@ -124,6 +129,7 @@ export default function ProductPurchasePanel({
           )}
           Mua ngay
         </button>
+        </div>
       </div>
     </div>
   );

@@ -48,18 +48,19 @@ pczone/
 │       ├── app.ts              cấu hình middleware + gắn router
 │       ├── env.ts              đọc & kiểm tra biến môi trường
 │       ├── routes/             định nghĩa endpoint + kiểm tra tham số (zod)
-│       ├── services/           truy vấn Prisma, logic nghiệp vụ (sản phẩm, xác thực, giỏ hàng)
+│       ├── services/           truy vấn Prisma, logic nghiệp vụ (sản phẩm, xác thực, giỏ hàng, địa chỉ, đơn hàng, VNPay, chuyển khoản/MoMo thủ công, quản trị đơn hàng, yêu thích, mã giảm giá)
 │       ├── search/             bộ máy tìm kiếm: chuẩn hoá chữ, từ đồng nghĩa, lỗi gõ, mức giá, xếp hạng (có test: `npm test -w @pczone/api`)
 │       ├── mappers/            Prisma model → DTO cho frontend
 │       ├── middleware/         lỗi tập trung, nhận diện JWT, chống CSRF, giới hạn tần suất
-│       ├── utils/              cookie, trần số lượng giỏ hàng
+│       ├── utils/              cookie, trần số lượng giỏ hàng, phí vận chuyển, sinh mã đơn
 │       └── types/dto.ts        hợp đồng dữ liệu với frontend
 │
 ├── apps/web/               Next.js 16 + TypeScript + Tailwind 4
-│   ├── app/                    trang chủ, danh mục (/danh-muc, /danh-muc/[slug]), tìm kiếm (/tim-kiem), chi tiết sản phẩm, giỏ hàng, đăng nhập / đăng ký, tài khoản
-│   ├── components/             layout / home / category / search / product / cart / auth / providers / ui
+│   ├── app/                    trang chủ, danh mục (/danh-muc, /danh-muc/[slug]), tìm kiếm (/tim-kiem), chi tiết sản phẩm, giỏ hàng, yêu thích (/yeu-thich), khuyến mãi (/khuyen-mai), đặt hàng (/thanh-toan), đơn hàng (/don-hang/[code], /tai-khoan/don-hang, /tra-cuu-don-hang), quản trị (/quan-tri/don-hang), đăng nhập / đăng ký, tài khoản
+│   ├── components/             layout / home / category / search / product / cart / checkout / orders / vouchers / admin / auth / providers / ui
 │   ├── lib/category-query.ts   đọc / dựng bộ lọc trên URL của trang danh mục
 │   ├── lib/search-*.ts         câu tìm kiếm trên URL, gọi API gợi ý + lịch sử tìm kiếm ở trình duyệt, tô sáng từ khoá
+│   ├── lib/shipping.ts         xem trước phí vận chuyển ở giỏ hàng / bước đặt hàng (con số thật luôn tính lại ở API)
 │   ├── lib/api.ts              gọi API từ server (cache ISR, có fallback khi API chưa chạy)
 │   ├── lib/api-client.ts       gọi API từ trình duyệt (cookie, tự refresh token)
 │   ├── lib/data/               dữ liệu dự phòng
@@ -273,6 +274,26 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | PATCH | `/api/cart/items/:itemId` | Đặt số lượng `{ quantity }` |
 | DELETE | `/api/cart/items/:itemId` | Xoá một dòng khỏi giỏ |
 | DELETE | `/api/cart` | Làm trống giỏ |
+| GET | `/api/wishlist` | Sản phẩm yêu thích của tài khoản hiện tại, mới lưu trước (cần đăng nhập) |
+| GET | `/api/wishlist/ids` | Chỉ id sản phẩm đã lưu — để tô trạng thái nút trái tim mà không tải cả sản phẩm |
+| POST \| DELETE | `/api/wishlist/:productId` | Thêm / xoá một sản phẩm khỏi yêu thích |
+| GET | `/api/vouchers` | Mã giảm giá công khai đang áp dụng được (không cần đăng nhập) |
+| GET | `/api/vouchers/preview?code=&subtotal=` | Xem trước số tiền được giảm trước khi đặt hàng (cần đăng nhập, để kiểm tra lượt dùng của riêng người đó) |
+| GET | `/api/addresses` | Sổ địa chỉ giao hàng của tài khoản hiện tại, mặc định đứng đầu (cần đăng nhập) |
+| POST | `/api/addresses` | Thêm địa chỉ mới |
+| PATCH | `/api/addresses/:addressId` | Sửa một địa chỉ |
+| PATCH | `/api/addresses/:addressId/default` | Đặt làm địa chỉ mặc định |
+| DELETE | `/api/addresses/:addressId` | Xoá một địa chỉ |
+| POST | `/api/orders` | Tạo đơn từ giỏ hàng hiện tại: `{ addressId hoặc newAddress, paymentMethod: "COD" \| "VNPAY" \| "BANK_TRANSFER" \| "MOMO", customerNote?, voucherCode? }`. Trả `payUrl` nếu chọn VNPay |
+| GET | `/api/orders?page=&pageSize=` | Danh sách đơn của tài khoản hiện tại, mới nhất trước |
+| GET | `/api/orders/:orderCode` | Chi tiết một đơn (chỉ chủ đơn xem được). Đơn BANK_TRANSFER/MOMO còn chờ thanh toán có thêm `bankTransfer`/`momo` — đủ để vẽ mã QR và hướng dẫn chuyển khoản |
+| POST | `/api/orders/:orderCode/cancel` | Tự huỷ đơn — chỉ khi chưa thanh toán và chưa đóng gói |
+| POST | `/api/orders/:orderCode/pay` | Mở một lượt thử thanh toán VNPay mới cho đơn chưa trả tiền thành công |
+| GET | `/api/order-lookup?code=&phone=` | Tra cứu đơn hàng công khai (không cần đăng nhập), phải khớp cả mã đơn lẫn số điện thoại nhận hàng |
+| GET | `/api/payments/methods` | Phương thức thanh toán nào đang bật (`{ cod, vnpay, bankTransfer, momo }`, `false` nếu thiếu cấu hình) |
+| GET | `/api/payments/vnpay/return`, `/api/payments/vnpay/ipn` | VNPay gọi về sau khi thanh toán (mục 9 bên dưới) — không gọi trực tiếp từ frontend |
+| GET | `/api/admin/orders?paymentStatus=&paymentMethod=&page=` | Danh sách đơn cho nhân viên xác nhận thanh toán thủ công (role ADMIN/STAFF) |
+| POST | `/api/admin/orders/:orderCode/confirm-payment` | Đánh dấu đã nhận được tiền chuyển khoản/MoMo — không có cổng nào tự báo như VNPay (role ADMIN/STAFF) |
 
 Tham số của `/api/products`:
 
@@ -489,7 +510,101 @@ khoản Google / Facebook chỉ thuộc **một** User. Mã lỗi riêng của l
 (chưa đăng nhập, hoặc phiên đã đổi giữa chừng), `oauth_already_linked`, `oauth_provider_taken`.
 Chưa có nút *Hủy liên kết*.
 
-## 9. Tài khoản mẫu
+## 9. Đặt hàng và thanh toán — cách hoạt động
+
+### Sổ địa chỉ và đặt hàng
+
+Đặt hàng bắt buộc đăng nhập (không có giỏ vãng lai → đơn khách như giỏ hàng): trang `/thanh-toan` chuyển
+sang `/dang-nhap?next=/thanh-toan` nếu chưa đăng nhập. Bước đặt hàng chọn một địa chỉ đã lưu trong sổ địa
+chỉ (`/api/addresses`) hoặc nhập địa chỉ mới — địa chỉ mới luôn được lưu lại vào sổ để dùng cho lần sau,
+địa chỉ đầu tiên tự động thành mặc định. Tỉnh/huyện/xã là ô nhập tự do (không có danh sách hành chính cố
+định trong schema — xem `apps/crawler/csdl.md` mục 3.3).
+
+`POST /api/orders` chạy trong **một transaction** (đúng nguyên tắc ở `csdl.md` mục 9 "Tạo đơn: trừ kho +
+ghi InventoryTransaction + tạo Order + OrderItem"):
+
+1. Kiểm tra lại từng dòng giỏ hàng còn `ACTIVE` và đủ số lượng — giỏ có thể đã cũ so với lúc khách bấm.
+2. Tính tiền theo giá bán **hiện tại** (không phải giá lúc thêm vào giỏ), phí vận chuyển tính bằng
+   `calcShippingFee` (`apps/api/src/utils/shipping.ts`): miễn phí từ 500.000đ, dưới mức đó thu 30.000đ.
+3. Sinh `orderCode` dạng `PCZ20260922-0001` (tiền tố ngày + số thứ tự trong ngày).
+4. Với mỗi dòng: trừ `Product.inventoryQuantity` bằng một `updateMany` có điều kiện tồn kho ngay trong
+   `WHERE` (hai người mua nốt sản phẩm cuối không thể cùng thành công), ghi `InventoryTransaction`
+   (`type: EXPORT`), tạo `OrderItem` snapshot tên/ảnh/giá tại thời điểm mua.
+5. Ghi `OrderStatusHistory` (trạng thái đầu luôn `PENDING`), tạo `Payment` (COD hoặc VNPay), dọn giỏ hàng.
+
+Khách tự huỷ được đơn (`POST /api/orders/:orderCode/cancel`) khi còn `PENDING`/`CONFIRMED` **và** chưa
+thanh toán — hoàn kho bằng `InventoryTxType.ADJUST` (khác `RETURN`, dành cho khách trả hàng đã nhận).
+Đơn đã thanh toán (VNPay thành công) không tự huỷ được qua đây, tránh để lại tiền chưa được hoàn mà
+không ai theo dõi — cần trang quản trị (mục 11) để xử lý.
+
+### Thanh toán VNPay Sandbox
+
+Tuỳ chọn — thiếu `VNPAY_TMN_CODE` / `VNPAY_HASH_SECRET` thì trang đặt hàng ẩn phương thức VNPay (khoá
+với ghi chú "chưa khả dụng"), COD vẫn hoạt động bình thường, cùng nguyên tắc với đăng nhập Google /
+Facebook (mục 8). Đăng ký tài khoản thử nghiệm **miễn phí** tại <https://sandbox.vnpayment.vn> để lấy
+hai khoá này, điền vào `.env` rồi khởi động lại API.
+
+Bộ máy ký/xác minh nằm ở `apps/api/src/services/vnpay.service.ts`, **không tự đọc `env`** — nhận cấu
+hình qua tham số nên kiểm thử được bằng khoá giả (`npm test -w @pczone/api` chạy cả bộ này, không cần
+mạng hay khoá thật). Thuật toán đúng theo tài liệu chính thức VNPay: các tham số `vnp_*` được sắp xếp
+theo tên, mã hoá từng giá trị rồi ký HMAC-SHA512 bằng hash secret.
+
+```
+Đặt hàng, chọn VNPay
+  → POST /api/orders          Tạo đơn (trừ kho, PENDING), tạo Payment, dựng payUrl → trả về payUrl
+  → trình duyệt chuyển sang VNPay (window.location.assign, không phải điều hướng nội bộ)
+  → khách thanh toán trên trang VNPay
+  → GET /api/payments/vnpay/return    VNPay chuyển trình duyệt về đây — xác minh chữ ký, cập nhật
+        Payment + Order, rồi chuyển tiếp sang /don-hang/:code?pay=success|failed
+  → GET /api/payments/vnpay/ipn       VNPay GỌI THẲNG TỪ SERVER của họ, độc lập với return — đây mới
+        là nguồn sự thật (khách có thể đóng tab trước khi trình duyệt kịp quay về). Trả đúng JSON
+        {RspCode, Message} theo tài liệu VNPay, không phải trang HTML
+```
+
+`return` và `ipn` dùng chung một hàm áp dụng kết quả (`applyVnpayCallback` trong `order.service.ts`),
+idempotent theo `Payment.id` (`vnp_TxnRef`): gọi lại nhiều lần (VNPay có thể gọi IPN lặp) không xử lý hai
+lần. Thanh toán thành công thì `Order.status` tự chuyển `PENDING → CONFIRMED`; thất bại thì đơn giữ
+nguyên `PENDING` để khách thử lại (`POST /api/orders/:orderCode/pay` — mỗi lượt thử là một dòng `Payment`
+riêng, đúng lý do tách bảng này khỏi `Order` ở `csdl.md` mục 4.4).
+
+### Chuyển khoản ngân hàng / MoMo thủ công
+
+Tuỳ chọn — thiếu biến môi trường tương ứng thì phương thức bị ẩn ở trang đặt hàng, cùng nguyên tắc với
+VNPay/Google/Facebook. Khác VNPay: đây **không phải cổng thanh toán**, không có API/chữ ký/callback nào
+cả — chỉ hiện QR + thông tin để khách tự chuyển khoản, sau đó **nhân viên xác nhận tay**:
+
+- **Chuyển khoản ngân hàng** (`BANK_ID`, `BANK_ACCOUNT_NUMBER`, `BANK_ACCOUNT_NAME`, `BANK_NAME` trong
+  `.env`) — mã QR dựng bằng dịch vụ công khai [VietQR](https://vietqr.io) (`img.vietqr.io`, miễn phí,
+  không cần khoá), đã điền sẵn đúng số tiền và nội dung là mã đơn nên quét bằng app ngân hàng bất kỳ là
+  tự điền hết, không phải gõ tay.
+- **Ví MoMo** (`MOMO_PHONE`, `MOMO_DISPLAY_NAME`) — chỉ hiện số điện thoại + tên người nhận (không dựng
+  QR động: MoMo yêu cầu tài khoản merchant riêng mới có API tạo QR nhận tiền theo số tiền cụ thể, khác
+  QR "nhận tiền" cá nhân trong app tự hết hạn sau ~1 phút nên không dùng lại được).
+
+Đơn tạo xong ở trạng thái `paymentStatus: PENDING`, trang chi tiết đơn hiện lại đúng QR/hướng dẫn này
+cho tới khi được xác nhận (mã hoá trong `OrderDto.bankTransfer`/`momo`, chỉ có khi còn `PENDING`). Trang
+`/quan-tri/don-hang` (role `ADMIN`/`STAFF` — tài khoản mẫu ở mục 10) liệt kê các đơn chờ xác nhận, bấm
+"Xác nhận đã nhận tiền" chuyển `Payment.status → PAID` và `Order.status → CONFIRMED` (logic dùng chung
+với nhánh thành công của `applyVnpayCallback`, chỉ khác là do người bấm thay vì VNPay gọi về).
+
+### Mã giảm giá và sản phẩm yêu thích
+
+`Voucher` là mã **công khai** (không gắn `userId`) — ai cũng nhập được, chỉ giới hạn bởi `usageLimit`
+(tổng lượt), `perUserLimit` (lượt của mỗi người, đếm qua `VoucherRedemption`), `minOrderAmount` và
+khoảng ngày hiệu lực; `/khuyen-mai` vì vậy liệt kê "mã đang áp dụng được" chứ không phải sổ voucher
+riêng của một người. Mỗi đơn dùng tối đa **một** mã (`Order.voucherId` là một khoá đơn). Bước đặt hàng
+gọi `GET /api/vouchers/preview` để xem trước số tiền giảm, rồi `POST /api/orders` **kiểm tra lại từ
+đầu** trong transaction tạo đơn (cùng lý do "giỏ hàng có thể đã cũ" đang áp dụng cho tồn kho — mã có
+thể vừa hết lượt giữa lúc xem trước và lúc bấm đặt hàng) trước khi tăng `usageCount` và ghi
+`VoucherRedemption`. Huỷ đơn thì **hoàn lại đúng một lượt** (giảm `usageCount`, xoá dòng
+`VoucherRedemption`) — không làm vậy thì một đơn đặt rồi huỷ ngay sẽ làm mất một lượt dùng mã một cách
+vô lý.
+
+Sản phẩm yêu thích (`WishlistItem`) đơn giản hơn nhiều: chỉ `(userId, productId)`. `GET
+/api/wishlist/ids` tách riêng khỏi `GET /api/wishlist` (trả đủ thông tin sản phẩm) để nút trái tim trên
+mọi lưới sản phẩm biết ngay trạng thái ban đầu mà không phải tải lại object sản phẩm ở mọi trang.
+
+## 10. Tài khoản mẫu
 
 | Email | Mật khẩu | Quyền |
 | ----- | -------- | ----- |
@@ -497,7 +612,7 @@ Chưa có nút *Hủy liên kết*.
 
 Đổi mật khẩu ngay sau lần chạy đầu tiên.
 
-## 10. Việc còn lại
+## 11. Việc còn lại
 
 - [x] Trang danh sách sản phẩm theo danh mục (`/danh-muc/[slug]`, `/danh-muc`): lọc hãng / giá / còn hàng, sắp xếp, phân trang
 - [x] ~420 sản phẩm demo có ảnh thật, thông số và mô tả dài; nhóm Laptop và nhóm Gaming Gear (bàn phím, chuột, tai nghe, loa, ghế, bàn) đều 150 sản phẩm (xem "Dữ liệu demo" ở mục 4)
@@ -507,7 +622,14 @@ Chưa có nút *Hủy liên kết*.
 - [ ] Hủy liên kết tài khoản mạng xã hội (phải chặn hủy liên kết cuối cùng của tài khoản không có mật khẩu, kẻo mất đường đăng nhập)
 - [ ] Quên mật khẩu, xác minh email (cần gửi email; nút "Quên mật khẩu?" hiện mới chỉ báo tính năng đang phát triển)
 - [x] Giỏ hàng (khách vãng lai + tài khoản, gộp giỏ khi đăng nhập)
-- [ ] Đặt hàng: địa chỉ giao hàng, tạo đơn, trừ kho (`/thanh-toan` mới là trang giữ chỗ, đã bắt buộc đăng nhập)
-- [ ] Thanh toán VNPay Sandbox
+- [x] Đặt hàng (`/thanh-toan`): sổ địa chỉ, tạo đơn có trừ kho trong transaction, huỷ đơn tự hoàn kho, lịch sử đơn (`/tai-khoan/don-hang`, `/don-hang/[code]`), tra cứu công khai (`/tra-cuu-don-hang`)
+- [x] Thanh toán VNPay Sandbox (mã ký/xác minh đầy đủ, có test; cần tự đăng ký tài khoản sandbox để bật — mục 9)
+- [x] Sản phẩm yêu thích (`/yeu-thich`) và mã giảm giá (`/khuyen-mai`, áp dụng được lúc đặt hàng)
+- [ ] Đánh giá sản phẩm (đã có bảng `Review` trong schema, chưa có API/giao diện)
+- [ ] Điểm thưởng (PCPoints) và hạng thành viên — cần thêm bảng mới, "PCPoints VIP hoàn tiền 5%" hiện mới là chữ quảng cáo ở trang đăng nhập
+- [ ] Làm lại giao diện Tổng quan tài khoản / danh sách đơn hàng theo phong cách bảng điều khiển (thẻ số liệu, dòng thời gian ngang) — đã bàn hướng làm, chưa triển khai
+- [x] Chuyển khoản ngân hàng (QR VietQR tự điền số tiền/nội dung) và ví MoMo (số điện thoại) làm thủ công, không qua cổng — xác nhận tay ở `/quan-tri/don-hang` (mục 9)
+- [ ] Cổng thanh toán thật cho thẻ quốc tế / trả góp (MoMo Business API, OnePay...) — mỗi cổng cần tự đăng ký tài khoản sandbox riêng như VNPay; thẻ ATM/Visa/Master nội địa đã dùng được ngay qua VNPay (mục 9)
 - [ ] Service AI (Python/FastAPI): AI Search, AI Chat, AI Build PC
-- [ ] Trang quản trị: duyệt sản phẩm DRAFT, quản lý đơn hàng
+- [x] Trang quản trị xác nhận thanh toán thủ công (`/quan-tri/don-hang`, role ADMIN/STAFF)
+- [ ] Trang quản trị đầy đủ: duyệt sản phẩm DRAFT, cập nhật trạng thái giao hàng (đóng gói / đang giao / đã giao), đối soát thanh toán lệch

@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { LogOut, ShoppingCart, UserRound } from "lucide-react";
+import { Heart, LogOut, Package, ShieldCheck, ShoppingCart, UserRound } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useCart } from "@/components/providers/CartProvider";
 import { useToast } from "@/components/providers/ToastProvider";
+import { useWishlist } from "@/components/providers/WishlistProvider";
 import Avatar from "@/components/ui/Avatar";
 import { errorMessage } from "@/lib/api-client";
 
@@ -20,6 +21,7 @@ const BUTTON_CLASS =
 export default function UserMenu() {
   const { status, user, logout } = useAuth();
   const { cart } = useCart();
+  const { productIds } = useWishlist();
   const toast = useToast();
 
   const [open, setOpen] = useState(false);
@@ -103,6 +105,27 @@ export default function UserMenu() {
               Tài khoản của tôi
             </Link>
             <Link
+              href="/tai-khoan/don-hang"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2 font-medium transition hover:bg-slate-100"
+            >
+              <Package className="size-4 text-slate-400" />
+              Đơn hàng của tôi
+            </Link>
+            <Link
+              href="/yeu-thich"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2 font-medium transition hover:bg-slate-100"
+            >
+              <Heart className="size-4 text-slate-400" />
+              Sản phẩm yêu thích
+              {productIds.size > 0 ? (
+                <span className="ml-auto rounded-full bg-sale-600 px-1.5 text-[10px] font-bold text-white">
+                  {productIds.size}
+                </span>
+              ) : null}
+            </Link>
+            <Link
               href="/gio-hang"
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 rounded-lg px-3 py-2 font-medium transition hover:bg-slate-100"
@@ -116,6 +139,19 @@ export default function UserMenu() {
               ) : null}
             </Link>
           </div>
+
+          {user.role === "ADMIN" || user.role === "STAFF" ? (
+            <div className="border-t border-slate-100 p-1.5 text-sm">
+              <Link
+                href="/quan-tri/don-hang"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2 font-medium transition hover:bg-slate-100"
+              >
+                <ShieldCheck className="size-4 text-slate-400" />
+                Quản trị đơn hàng
+              </Link>
+            </div>
+          ) : null}
 
           <div className="border-t border-slate-100 p-1.5 text-sm">
             <button

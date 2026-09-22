@@ -274,3 +274,163 @@ export interface SearchSuggestDto {
   categories: { slug: string; name: string; count: number }[];
   brands: { slug: string; name: string; count: number }[];
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Sổ địa chỉ                                                                */
+/* -------------------------------------------------------------------------- */
+
+export interface AddressDto {
+  id: string;
+  recipientName: string;
+  phone: string;
+  /** Tỉnh/Thành phố */
+  province: string;
+  /** Quận/Huyện */
+  district: string;
+  /** Phường/Xã */
+  ward: string;
+  streetAddress: string;
+  note?: string;
+  isDefault: boolean;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Đặt hàng & thanh toán                                                     */
+/* -------------------------------------------------------------------------- */
+
+export type OrderStatusDto =
+  | "PENDING"
+  | "CONFIRMED"
+  | "PACKING"
+  | "SHIPPING"
+  | "DELIVERED"
+  | "CANCELLED"
+  | "RETURNED";
+
+export type PaymentMethodDto = "COD" | "VNPAY" | "BANK_TRANSFER" | "MOMO";
+export type PaymentStatusDto = "PENDING" | "PAID" | "FAILED" | "REFUNDED" | "CANCELLED";
+
+export interface OrderItemDto {
+  id: string;
+  /** Có khi sản phẩm còn tồn tại — dùng để dẫn link; sản phẩm đã bị xoá hẳn thì không có */
+  productSlug?: string;
+  name: string;
+  image?: string;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+}
+
+/** Một lần chuyển trạng thái — dựng dòng thời gian ở trang chi tiết đơn */
+export interface OrderStatusEventDto {
+  status: OrderStatusDto;
+  note?: string;
+  createdAt: string;
+}
+
+export interface OrderShippingAddressDto {
+  recipientName: string;
+  phone: string;
+  province: string;
+  district: string;
+  ward: string;
+  streetAddress: string;
+}
+
+/** `GET /api/orders/:code` và kết quả của `POST /api/orders` */
+export interface OrderDto {
+  orderCode: string;
+  status: OrderStatusDto;
+  subtotal: number;
+  discountAmount: number;
+  /** Mã đã dùng để có `discountAmount` — không có nghĩa là chưa áp mã nào */
+  voucherCode?: string;
+  shippingFee: number;
+  totalAmount: number;
+  paymentMethod: PaymentMethodDto;
+  paymentStatus: PaymentStatusDto;
+  /** Có khi paymentMethod = BANK_TRANSFER và đã cấu hình đủ — QR đã điền sẵn số tiền + mã đơn */
+  bankTransfer?: { qrUrl: string; bankName: string; accountNumber: string; accountName: string };
+  /** Có khi paymentMethod = MOMO và đã cấu hình đủ */
+  momo?: { phone: string; displayName: string };
+  /** true khi là đơn VNPay chưa thanh toán thành công — trang chi tiết hiện nút "Thanh toán lại" */
+  canRetryPayment: boolean;
+  /** true khi khách có thể tự huỷ (chưa thanh toán, chưa đóng gói) */
+  canCancel: boolean;
+  shippingAddress: OrderShippingAddressDto;
+  customerNote?: string;
+  items: OrderItemDto[];
+  /** Từ cũ tới mới */
+  statusHistory: OrderStatusEventDto[];
+  createdAt: string;
+}
+
+/** Dòng gọn cho danh sách đơn hàng của tài khoản */
+export interface OrderSummaryDto {
+  orderCode: string;
+  status: OrderStatusDto;
+  paymentMethod: PaymentMethodDto;
+  paymentStatus: PaymentStatusDto;
+  totalAmount: number;
+  itemCount: number;
+  /** Ảnh + tên vài sản phẩm đầu, đủ để vẽ thumbnail trong danh sách */
+  previewItems: { name: string; image?: string }[];
+  createdAt: string;
+}
+
+export interface CreateOrderResultDto {
+  order: OrderDto;
+  /** Có khi chọn VNPay và đã cấu hình: trình duyệt chuyển sang đây để thanh toán */
+  payUrl?: string;
+}
+
+/** `GET /api/payments/methods` — phương thức nào đang dùng được, để trang đặt hàng ẩn/khoá phương thức chưa cấu hình */
+export interface PaymentMethodsDto {
+  cod: boolean;
+  vnpay: boolean;
+  bankTransfer: boolean;
+  momo: boolean;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Quản trị đơn hàng (xác nhận thanh toán thủ công)                          */
+/* -------------------------------------------------------------------------- */
+
+/** Dòng gọn cho `GET /api/admin/orders` — thêm tên/SĐT người nhận so với `OrderSummaryDto` để nhân viên đối chiếu tiền vào */
+export interface AdminOrderSummaryDto {
+  orderCode: string;
+  status: OrderStatusDto;
+  paymentMethod: PaymentMethodDto;
+  paymentStatus: PaymentStatusDto;
+  totalAmount: number;
+  recipientName: string;
+  recipientPhone: string;
+  itemCount: number;
+  createdAt: string;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Mã giảm giá                                                               */
+/* -------------------------------------------------------------------------- */
+
+export type DiscountTypeDto = "PERCENT" | "FIXED";
+
+/** Mã công khai (không gắn với riêng ai) — `GET /api/vouchers` liệt kê các mã đang áp dụng được */
+export interface VoucherDto {
+  code: string;
+  name: string;
+  description?: string;
+  discountType: DiscountTypeDto;
+  /** % nếu PERCENT (vd 10 nghĩa là 10%), VNĐ nếu FIXED */
+  discountValue: number;
+  /** Trần số tiền giảm — chỉ có ý nghĩa khi discountType = PERCENT */
+  maxDiscount?: number;
+  minOrderAmount?: number;
+  endsAt: string;
+}
+
+/** `GET /api/vouchers/preview?code=&subtotal=` — xem trước số tiền được giảm trước khi đặt hàng */
+export interface VoucherPreviewResultDto {
+  voucher: VoucherDto;
+  discountAmount: number;
+}

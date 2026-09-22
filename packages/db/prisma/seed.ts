@@ -13,6 +13,7 @@
  */
 import {
   ComponentType,
+  DiscountType,
   PrismaClient,
   ProductStatus,
   StockStatus,
@@ -758,9 +759,87 @@ async function seedAdmin() {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Mã giảm giá                                                               */
+/* -------------------------------------------------------------------------- */
+
+interface VoucherSeed {
+  code: string;
+  name: string;
+  description: string;
+  discountType: DiscountType;
+  discountValue: number;
+  maxDiscount?: number;
+  minOrderAmount?: number;
+}
+
+// Chạy lại được nhiều lần: startsAt/endsAt tính từ lúc chạy seed (chứ không hardcode ngày) nên mã
+// không bao giờ tự hết hạn giữa chừng lúc làm đồ án.
+const voucherSeeds: VoucherSeed[] = [
+  {
+    code: "WELCOME10",
+    name: "Giảm 10% cho đơn hàng",
+    description: "Áp dụng cho mọi đơn hàng, giảm tối đa 300.000đ",
+    discountType: DiscountType.PERCENT,
+    discountValue: 10,
+    maxDiscount: 300_000,
+  },
+  {
+    code: "FREESHIP",
+    name: "Miễn phí vận chuyển",
+    description: "Giảm thẳng 30.000đ phí vận chuyển cho đơn từ 200.000đ",
+    discountType: DiscountType.FIXED,
+    discountValue: 30_000,
+    minOrderAmount: 200_000,
+  },
+  {
+    code: "SALE500K",
+    name: "Giảm 500.000đ cho đơn laptop/PC",
+    description: "Áp dụng cho đơn hàng từ 15.000.000đ — hợp cho laptop, PC nguyên bộ",
+    discountType: DiscountType.FIXED,
+    discountValue: 500_000,
+    minOrderAmount: 15_000_000,
+  },
+];
+
+async function seedVouchers() {
+  const startsAt = new Date(Date.now() - 24 * 60 * 60 * 1000); // hôm qua — có hiệu lực ngay
+  const endsAt = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000); // còn hạn dùng 180 ngày kể từ lúc seed
+
+  for (const item of voucherSeeds) {
+    await prisma.voucher.upsert({
+      where: { code: item.code },
+      update: {}, // đã tồn tại thì giữ nguyên (không ghi đè usageCount đang tích luỹ thật)
+      create: {
+        code: item.code,
+        name: item.name,
+        description: item.description,
+        discountType: item.discountType,
+        discountValue: item.discountValue,
+        maxDiscount: item.maxDiscount,
+        minOrderAmount: item.minOrderAmount,
+        startsAt,
+        endsAt,
+      },
+    });
+  }
+
+  console.log(`✓ Mã giảm giá: ${await prisma.voucher.count()} bản ghi`);
+}
+
+/* -------------------------------------------------------------------------- */
 
 async function main() {
   console.log("Bắt đầu seed dữ liệu PCZone...\n");
+
+  // `--vouchers`: chỉ thêm mã giảm giá vào DB đang chạy, không đụng gì tới sản phẩm — seedProducts()
+  // ghi đè cả inventoryQuantity/soldCount về đúng số seed tĩnh, không an toàn để chạy lại một mình trên
+  // DB đã có đơn hàng thật.
+  if (process.argv.includes("--vouchers")) {
+    await seedVouchers();
+    console.log("\nXong (chỉ mã giảm giá).");
+    return;
+  }
+
   await seedCategories();
 
   // `--categories`: chỉ cập nhật cây danh mục (thêm danh mục mới vào DB đang chạy mà không đụng tới
@@ -773,6 +852,7 @@ async function main() {
   await seedBrands();
   await seedProducts();
   await seedAdmin();
+  await seedVouchers();
   console.log("\nXong. Chạy `npm run db:studio` để xem dữ liệu.");
 }
 

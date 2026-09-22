@@ -286,3 +286,168 @@ export interface Cart {
   /** true khi còn dòng có `issue` — phải xử lý xong mới đặt hàng được */
   hasBlockingIssues: boolean;
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Sổ địa chỉ                                                                */
+/* -------------------------------------------------------------------------- */
+
+export interface Address {
+  id: string;
+  recipientName: string;
+  phone: string;
+  /** Tỉnh/Thành phố */
+  province: string;
+  /** Quận/Huyện */
+  district: string;
+  /** Phường/Xã */
+  ward: string;
+  streetAddress: string;
+  note?: string;
+  isDefault: boolean;
+}
+
+/** Các trường nhập một địa chỉ mới — dùng cho cả form "Thêm địa chỉ" trong sổ địa chỉ lẫn lúc đặt hàng */
+export interface AddressInput {
+  recipientName: string;
+  phone: string;
+  province: string;
+  district: string;
+  ward: string;
+  streetAddress: string;
+  note?: string;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Đặt hàng & thanh toán                                                     */
+/* -------------------------------------------------------------------------- */
+
+export type OrderStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "PACKING"
+  | "SHIPPING"
+  | "DELIVERED"
+  | "CANCELLED"
+  | "RETURNED";
+
+export type PaymentMethod = "COD" | "VNPAY" | "BANK_TRANSFER" | "MOMO";
+export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "REFUNDED" | "CANCELLED";
+
+export interface OrderItem {
+  id: string;
+  /** Có khi sản phẩm còn tồn tại — dùng để dẫn link; sản phẩm đã bị xoá hẳn thì không có */
+  productSlug?: string;
+  name: string;
+  image?: string;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+}
+
+export interface OrderStatusEvent {
+  status: OrderStatus;
+  note?: string;
+  createdAt: string;
+}
+
+export interface OrderShippingAddress {
+  recipientName: string;
+  phone: string;
+  province: string;
+  district: string;
+  ward: string;
+  streetAddress: string;
+}
+
+/** `GET /api/orders/:code`, `GET /api/order-lookup` và kết quả của `POST /api/orders` */
+export interface Order {
+  orderCode: string;
+  status: OrderStatus;
+  subtotal: number;
+  discountAmount: number;
+  /** Mã đã dùng để có `discountAmount` — không có nghĩa là chưa áp mã nào */
+  voucherCode?: string;
+  shippingFee: number;
+  totalAmount: number;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  /** Có khi paymentMethod = BANK_TRANSFER và đã cấu hình đủ — QR đã điền sẵn số tiền + mã đơn */
+  bankTransfer?: { qrUrl: string; bankName: string; accountNumber: string; accountName: string };
+  /** Có khi paymentMethod = MOMO và đã cấu hình đủ */
+  momo?: { phone: string; displayName: string };
+  /** true khi là đơn VNPay chưa thanh toán thành công — trang chi tiết hiện nút "Thanh toán lại" */
+  canRetryPayment: boolean;
+  /** true khi khách có thể tự huỷ (chưa thanh toán, chưa đóng gói) */
+  canCancel: boolean;
+  shippingAddress: OrderShippingAddress;
+  customerNote?: string;
+  items: OrderItem[];
+  /** Từ cũ tới mới */
+  statusHistory: OrderStatusEvent[];
+  createdAt: string;
+}
+
+/** Dòng gọn cho danh sách đơn hàng của tài khoản */
+export interface OrderSummary {
+  orderCode: string;
+  status: OrderStatus;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  totalAmount: number;
+  itemCount: number;
+  previewItems: { name: string; image?: string }[];
+  createdAt: string;
+}
+
+export interface CreateOrderResult {
+  order: Order;
+  /** Có khi chọn VNPay và đã cấu hình: trình duyệt chuyển sang đây để thanh toán */
+  payUrl?: string;
+}
+
+/** `GET /api/payments/methods` — phương thức nào dùng được, để ẩn/khoá phương thức chưa cấu hình */
+export interface PaymentMethods {
+  cod: boolean;
+  vnpay: boolean;
+  bankTransfer: boolean;
+  momo: boolean;
+}
+
+/** Dòng gọn cho `GET /api/admin/orders` — trang quản trị xác nhận thanh toán thủ công */
+export interface AdminOrderSummary {
+  orderCode: string;
+  status: OrderStatus;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  totalAmount: number;
+  recipientName: string;
+  recipientPhone: string;
+  itemCount: number;
+  createdAt: string;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Mã giảm giá                                                               */
+/* -------------------------------------------------------------------------- */
+
+export type DiscountType = "PERCENT" | "FIXED";
+
+/** Mã công khai — `GET /api/vouchers` liệt kê các mã đang áp dụng được, không phải sổ voucher riêng của ai */
+export interface Voucher {
+  code: string;
+  name: string;
+  description?: string;
+  discountType: DiscountType;
+  /** % nếu PERCENT (vd 10 nghĩa là 10%), VNĐ nếu FIXED */
+  discountValue: number;
+  /** Trần số tiền giảm — chỉ có ý nghĩa khi discountType = PERCENT */
+  maxDiscount?: number;
+  minOrderAmount?: number;
+  endsAt: string;
+}
+
+/** `GET /api/vouchers/preview?code=&subtotal=` */
+export interface VoucherPreviewResult {
+  voucher: Voucher;
+  discountAmount: number;
+}

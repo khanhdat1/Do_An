@@ -99,4 +99,36 @@ export const env = {
     /** Chỉ dùng khi kiểm thử: trỏ mọi lời gọi OAuth vào một máy chủ giả thay vì Google / Facebook thật */
     mockUrl: optional("OAUTH_MOCK_URL"),
   },
+
+  /**
+   * Thanh toán VNPay Sandbox. Thiếu hai khoá thì phương thức VNPay báo "chưa cấu hình" ở
+   * trang đặt hàng, COD vẫn hoạt động bình thường — cùng nguyên tắc với Google / Facebook.
+   * Đăng ký tài khoản thử nghiệm miễn phí tại https://sandbox.vnpayment.vn để lấy
+   * vnp_TmnCode và vnp_HashSecret của riêng bạn (README mục 9).
+   */
+  vnpay: {
+    tmnCode: optional("VNPAY_TMN_CODE"),
+    hashSecret: optional("VNPAY_HASH_SECRET"),
+    payUrl: optional("VNPAY_PAY_URL") ?? "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html",
+    /** VNPay chuyển trình duyệt về đây sau khi thanh toán; API xác minh chữ ký rồi mới đưa tiếp sang web */
+    returnUrl: optional("VNPAY_RETURN_URL") ?? `${stripTrailingSlash(optional("API_PUBLIC_URL") ?? `http://localhost:${port}`)}/api/payments/vnpay/return`,
+  },
+
+  /**
+   * Chuyển khoản ngân hàng thủ công: không qua cổng nào, chỉ hiện mã QR VietQR (miễn phí, không cần khoá)
+   * đã điền sẵn đúng số tiền + mã đơn, khách tự chuyển rồi NHÂN VIÊN xác nhận tay ở trang quản trị —
+   * xem `isPaymentMethodConfigured` (order.service.ts) và route `/api/admin/orders`.
+   */
+  bankTransfer: {
+    bankId: optional("BANK_ID"), // BIN hoặc mã ngân hàng theo VietQR, vd "970436" (Vietcombank)
+    accountNumber: optional("BANK_ACCOUNT_NUMBER"),
+    accountName: optional("BANK_ACCOUNT_NAME"),
+    bankName: optional("BANK_NAME"), // tên hiển thị cho khách, vd "Vietcombank"
+  },
+
+  /** Chuyển khoản thủ công qua ví MoMo (số điện thoại) — cùng nguyên tắc với bankTransfer ở trên */
+  momo: {
+    phone: optional("MOMO_PHONE"),
+    displayName: optional("MOMO_DISPLAY_NAME"),
+  },
 };

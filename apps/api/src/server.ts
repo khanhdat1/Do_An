@@ -3,6 +3,7 @@ import { createApp } from "./app.js";
 import { env } from "./env.js";
 import { warmSearchIndex } from "./search/index-store.js";
 import { getProvider, isConfigured, redirectUri } from "./services/oauth.providers.js";
+import { isVnpayConfigured } from "./services/vnpay.service.js";
 
 const app = createApp();
 
@@ -22,6 +23,12 @@ const server = app.listen(env.port, () => {
         : `  ${label}chưa cấu hình (xem README mục 8)`,
     );
   }
+
+  console.log(
+    isVnpayConfigured(env.vnpay)
+      ? `  Thanh toán VNPay:     đã bật — return URL cần khai: ${env.vnpay.returnUrl}`
+      : `  Thanh toán VNPay:     chưa cấu hình (xem README mục 9) — COD vẫn hoạt động bình thường`,
+  );
   console.log("");
 
   // Dựng sẵn chỉ mục tìm kiếm để lượt tìm đầu tiên không phải chờ; DB chưa lên thì lượt tìm đầu sẽ tự dựng

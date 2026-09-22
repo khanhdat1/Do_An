@@ -14,7 +14,8 @@ import { MAX_QUANTITY_PER_LINE } from "../utils/limits.js";
  * khác, hoặc so khớp model chưa chắc chắn — xem ProductImage trong schema.prisma),
  * ảnh chính đứng đầu rồi tới thứ tự `position`.
  */
-const publicImages = {
+/** Cũng dùng ở order.service.ts để chụp ảnh sản phẩm lúc đặt hàng — cùng một luật hiển thị ảnh */
+export const publicImages = {
   where: { needsReview: false },
   orderBy: [{ isPrimary: "desc" }, { position: "asc" }],
 } satisfies Prisma.Product$imagesArgs;

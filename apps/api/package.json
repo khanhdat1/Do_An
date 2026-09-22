@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx src/search/search.test.ts"
+    "test": "tsx src/search/search.test.ts && tsx src/services/vnpay.test.ts && tsx src/services/voucher.test.ts && tsx src/services/manual-payment.test.ts"
   },
   "dependencies": {
     "@pczone/db": "*",
