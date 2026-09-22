@@ -88,7 +88,7 @@ export default function ManualPaymentPanel({ order }: { order: Order }) {
             src="/images/payments/momo-qr.png"
             alt="Mã QR nhận tiền MoMo"
             width={360}
-            height={386}
+            height={382}
             className="mx-auto h-auto w-64 shrink-0 rounded-xl border border-slate-200 md:mx-0 md:w-80"
           />
           <div className="w-full min-w-0 divide-y divide-slate-100">
