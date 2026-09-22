@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Check, Copy, TriangleAlert } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { formatPrice } from "@/lib/format";
@@ -75,17 +76,27 @@ export default function ManualPaymentPanel({ order }: { order: Order }) {
   if (order.paymentMethod === "MOMO" && order.momo) {
     return (
       <section className="surface-card p-4 sm:p-5">
-        <h2 className="mb-3 text-base font-bold text-slate-900">Chuyển khoản qua MoMo</h2>
-        <div className="divide-y divide-slate-100">
-          <CopyRow label="Số điện thoại MoMo" value={order.momo.phone} />
-          <CopyRow label="Tên người nhận" value={order.momo.displayName} />
-          <CopyRow label="Số tiền" value={formatPrice(order.totalAmount)} />
-          <CopyRow label="Lời nhắn" value={order.orderCode} />
+        <h2 className="mb-3 text-base font-bold text-slate-900">Quét mã để chuyển khoản qua MoMo</h2>
+        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+          <Image
+            src="/images/payments/momo-qr.png"
+            alt="Mã QR nhận tiền MoMo"
+            width={220}
+            height={236}
+            className="shrink-0 rounded-xl border border-slate-200"
+          />
+          <div className="w-full min-w-0 divide-y divide-slate-100">
+            <CopyRow label="Số điện thoại MoMo" value={order.momo.phone} />
+            <CopyRow label="Tên người nhận" value={order.momo.displayName} />
+            <CopyRow label="Số tiền" value={formatPrice(order.totalAmount)} />
+            <CopyRow label="Lời nhắn" value={order.orderCode} />
+          </div>
         </div>
         <p className="mt-4 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-700">
           <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
-          Mở app MoMo, chuyển đúng số tiền tới số điện thoại trên và ghi mã đơn <strong>{order.orderCode}</strong> vào lời nhắn
-          để cửa hàng đối chiếu. Đơn sẽ được xác nhận sau khi nhận được tiền, có thể mất một thời gian do xác nhận thủ công.
+          Mã QR này không tự điền số tiền như VietQR — quét xong nhớ nhập đúng số tiền và ghi mã đơn{" "}
+          <strong>{order.orderCode}</strong> vào lời nhắn để cửa hàng đối chiếu. Đơn sẽ được xác nhận sau khi nhận được tiền,
+          có thể mất một thời gian do xác nhận thủ công.
         </p>
       </section>
     );
