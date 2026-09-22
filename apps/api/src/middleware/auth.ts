@@ -1,7 +1,8 @@
+import type { UserRole } from "@pczone/db";
 import type { Request, RequestHandler } from "express";
 import { verifyAccessToken, type AccessTokenClaims } from "../services/token.service.js";
 import { ACCESS_COOKIE, readCookie } from "../utils/cookies.js";
-import { UnauthorizedError } from "./errors.js";
+import { ForbiddenError, UnauthorizedError } from "./errors.js";
 
 /** Trình duyệt gửi qua cookie; công cụ như curl / Postman có thể gửi header Bearer */
 function readAccessToken(req: Request): string | undefined {
@@ -32,6 +33,28 @@ export const authenticate: RequestHandler = (req, _res, next) => {
     next(new UnauthorizedError("Phiên đăng nhập đã hết hạn"));
   }
 };
+
+/**
+ * Chặn route chỉ dành cho người đã đăng nhập. Đặt SAU `authenticate` trong chuỗi middleware —
+ * bản thân nó không đọc token, chỉ kiểm tra `req.auth` đã có do `authenticate` gắn vào chưa.
+ * Dùng cho địa chỉ, đơn hàng: mọi thứ phải gắn với một tài khoản, không có phiên bản khách vãng lai.
+ */
+export const requireAuth: RequestHandler = (req, _res, next) => {
+  if (!req.auth) return next(new UnauthorizedError("Bạn cần đăng nhập để thực hiện thao tác này"));
+  next();
+};
+
+/**
+ * Chặn route chỉ dành cho nhân viên/quản trị. Đặt SAU `authenticate` + `requireAuth`.
+ * Dùng cho `/api/admin/*` — trang quản trị xác nhận thanh toán thủ công (MoMo, chuyển khoản).
+ */
+export function requireRole(...roles: UserRole[]): RequestHandler {
+  return (req, _res, next) => {
+    if (!req.auth) return next(new UnauthorizedError("Bạn cần đăng nhập để thực hiện thao tác này"));
+    if (!roles.includes(req.auth.role)) return next(new ForbiddenError("Bạn không có quyền truy cập chức năng này"));
+    next();
+  };
+}
 
 /**
  * Đọc phiên hiện tại mà KHÔNG bao giờ ném lỗi: thiếu, sai hay hết hạn đều trả `null`.

@@ -1,4 +1,4 @@
-import type { Category, CategoryDetail, Paginated, Product, ProductDetail, SearchResult } from "@/types";
+import type { Category, CategoryDetail, Paginated, Product, ProductDetail, SearchResult, Voucher } from "@/types";
 import type { SearchQuery } from "@/lib/search-query";
 import {
   bestSellerProducts,
@@ -6,6 +6,7 @@ import {
   flashSaleProducts,
 } from "@/lib/data/products";
 import { featuredCategories } from "@/lib/data/categories";
+import { activeVouchers } from "@/lib/data/vouchers";
 
 /**
  * Lớp gọi Express API.
@@ -281,5 +282,15 @@ export async function getCategories(): Promise<Category[]> {
   const data = await apiGet<{ items: Category[] }>("/api/categories", {
     items: featuredCategories,
   });
+  return data.items;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Mã giảm giá                                                               */
+/* -------------------------------------------------------------------------- */
+
+/** Mã công khai đang áp dụng được — trang `/khuyen-mai` */
+export async function getActiveVouchers(): Promise<Voucher[]> {
+  const data = await apiGet<{ items: Voucher[] }>("/api/vouchers", { items: activeVouchers });
   return data.items;
 }

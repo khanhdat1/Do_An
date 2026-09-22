@@ -5,9 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CircleCheck,
+  Heart,
   LoaderCircle,
   LogOut,
   Mail,
+  Package,
   Phone,
   Shield,
   ShoppingCart,
@@ -15,6 +17,7 @@ import {
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useCart } from "@/components/providers/CartProvider";
 import { useToast } from "@/components/providers/ToastProvider";
+import { useWishlist } from "@/components/providers/WishlistProvider";
 import Avatar from "@/components/ui/Avatar";
 import { apiFetch, errorMessage, renewSession } from "@/lib/api-client";
 import type { LinkNotice } from "@/lib/auth-errors";
@@ -45,6 +48,7 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
   const user = useRequireAuth("/tai-khoan");
   const { logout } = useAuth();
   const { cart } = useCart();
+  const wishlist = useWishlist();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [linked, setLinked] = useState<LinkedState>(null);
@@ -235,6 +239,44 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
             Không tải được danh sách liên kết. Vui lòng tải lại trang.
           </p>
         ) : null}
+      </section>
+
+      <section className="surface-card flex flex-wrap items-center justify-between gap-3 p-5 sm:p-6">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-xl bg-slate-100">
+            <Package className="size-5 text-slate-500" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-slate-800">Đơn hàng của bạn</p>
+            <p className="text-xs text-slate-500">Xem lại các đơn đã đặt và tình trạng giao hàng</p>
+          </div>
+        </div>
+        <Link
+          href="/tai-khoan/don-hang"
+          className="rounded-lg bg-brand-500 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition hover:bg-brand-600"
+        >
+          Xem đơn hàng
+        </Link>
+      </section>
+
+      <section className="surface-card flex flex-wrap items-center justify-between gap-3 p-5 sm:p-6">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-xl bg-slate-100">
+            <Heart className="size-5 text-slate-500" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-slate-800">Sản phẩm yêu thích</p>
+            <p className="text-xs text-slate-500">
+              {wishlist.productIds.size > 0 ? `${wishlist.productIds.size} sản phẩm đã lưu` : "Chưa có sản phẩm nào"}
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/yeu-thich"
+          className="rounded-lg bg-brand-500 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition hover:bg-brand-600"
+        >
+          Xem yêu thích
+        </Link>
       </section>
 
       <section className="surface-card flex flex-wrap items-center justify-between gap-3 p-5 sm:p-6">

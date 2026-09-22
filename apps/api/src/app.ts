@@ -6,12 +6,19 @@ import morgan from "morgan";
 import { env } from "./env.js";
 import { errorHandler, notFoundHandler } from "./middleware/errors.js";
 import { originGuard } from "./middleware/security.js";
+import { addressesRouter } from "./routes/addresses.routes.js";
+import { adminOrdersRouter } from "./routes/admin-orders.routes.js";
 import { authRouter } from "./routes/auth.routes.js";
 import { cartRouter } from "./routes/cart.routes.js";
 import { categoriesRouter } from "./routes/categories.routes.js";
 import { oauthRouter } from "./routes/oauth.routes.js";
+import { orderLookupRouter } from "./routes/order-lookup.routes.js";
+import { ordersRouter } from "./routes/orders.routes.js";
+import { paymentsRouter } from "./routes/payments.routes.js";
 import { productsRouter } from "./routes/products.routes.js";
 import { searchRouter } from "./routes/search.routes.js";
+import { vouchersRouter } from "./routes/vouchers.routes.js";
+import { wishlistRouter } from "./routes/wishlist.routes.js";
 
 export function createApp() {
   const app = express();
@@ -36,10 +43,17 @@ export function createApp() {
   app.use("/api/products", productsRouter);
   app.use("/api/categories", categoriesRouter);
   app.use("/api/search", searchRouter);
+  app.use("/api/vouchers", vouchersRouter);
   app.use("/api/auth", authRouter);
   // Sau authRouter để /api/auth/me, /login... khớp trước; :provider chỉ nhận google | facebook
   app.use("/api/auth", oauthRouter);
   app.use("/api/cart", cartRouter);
+  app.use("/api/addresses", addressesRouter);
+  app.use("/api/wishlist", wishlistRouter);
+  app.use("/api/orders", ordersRouter);
+  app.use("/api/order-lookup", orderLookupRouter);
+  app.use("/api/payments", paymentsRouter);
+  app.use("/api/admin/orders", adminOrdersRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

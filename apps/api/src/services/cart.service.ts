@@ -9,6 +9,7 @@ import {
 import { ConflictError, NotFoundError, UnauthorizedError } from "../middleware/errors.js";
 import type { CartDto } from "../types/dto.js";
 import { MAX_CART_LINES, MAX_QUANTITY_PER_LINE } from "../utils/limits.js";
+import { isUniqueViolation } from "../utils/prisma-errors.js";
 
 /**
  * Chủ của giỏ hàng: người đã đăng nhập (theo userId) hoặc khách vãng lai
@@ -32,10 +33,6 @@ export function isValidGuestSessionId(value: string): boolean {
 
 function ownerWhere(owner: CartOwner): Prisma.CartWhereUniqueInput {
   return "userId" in owner ? { userId: owner.userId } : { sessionId: owner.sessionId };
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
 
 async function findOrCreateCart(owner: CartOwner) {

@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { Bot, Heart } from "lucide-react";
+import { Bot } from "lucide-react";
 import CartButton from "./CartButton";
-import IconButton from "./IconButton";
 import Logo from "./Logo";
 import Navbar from "./Navbar";
 import SearchBar from "./SearchBar";
 import TopBar from "./TopBar";
 import UserMenu from "./UserMenu";
+import WishlistIconButton from "./WishlistIconButton";
 
 /**
  * Header tổng của site, gồm 3 tầng như bản thiết kế:
@@ -46,14 +46,7 @@ export default function Header() {
             </span>
           </Link>
 
-          <IconButton
-            href="/yeu-thich"
-            label="Sản phẩm yêu thích"
-            count={3}
-            className="hidden sm:grid"
-          >
-            <Heart className="size-5" />
-          </IconButton>
+          <WishlistIconButton />
 
           <CartButton />
 

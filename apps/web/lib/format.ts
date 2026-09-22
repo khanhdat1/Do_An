@@ -14,6 +14,17 @@ export function discountPercent(price: number, oldPrice?: number): number {
   return Math.floor(((oldPrice - price) / oldPrice) * 100);
 }
 
+/** "Giảm 10%, tối đa 300.000đ" / "Giảm 10%" / "Giảm 500.000đ" — dòng tóm tắt mức giảm của một mã */
+export function formatVoucherDiscount(voucher: {
+  discountType: "PERCENT" | "FIXED";
+  discountValue: number;
+  maxDiscount?: number;
+}): string {
+  if (voucher.discountType === "FIXED") return `Giảm ${formatPrice(voucher.discountValue)}`;
+  const cap = voucher.maxDiscount ? `, tối đa ${formatPrice(voucher.maxDiscount)}` : "";
+  return `Giảm ${voucher.discountValue}%${cap}`;
+}
+
 /** 1842 -> "1.842" */
 export function formatNumber(value: number): string {
   return value.toLocaleString("vi-VN");

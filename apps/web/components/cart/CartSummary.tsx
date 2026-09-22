@@ -5,6 +5,7 @@ import { ArrowRight, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { formatPrice } from "@/lib/format";
 import { authHref } from "@/lib/navigation";
+import { calcShippingFee, FREE_SHIPPING_THRESHOLD } from "@/lib/shipping";
 import type { Cart, CartItem } from "@/types";
 
 /** Trang đặt hàng — cửa ngõ sang bước thanh toán */
@@ -32,6 +33,7 @@ export default function CartSummary({ cart }: { cart: Cart }) {
   const billable = cart.items.filter(isBillable);
   const billableCount = billable.reduce((sum, item) => sum + item.quantity, 0);
   const savings = calcSavings(billable);
+  const shippingFee = calcShippingFee(cart.subtotal);
 
   return (
     <aside className="surface-card p-4 sm:p-5">
@@ -52,13 +54,18 @@ export default function CartSummary({ cart }: { cart: Cart }) {
 
         <div className="flex items-center justify-between gap-3">
           <dt className="text-slate-500">Phí vận chuyển</dt>
-          <dd className="text-xs text-slate-500">Tính ở bước đặt hàng</dd>
+          <dd className="font-semibold text-slate-800">
+            {shippingFee === 0 ? <span className="text-emerald-600">Miễn phí</span> : formatPrice(shippingFee)}
+          </dd>
         </div>
+        {shippingFee > 0 ? (
+          <p className="text-right text-xs text-slate-400">Miễn phí vận chuyển cho đơn từ {formatPrice(FREE_SHIPPING_THRESHOLD)}</p>
+        ) : null}
       </dl>
 
       <div className="mt-4 flex items-end justify-between gap-3 border-t border-slate-100 pt-4">
         <span className="text-sm font-semibold text-slate-700">Tổng cộng</span>
-        <span className="font-display text-2xl font-bold text-sale-600">{formatPrice(cart.subtotal)}</span>
+        <span className="font-display text-2xl font-bold text-sale-600">{formatPrice(cart.subtotal + shippingFee)}</span>
       </div>
 
       <div className="mt-5">

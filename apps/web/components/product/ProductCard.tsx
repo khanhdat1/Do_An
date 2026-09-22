@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Gift, Star, Trophy } from "lucide-react";
 import BuyNowButton from "@/components/cart/BuyNowButton";
 import Highlight from "@/components/search/Highlight";
+import WishlistButton from "@/components/product/WishlistButton";
 import ProductThumb from "./ProductThumb";
 import type { Product, Tone } from "@/types";
 import { discountPercent, formatPrice } from "@/lib/format";
@@ -75,6 +76,8 @@ export default function ProductCard({
           Top {rank}
         </span>
       ) : null}
+
+      <WishlistButton productId={product.id} name={product.name} />
 
       <div className="p-2.5 pb-0">
         <Link href={`/san-pham/${product.slug}`} className="block">

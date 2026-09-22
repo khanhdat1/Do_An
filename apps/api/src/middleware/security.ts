@@ -92,3 +92,54 @@ export const searchLimiter = limiter({
   limit: 120,
   message: "Bạn tìm kiếm quá nhanh. Vui lòng thử lại sau ít giây.",
 });
+
+/** Thêm / xoá sản phẩm yêu thích */
+export const wishlistWriteLimiter = limiter({
+  windowMs: 10 * 60 * 1000,
+  limit: 200,
+  message: "Bạn thao tác với danh sách yêu thích quá nhanh. Vui lòng thử lại sau ít phút.",
+});
+
+/** Thêm / sửa / xoá địa chỉ giao hàng */
+export const addressWriteLimiter = limiter({
+  windowMs: 10 * 60 * 1000,
+  limit: 60,
+  message: "Bạn thao tác với sổ địa chỉ quá nhanh. Vui lòng thử lại sau ít phút.",
+});
+
+/**
+ * Tạo đơn / huỷ đơn / thử thanh toán lại — mỗi lượt đều ghi DB (và tạo đơn còn trừ kho), nên trần
+ * thấp hơn hẳn giỏ hàng để không thành công cụ đặt đơn rác hoặc dò trừ kho hàng loạt.
+ */
+export const orderWriteLimiter = limiter({
+  windowMs: 10 * 60 * 1000,
+  limit: 20,
+  message: "Bạn thao tác với đơn hàng quá nhanh. Vui lòng thử lại sau ít phút.",
+});
+
+/**
+ * Tra cứu đơn hàng công khai (mã đơn + số điện thoại), không cần đăng nhập: trần chặt hơn hẳn để
+ * không bị dùng dò mã đơn hoặc số điện thoại của người khác.
+ */
+export const orderLookupLimiter = limiter({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  message: "Bạn tra cứu quá nhiều lần. Vui lòng thử lại sau 15 phút.",
+});
+
+/**
+ * Xem trước mã giảm giá: chỉ đọc nhưng là "máy dò" biết mã còn dùng được không, nên vẫn cần trần
+ * để không bị quét thử hàng loạt mã.
+ */
+export const voucherPreviewLimiter = limiter({
+  windowMs: 10 * 60 * 1000,
+  limit: 30,
+  message: "Bạn thử mã giảm giá quá nhiều lần. Vui lòng thử lại sau ít phút.",
+});
+
+/** Xác nhận thanh toán thủ công ở trang quản trị — đã chặn bằng role, trần chỉ để phòng thao tác nhầm hàng loạt */
+export const adminWriteLimiter = limiter({
+  windowMs: 10 * 60 * 1000,
+  limit: 100,
+  message: "Thao tác quá nhanh. Vui lòng thử lại sau ít phút.",
+});
