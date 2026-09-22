@@ -451,3 +451,43 @@ export interface VoucherPreviewResult {
   voucher: Voucher;
   discountAmount: number;
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Đánh giá sản phẩm                                                         */
+/* -------------------------------------------------------------------------- */
+
+/** Một đánh giá đã được duyệt — `GET /api/products/:slug/reviews` */
+export interface Review {
+  id: string;
+  rating: number;
+  title?: string;
+  content?: string;
+  images?: string[];
+  isVerified: boolean;
+  reviewerName: string;
+  reviewerAvatarUrl?: string;
+  adminReply?: string;
+  adminRepliedAt?: string;
+  createdAt: string;
+}
+
+/** `GET /api/products/:slug/reviews/eligibility` */
+export interface ReviewEligibility {
+  canReview: boolean;
+  hasReviewed: boolean;
+}
+
+/** Dòng cho `GET /api/admin/reviews` */
+export interface AdminReviewSummary {
+  id: string;
+  productSlug: string;
+  productName: string;
+  rating: number;
+  title?: string;
+  content?: string;
+  isApproved: boolean;
+  isVerified: boolean;
+  reviewerName: string;
+  adminReply?: string;
+  createdAt: string;
+}

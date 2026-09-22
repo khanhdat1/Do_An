@@ -16,6 +16,7 @@ import ProductCard from "@/components/product/ProductCard";
 import ProductDescription from "@/components/product/ProductDescription";
 import ProductGallery from "@/components/product/ProductGallery";
 import ProductPurchasePanel from "@/components/product/ProductPurchasePanel";
+import ReviewList from "@/components/product/ReviewList";
 import SpecTable from "@/components/product/SpecTable";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { getProductBySlug, getRelatedProducts } from "@/lib/api";
@@ -245,6 +246,11 @@ export default async function ProductDetailPage({ params }: PageProps) {
           Thông tin chi tiết của sản phẩm này đang được cập nhật.
         </section>
       )}
+
+      {/* ------------------------------ Đánh giá --------------------------------- */}
+      <div className="mt-6">
+        <ReviewList productSlug={product.slug} />
+      </div>
 
       {/* ---------------------------- Sản phẩm liên quan ------------------------ */}
       {related.length > 0 ? (

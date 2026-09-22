@@ -48,7 +48,7 @@ pczone/
 │       ├── app.ts              cấu hình middleware + gắn router
 │       ├── env.ts              đọc & kiểm tra biến môi trường
 │       ├── routes/             định nghĩa endpoint + kiểm tra tham số (zod)
-│       ├── services/           truy vấn Prisma, logic nghiệp vụ (sản phẩm, xác thực, giỏ hàng, địa chỉ, đơn hàng, VNPay, chuyển khoản/MoMo thủ công, quản trị đơn hàng, yêu thích, mã giảm giá)
+│       ├── services/           truy vấn Prisma, logic nghiệp vụ (sản phẩm, xác thực, giỏ hàng, địa chỉ, đơn hàng, VNPay, chuyển khoản/MoMo thủ công, quản trị đơn hàng, yêu thích, mã giảm giá, đánh giá + duyệt đánh giá)
 │       ├── search/             bộ máy tìm kiếm: chuẩn hoá chữ, từ đồng nghĩa, lỗi gõ, mức giá, xếp hạng (có test: `npm test -w @pczone/api`)
 │       ├── mappers/            Prisma model → DTO cho frontend
 │       ├── middleware/         lỗi tập trung, nhận diện JWT, chống CSRF, giới hạn tần suất
@@ -56,7 +56,7 @@ pczone/
 │       └── types/dto.ts        hợp đồng dữ liệu với frontend
 │
 ├── apps/web/               Next.js 16 + TypeScript + Tailwind 4
-│   ├── app/                    trang chủ, danh mục (/danh-muc, /danh-muc/[slug]), tìm kiếm (/tim-kiem), chi tiết sản phẩm, giỏ hàng, yêu thích (/yeu-thich), khuyến mãi (/khuyen-mai), đặt hàng (/thanh-toan), đơn hàng (/don-hang/[code], /tai-khoan/don-hang, /tra-cuu-don-hang), quản trị (/quan-tri/don-hang), đăng nhập / đăng ký, tài khoản
+│   ├── app/                    trang chủ, danh mục (/danh-muc, /danh-muc/[slug]), tìm kiếm (/tim-kiem), chi tiết sản phẩm, giỏ hàng, yêu thích (/yeu-thich), khuyến mãi (/khuyen-mai), đặt hàng (/thanh-toan), đơn hàng (/don-hang/[code], /tai-khoan/don-hang, /tra-cuu-don-hang), quản trị (/quan-tri/don-hang, /quan-tri/danh-gia), đăng nhập / đăng ký, tài khoản
 │   ├── components/             layout / home / category / search / product / cart / checkout / orders / vouchers / admin / auth / providers / ui
 │   ├── lib/category-query.ts   đọc / dựng bộ lọc trên URL của trang danh mục
 │   ├── lib/search-*.ts         câu tìm kiếm trên URL, gọi API gợi ý + lịch sử tìm kiếm ở trình duyệt, tô sáng từ khoá
@@ -279,6 +279,10 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | POST \| DELETE | `/api/wishlist/:productId` | Thêm / xoá một sản phẩm khỏi yêu thích |
 | GET | `/api/vouchers` | Mã giảm giá công khai đang áp dụng được (không cần đăng nhập) |
 | GET | `/api/vouchers/preview?code=&subtotal=` | Xem trước số tiền được giảm trước khi đặt hàng (cần đăng nhập, để kiểm tra lượt dùng của riêng người đó) |
+| GET | `/api/products/:slug/reviews?page=&pageSize=` | Đánh giá ĐÃ DUYỆT của một sản phẩm, công khai, mới nhất trước |
+| GET | `/api/products/:slug/reviews/eligibility` | Đã mua (đơn thanh toán xong) và còn đơn nào chưa dùng để đánh giá không (cần đăng nhập) |
+| POST | `/api/products/:slug/reviews` | Gửi đánh giá `{ rating, title?, content? }` — chỉ khách có đơn `paymentStatus=PAID` chứa sản phẩm này; vào hàng chờ duyệt, chưa hiện công khai ngay |
+| GET \| POST \| DELETE | `/api/admin/reviews`, `/:id/approve`, `/:id`, `/:id/reply` | Duyệt / xoá / trả lời đánh giá — role ADMIN/STAFF (mục 9) |
 | GET | `/api/addresses` | Sổ địa chỉ giao hàng của tài khoản hiện tại, mặc định đứng đầu (cần đăng nhập) |
 | POST | `/api/addresses` | Thêm địa chỉ mới |
 | PATCH | `/api/addresses/:addressId` | Sửa một địa chỉ |
@@ -604,7 +608,22 @@ Sản phẩm yêu thích (`WishlistItem`) đơn giản hơn nhiều: chỉ `(use
 /api/wishlist/ids` tách riêng khỏi `GET /api/wishlist` (trả đủ thông tin sản phẩm) để nút trái tim trên
 mọi lưới sản phẩm biết ngay trạng thái ban đầu mà không phải tải lại object sản phẩm ở mọi trang.
 
-## 10. Tài khoản mẫu
+## 10. Đánh giá sản phẩm — cách hoạt động
+
+Chỉ khách **đã mua và thanh toán xong** mới đánh giá được — cụ thể là có ít nhất một đơn
+`paymentStatus: PAID` chứa sản phẩm đó mà **chưa dùng để đánh giá lần nào** (`Review.orderId` +
+`@@unique([productId, userId, orderId])`: mua ở nhiều đơn khác nhau thì đánh giá được từng đó lần,
+mỗi đơn một lần). Dùng mốc "đã thanh toán" thay vì "đã giao hàng" vì hệ thống hiện chưa có bước cập
+nhật trạng thái giao hàng thật (mục 11) — `paymentStatus` chuyển sang `PAID` khi VNPay báo về, hoặc
+nhân viên xác nhận tay ở `/quan-tri/don-hang` (áp dụng cho cả COD, không chỉ chuyển khoản/MoMo).
+
+Đánh giá gửi lên luôn ở trạng thái **chờ duyệt** (`isApproved: false`), không hiện công khai ngay —
+nhân viên vào `/quan-tri/danh-gia` (role ADMIN/STAFF) duyệt / xoá / trả lời. Chỉ đánh giá **đã duyệt**
+mới được tính vào `Product.ratingAvg`/`ratingCount` (tính lại toàn bộ bằng `aggregate` mỗi lần duyệt
+hoặc xoá một đánh giá — `review.service.ts`'s `recomputeProductRating`), nên số sao hiển thị ở trang
+sản phẩm luôn phản ánh đúng các đánh giá thật đã được kiểm duyệt, không có số liệu bịa.
+
+## 11. Tài khoản mẫu
 
 | Email | Mật khẩu | Quyền |
 | ----- | -------- | ----- |
@@ -612,7 +631,7 @@ mọi lưới sản phẩm biết ngay trạng thái ban đầu mà không phả
 
 Đổi mật khẩu ngay sau lần chạy đầu tiên.
 
-## 11. Việc còn lại
+## 12. Việc còn lại
 
 - [x] Trang danh sách sản phẩm theo danh mục (`/danh-muc/[slug]`, `/danh-muc`): lọc hãng / giá / còn hàng, sắp xếp, phân trang
 - [x] ~420 sản phẩm demo có ảnh thật, thông số và mô tả dài; nhóm Laptop và nhóm Gaming Gear (bàn phím, chuột, tai nghe, loa, ghế, bàn) đều 150 sản phẩm (xem "Dữ liệu demo" ở mục 4)
@@ -625,7 +644,7 @@ mọi lưới sản phẩm biết ngay trạng thái ban đầu mà không phả
 - [x] Đặt hàng (`/thanh-toan`): sổ địa chỉ, tạo đơn có trừ kho trong transaction, huỷ đơn tự hoàn kho, lịch sử đơn (`/tai-khoan/don-hang`, `/don-hang/[code]`), tra cứu công khai (`/tra-cuu-don-hang`)
 - [x] Thanh toán VNPay Sandbox (mã ký/xác minh đầy đủ, có test; cần tự đăng ký tài khoản sandbox để bật — mục 9)
 - [x] Sản phẩm yêu thích (`/yeu-thich`) và mã giảm giá (`/khuyen-mai`, áp dụng được lúc đặt hàng)
-- [ ] Đánh giá sản phẩm (đã có bảng `Review` trong schema, chưa có API/giao diện)
+- [x] Đánh giá sản phẩm (`/san-pham/[slug]`, chỉ khách đã thanh toán mới gửi được, chờ duyệt ở `/quan-tri/danh-gia` mới hiện công khai — mục 10)
 - [ ] Điểm thưởng (PCPoints) và hạng thành viên — cần thêm bảng mới, "PCPoints VIP hoàn tiền 5%" hiện mới là chữ quảng cáo ở trang đăng nhập
 - [ ] Làm lại giao diện Tổng quan tài khoản / danh sách đơn hàng theo phong cách bảng điều khiển (thẻ số liệu, dòng thời gian ngang) — đã bàn hướng làm, chưa triển khai
 - [x] Chuyển khoản ngân hàng (QR VietQR tự điền số tiền/nội dung) và ví MoMo (số điện thoại) làm thủ công, không qua cổng — xác nhận tay ở `/quan-tri/don-hang` (mục 9)
