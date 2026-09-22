@@ -191,6 +191,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
             <ProductPurchasePanel
               productId={product.id}
+              slug={product.slug}
               name={product.name}
               inStock={product.inStock !== false}
               maxQuantity={product.maxQuantity}

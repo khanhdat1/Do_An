@@ -56,7 +56,7 @@ pczone/
 │       └── types/dto.ts        hợp đồng dữ liệu với frontend
 │
 ├── apps/web/               Next.js 16 + TypeScript + Tailwind 4
-│   ├── app/                    trang chủ, danh mục (/danh-muc, /danh-muc/[slug]), tìm kiếm (/tim-kiem), chi tiết sản phẩm, giỏ hàng, yêu thích (/yeu-thich), khuyến mãi (/khuyen-mai), đặt hàng (/thanh-toan), đơn hàng (/don-hang/[code], /tai-khoan/don-hang, /tra-cuu-don-hang), quản trị (/quan-tri/don-hang, /quan-tri/danh-gia), đăng nhập / đăng ký, tài khoản
+│   ├── app/                    trang chủ, danh mục (/danh-muc, /danh-muc/[slug]), tìm kiếm (/tim-kiem), chi tiết sản phẩm, so sánh (/so-sanh), giỏ hàng, yêu thích (/yeu-thich), khuyến mãi (/khuyen-mai), đặt hàng (/thanh-toan), đơn hàng (/don-hang/[code], /tai-khoan/don-hang, /tra-cuu-don-hang), quản trị (/quan-tri/don-hang, /quan-tri/danh-gia), đăng nhập / đăng ký, tài khoản
 │   ├── components/             layout / home / category / search / product / cart / checkout / orders / vouchers / admin / auth / providers / ui
 │   ├── lib/category-query.ts   đọc / dựng bộ lọc trên URL của trang danh mục
 │   ├── lib/search-*.ts         câu tìm kiếm trên URL, gọi API gợi ý + lịch sử tìm kiếm ở trình duyệt, tô sáng từ khoá
@@ -645,6 +645,7 @@ sản phẩm luôn phản ánh đúng các đánh giá thật đã được ki�
 - [x] Thanh toán VNPay Sandbox (mã ký/xác minh đầy đủ, có test; cần tự đăng ký tài khoản sandbox để bật — mục 9)
 - [x] Sản phẩm yêu thích (`/yeu-thich`) và mã giảm giá (`/khuyen-mai`, áp dụng được lúc đặt hàng)
 - [x] Đánh giá sản phẩm (`/san-pham/[slug]`, chỉ khách đã thanh toán mới gửi được, chờ duyệt ở `/quan-tri/danh-gia` mới hiện công khai — mục 10)
+- [x] So sánh sản phẩm (`/so-sanh`, tối đa 4 sản phẩm, chỉ lưu ở trình duyệt qua localStorage — không cần đăng nhập, không gọi API mới; bảng gộp mọi nhãn thông số của các sản phẩm đã chọn)
 - [ ] Điểm thưởng (PCPoints) và hạng thành viên — cần thêm bảng mới, "PCPoints VIP hoàn tiền 5%" hiện mới là chữ quảng cáo ở trang đăng nhập
 - [ ] Làm lại giao diện Tổng quan tài khoản / danh sách đơn hàng theo phong cách bảng điều khiển (thẻ số liệu, dòng thời gian ngang) — đã bàn hướng làm, chưa triển khai
 - [x] Chuyển khoản ngân hàng (QR VietQR tự điền số tiền/nội dung) và ví MoMo (số điện thoại) làm thủ công, không qua cổng — xác nhận tay ở `/quan-tri/don-hang` (mục 9)

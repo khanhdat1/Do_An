@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle, ShoppingCart, Zap } from "lucide-react";
 import QuantityStepper from "@/components/ui/QuantityStepper";
+import CompareButton from "@/components/product/CompareButton";
 import WishlistButton from "@/components/product/WishlistButton";
 import { useCart } from "@/components/providers/CartProvider";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -11,6 +12,7 @@ import { errorMessage } from "@/lib/api-client";
 
 interface ProductPurchasePanelProps {
   productId: string;
+  slug: string;
   name: string;
   inStock: boolean;
   /** Số lượng tối đa được đặt (đã tính tồn kho và trần mỗi dòng) */
@@ -23,6 +25,7 @@ interface ProductPurchasePanelProps {
  */
 export default function ProductPurchasePanel({
   productId,
+  slug,
   name,
   inStock,
   maxQuantity,
@@ -65,6 +68,7 @@ export default function ProductPurchasePanel({
     return (
       <div className="mt-5 flex items-stretch gap-3">
         <WishlistButton productId={productId} name={name} variant="panel" />
+        <CompareButton slug={slug} name={name} variant="panel" />
         <button
           type="button"
           disabled
@@ -100,6 +104,7 @@ export default function ProductPurchasePanel({
 
       <div className="mt-4 flex items-stretch gap-3">
         <WishlistButton productId={productId} name={name} variant="panel" />
+        <CompareButton slug={slug} name={name} variant="panel" />
 
         <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
         <button
