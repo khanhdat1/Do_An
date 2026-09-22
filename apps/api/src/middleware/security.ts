@@ -143,3 +143,10 @@ export const adminWriteLimiter = limiter({
   limit: 100,
   message: "Thao tác quá nhanh. Vui lòng thử lại sau ít phút.",
 });
+
+/** Gửi đánh giá sản phẩm — trần thấp vì mỗi lượt ghi DB, khách thật cũng không cần gửi nhiều trong 10 phút */
+export const reviewWriteLimiter = limiter({
+  windowMs: 10 * 60 * 1000,
+  limit: 10,
+  message: "Bạn gửi đánh giá quá nhanh. Vui lòng thử lại sau ít phút.",
+});

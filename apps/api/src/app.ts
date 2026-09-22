@@ -8,6 +8,7 @@ import { errorHandler, notFoundHandler } from "./middleware/errors.js";
 import { originGuard } from "./middleware/security.js";
 import { addressesRouter } from "./routes/addresses.routes.js";
 import { adminOrdersRouter } from "./routes/admin-orders.routes.js";
+import { adminReviewsRouter } from "./routes/admin-reviews.routes.js";
 import { authRouter } from "./routes/auth.routes.js";
 import { cartRouter } from "./routes/cart.routes.js";
 import { categoriesRouter } from "./routes/categories.routes.js";
@@ -16,6 +17,7 @@ import { orderLookupRouter } from "./routes/order-lookup.routes.js";
 import { ordersRouter } from "./routes/orders.routes.js";
 import { paymentsRouter } from "./routes/payments.routes.js";
 import { productsRouter } from "./routes/products.routes.js";
+import { reviewsRouter } from "./routes/reviews.routes.js";
 import { searchRouter } from "./routes/search.routes.js";
 import { vouchersRouter } from "./routes/vouchers.routes.js";
 import { wishlistRouter } from "./routes/wishlist.routes.js";
@@ -41,6 +43,9 @@ export function createApp() {
   });
 
   app.use("/api/products", productsRouter);
+  // Cùng tiền tố với productsRouter (giống auth+oauth cùng dùng /api/auth) — không đụng nhau vì
+  // :slug của productsRouter chỉ khớp đúng một đoạn đường dẫn, không khớp /:slug/reviews
+  app.use("/api/products", reviewsRouter);
   app.use("/api/categories", categoriesRouter);
   app.use("/api/search", searchRouter);
   app.use("/api/vouchers", vouchersRouter);
@@ -54,6 +59,7 @@ export function createApp() {
   app.use("/api/order-lookup", orderLookupRouter);
   app.use("/api/payments", paymentsRouter);
   app.use("/api/admin/orders", adminOrdersRouter);
+  app.use("/api/admin/reviews", adminReviewsRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

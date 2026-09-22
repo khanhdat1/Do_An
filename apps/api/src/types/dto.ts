@@ -434,3 +434,46 @@ export interface VoucherPreviewResultDto {
   voucher: VoucherDto;
   discountAmount: number;
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Đánh giá sản phẩm                                                         */
+/* -------------------------------------------------------------------------- */
+
+/** Một đánh giá đã được duyệt — `GET /api/products/:slug/reviews` */
+export interface ReviewDto {
+  id: string;
+  rating: number;
+  title?: string;
+  content?: string;
+  images?: string[];
+  /** true vì mọi đánh giá đều gắn với một đơn đã thanh toán — xem `review.service.ts` */
+  isVerified: boolean;
+  reviewerName: string;
+  reviewerAvatarUrl?: string;
+  adminReply?: string;
+  adminRepliedAt?: string;
+  createdAt: string;
+}
+
+/** `GET /api/products/:slug/reviews/eligibility` — có được viết đánh giá mới không, để trang sản phẩm ẩn/hiện form đúng lúc */
+export interface ReviewEligibilityDto {
+  /** true khi đã mua (đơn paymentStatus=PAID chứa sản phẩm này) và còn ít nhất một đơn chưa dùng để đánh giá */
+  canReview: boolean;
+  /** true khi đã có ít nhất một đánh giá (đã duyệt hay chưa đều tính) — vẫn có thể canReview=true nếu mua nhiều đơn */
+  hasReviewed: boolean;
+}
+
+/** Dòng cho `GET /api/admin/reviews` — nhân viên duyệt/xoá/trả lời đánh giá */
+export interface AdminReviewSummaryDto {
+  id: string;
+  productSlug: string;
+  productName: string;
+  rating: number;
+  title?: string;
+  content?: string;
+  isApproved: boolean;
+  isVerified: boolean;
+  reviewerName: string;
+  adminReply?: string;
+  createdAt: string;
+}
