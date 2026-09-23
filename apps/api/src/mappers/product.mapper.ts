@@ -1,5 +1,7 @@
 import type { Prisma } from "@pczone/db";
 import type {
+  AdminProductDetailDto,
+  AdminProductSummaryDto,
   BreadcrumbDto,
   ProductDetailDto,
   ProductDto,
@@ -216,5 +218,64 @@ export function toProductDetailDto(product: ProductDetailRow): ProductDetailDto 
     warrantyMonths: product.warrantyMonths ?? undefined,
     maxQuantity: Math.min(available, MAX_QUANTITY_PER_LINE),
     breadcrumb: buildBreadcrumb(product.category),
+  };
+}
+
+/**
+ * Bao gồm cả sản phẩm DRAFT/HIDDEN/DISCONTINUED (không lọc PUBLIC_FILTER) và các trường nội bộ
+ * (giá vốn, tồn kho tuyệt đối) mà `toProductDto` cố tình không trả cho khách hàng.
+ */
+export const adminProductSummaryInclude = {
+  category: true,
+  brand: true,
+  images: { ...publicImages, take: 1 },
+} satisfies Prisma.ProductInclude;
+
+export type AdminProductSummaryRow = Prisma.ProductGetPayload<{ include: typeof adminProductSummaryInclude }>;
+
+export const adminProductDetailInclude = {
+  category: true,
+  brand: true,
+  images: publicImages,
+} satisfies Prisma.ProductInclude;
+
+export type AdminProductDetailRow = Prisma.ProductGetPayload<{ include: typeof adminProductDetailInclude }>;
+
+export function toAdminProductSummaryDto(product: AdminProductSummaryRow): AdminProductSummaryDto {
+  return {
+    id: product.id,
+    slug: product.slug,
+    sku: product.sku,
+    name: product.name,
+    image: product.images[0]?.url,
+    categoryName: product.category.name,
+    brand: product.brand?.name,
+    status: product.status,
+    sellingPrice: Number(product.sellingPrice),
+    costPrice: toNumber(product.costPrice),
+    inventoryQuantity: product.inventoryQuantity,
+    reservedQuantity: product.reservedQuantity,
+    lowStockThreshold: product.lowStockThreshold,
+    // Cảnh báo NHẬP HÀNG dựa trên tồn kho vật lý — khác `inStock`/`stock.urgent` phía khách hàng
+    // (trừ đi reservedQuantity, tức "còn bán được ngay"). Hai mối quan tâm khác nhau: khách hàng
+    // cần biết mua được không, quản trị cần biết có phải đặt hàng thêm không.
+    lowStock: product.inventoryQuantity <= product.lowStockThreshold,
+    soldCount: product.soldCount,
+    updatedAt: product.updatedAt.toISOString(),
+  };
+}
+
+export function toAdminProductDetailDto(product: AdminProductDetailRow): AdminProductDetailDto {
+  return {
+    ...toAdminProductSummaryDto(product),
+    categoryId: product.categoryId,
+    brandId: product.brandId ?? undefined,
+    originalPrice: toNumber(product.originalPrice),
+    shortDescription: product.shortDescription ?? undefined,
+    description: product.description ?? undefined,
+    warrantyMonths: product.warrantyMonths ?? undefined,
+    specifications: readSpecifications(product.specifications),
+    images: product.images.map((image) => ({ url: image.url, alt: image.alt ?? product.name })),
+    createdAt: product.createdAt.toISOString(),
   };
 }

@@ -553,3 +553,85 @@ export interface AdminReviewSummary {
   adminReply?: string;
   createdAt: string;
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Quản trị sản phẩm và kho hàng                                             */
+/* -------------------------------------------------------------------------- */
+
+export type ProductStatus = "DRAFT" | "ACTIVE" | "HIDDEN" | "DISCONTINUED";
+
+/** Dòng gọn cho `GET /api/admin/products` */
+export interface AdminProductSummary {
+  id: string;
+  slug: string;
+  sku: string;
+  name: string;
+  image?: string;
+  categoryName: string;
+  brand?: string;
+  status: ProductStatus;
+  sellingPrice: number;
+  costPrice?: number;
+  inventoryQuantity: number;
+  reservedQuantity: number;
+  lowStockThreshold: number;
+  lowStock: boolean;
+  soldCount: number;
+  updatedAt: string;
+}
+
+/** `GET /api/admin/products/:id` */
+export interface AdminProductDetail extends AdminProductSummary {
+  categoryId: string;
+  brandId?: string;
+  originalPrice?: number;
+  shortDescription?: string;
+  description?: string;
+  warrantyMonths?: number;
+  specifications: SpecRow[];
+  images: ProductImage[];
+  createdAt: string;
+}
+
+/** Body tạo/sửa sản phẩm */
+export interface AdminProductInput {
+  name: string;
+  sku: string;
+  categoryId: string;
+  brandId?: string;
+  sellingPrice: number;
+  costPrice?: number;
+  originalPrice?: number;
+  shortDescription?: string;
+  description?: string;
+  warrantyMonths?: number;
+  lowStockThreshold?: number;
+  specifications?: SpecRow[];
+}
+
+/** `GET /api/admin/products/meta/options` — danh mục/hãng phẳng cho ô chọn của form */
+export interface ProductFormOptions {
+  categories: { id: string; name: string; path: string }[];
+  brands: { id: string; name: string }[];
+}
+
+export type InventoryTxType = "IMPORT" | "EXPORT" | "ADJUST" | "RETURN";
+
+/** Một dòng lịch sử kho — `GET /api/admin/products/:id/inventory` */
+export interface InventoryTransaction {
+  id: string;
+  type: InventoryTxType;
+  quantityChange: number;
+  quantityAfter: number;
+  unitCost?: number;
+  note?: string;
+  createdByName?: string;
+  orderCode?: string;
+  createdAt: string;
+}
+
+/** Body `POST /api/admin/products/:id/inventory` */
+export type InventoryAdjustmentInput =
+  | { type: "IMPORT"; quantity: number; unitCost?: number; note?: string }
+  | { type: "EXPORT"; quantity: number; note?: string }
+  | { type: "ADJUST"; newQuantity: number; note?: string };

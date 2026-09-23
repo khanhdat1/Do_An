@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Package, ShieldCheck, Star, X } from "lucide-react";
+import { Boxes, LayoutGrid, Package, ShieldCheck, Star, X } from "lucide-react";
 import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
 import { cn } from "@/lib/utils";
 import type { Permission } from "@/types";
@@ -15,12 +15,13 @@ interface NavItem {
   permission?: Permission;
 }
 
-/** Nhóm điều hướng — hiện chỉ có một nhóm "Vận hành", Đợt 3-6 sẽ thêm nhóm Sản phẩm/Báo cáo/Cài đặt */
+/** Nhóm điều hướng — Đợt 4-6 sẽ thêm nhóm Báo cáo/Khách hàng/Cài đặt */
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Vận hành",
     items: [
       { href: "/admin/orders", label: "Đơn hàng", icon: Package, permission: "orders:read" },
+      { href: "/admin/products", label: "Sản phẩm", icon: Boxes, permission: "products:read" },
       { href: "/admin/reviews", label: "Đánh giá", icon: Star, permission: "products:read" },
     ],
   },
