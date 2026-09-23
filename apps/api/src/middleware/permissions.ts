@@ -13,6 +13,8 @@ export type Permission =
   | "products:write"
   | "customers:read"
   | "customers:write"
+  | "vouchers:read"
+  | "vouchers:write"
   | "reports:read"
   | "settings:write"
   | "admins:manage"; // tạo/sửa/khoá tài khoản quản trị khác
@@ -24,6 +26,8 @@ const ALL_PERMISSIONS: Permission[] = [
   "products:write",
   "customers:read",
   "customers:write",
+  "vouchers:read",
+  "vouchers:write",
   "reports:read",
   "settings:write",
   "admins:manage",

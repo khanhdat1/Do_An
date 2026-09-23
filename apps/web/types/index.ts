@@ -244,6 +244,8 @@ export type Permission =
   | "products:write"
   | "customers:read"
   | "customers:write"
+  | "vouchers:read"
+  | "vouchers:write"
   | "reports:read"
   | "settings:write"
   | "admins:manage";
@@ -702,4 +704,41 @@ export interface AdminCustomerSummary {
 
 export interface AdminCustomerDetail extends AdminCustomerSummary {
   emailVerifiedAt?: string;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Quản trị mã giảm giá                                                      */
+/* -------------------------------------------------------------------------- */
+
+export interface AdminVoucher {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  discountType: DiscountType;
+  discountValue: number;
+  minOrderAmount?: number;
+  maxDiscount?: number;
+  usageLimit?: number;
+  usageCount: number;
+  perUserLimit: number;
+  startsAt: string;
+  endsAt: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface AdminVoucherInput {
+  code: string;
+  name: string;
+  description?: string;
+  discountType: DiscountType;
+  discountValue: number;
+  minOrderAmount?: number;
+  maxDiscount?: number;
+  usageLimit?: number;
+  perUserLimit: number;
+  startsAt: string;
+  endsAt: string;
+  isActive: boolean;
 }

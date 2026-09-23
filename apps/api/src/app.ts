@@ -13,6 +13,7 @@ import { adminDashboardRouter } from "./routes/admin-dashboard.routes.js";
 import { adminOrdersRouter } from "./routes/admin-orders.routes.js";
 import { adminProductsRouter } from "./routes/admin-products.routes.js";
 import { adminReviewsRouter } from "./routes/admin-reviews.routes.js";
+import { adminVouchersRouter } from "./routes/admin-vouchers.routes.js";
 import { authRouter } from "./routes/auth.routes.js";
 import { cartRouter } from "./routes/cart.routes.js";
 import { categoriesRouter } from "./routes/categories.routes.js";
@@ -68,6 +69,7 @@ export function createApp() {
   app.use("/api/admin/orders", adminOrdersRouter);
   app.use("/api/admin/products", adminProductsRouter);
   app.use("/api/admin/reviews", adminReviewsRouter);
+  app.use("/api/admin/vouchers", adminVouchersRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

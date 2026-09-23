@@ -157,6 +157,8 @@ export type PermissionDto =
   | "products:write"
   | "customers:read"
   | "customers:write"
+  | "vouchers:read"
+  | "vouchers:write"
   | "reports:read"
   | "settings:write"
   | "admins:manage";
@@ -724,4 +726,43 @@ export interface AdminCustomerSummaryDto {
 /** `GET /api/admin/customers/:id` — hồ sơ đầy đủ hơn danh sách một chút (thêm email đã xác minh chưa) */
 export interface AdminCustomerDetailDto extends AdminCustomerSummaryDto {
   emailVerifiedAt?: string;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Quản trị mã giảm giá                                                      */
+/* -------------------------------------------------------------------------- */
+
+/** Đầy đủ mọi cột — khác `VoucherDto` công khai (thiếu id/usageLimit/usageCount/perUserLimit/startsAt/isActive) */
+export interface AdminVoucherDto {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  discountType: DiscountTypeDto;
+  discountValue: number;
+  minOrderAmount?: number;
+  maxDiscount?: number;
+  usageLimit?: number;
+  usageCount: number;
+  perUserLimit: number;
+  startsAt: string;
+  endsAt: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+/** Body `POST`/`PATCH /api/admin/vouchers` — `code` tự viết hoa ở service, không cần gửi sẵn hoa */
+export interface AdminVoucherInput {
+  code: string;
+  name: string;
+  description?: string;
+  discountType: DiscountTypeDto;
+  discountValue: number;
+  minOrderAmount?: number;
+  maxDiscount?: number;
+  usageLimit?: number;
+  perUserLimit: number;
+  startsAt: string;
+  endsAt: string;
+  isActive: boolean;
 }
