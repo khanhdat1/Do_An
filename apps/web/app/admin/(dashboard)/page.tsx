@@ -23,6 +23,7 @@ export default function AdminIndexPage() {
     else if (user.permissions.includes("customers:read")) router.replace("/admin/customers");
     else if (user.permissions.includes("products:read")) router.replace("/admin/products");
     else if (user.permissions.includes("vouchers:read")) router.replace("/admin/vouchers");
+    else if (user.permissions.includes("content:read")) router.replace("/admin/banners");
     else router.replace("/admin/2fa");
   }, [user, showDashboard, router]);
 

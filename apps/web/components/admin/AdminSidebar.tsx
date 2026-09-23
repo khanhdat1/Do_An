@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, LayoutDashboard, LayoutGrid, Package, ShieldCheck, Star, Tag, Users, X } from "lucide-react";
+import { Boxes, Image, LayoutDashboard, LayoutGrid, Package, ShieldCheck, Star, Tag, Users, X } from "lucide-react";
 import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
 import { cn } from "@/lib/utils";
 import type { Permission } from "@/types";
@@ -31,6 +31,10 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: "/admin/vouchers", label: "Mã giảm giá", icon: Tag, permission: "vouchers:read" },
       { href: "/admin/reviews", label: "Đánh giá", icon: Star, permission: "products:read" },
     ],
+  },
+  {
+    label: "Nội dung",
+    items: [{ href: "/admin/banners", label: "Banner trang chủ", icon: Image, permission: "content:read" }],
   },
   {
     label: "Tài khoản",

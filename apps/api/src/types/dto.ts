@@ -159,6 +159,8 @@ export type PermissionDto =
   | "customers:write"
   | "vouchers:read"
   | "vouchers:write"
+  | "content:read"
+  | "content:write"
   | "reports:read"
   | "settings:write"
   | "admins:manage";
@@ -765,4 +767,45 @@ export interface AdminVoucherInput {
   startsAt: string;
   endsAt: string;
   isActive: boolean;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Banner trang chủ (quản trị nội dung — Đợt 6 phần 2)                       */
+/* -------------------------------------------------------------------------- */
+
+export type BannerStatusDto = "DRAFT" | "PUBLISHED";
+
+/** `GET /api/banners` — công khai, chỉ mã PUBLISHED và đang trong khoảng ngày hiệu lực */
+export interface BannerDto {
+  id: string;
+  title?: string;
+  subtitle?: string;
+  imageUrl: string;
+  linkUrl?: string;
+}
+
+/** Đầy đủ mọi cột cho khu quản trị — khác `BannerDto` công khai (thêm trạng thái/lịch/thứ tự) */
+export interface AdminBannerDto {
+  id: string;
+  title?: string;
+  subtitle?: string;
+  imageUrl: string;
+  linkUrl?: string;
+  displayOrder: number;
+  status: BannerStatusDto;
+  startsAt?: string;
+  endsAt?: string;
+  createdAt: string;
+}
+
+/** Body `POST`/`PATCH /api/admin/banners` */
+export interface AdminBannerInput {
+  title?: string;
+  subtitle?: string;
+  imageUrl: string;
+  linkUrl?: string;
+  displayOrder: number;
+  status: BannerStatusDto;
+  startsAt?: string;
+  endsAt?: string;
 }
