@@ -52,6 +52,20 @@ export async function listOrdersForAdmin(
   };
 }
 
+const EXPORT_ROW_LIMIT = 10_000;
+
+/** Dùng cho xuất báo cáo — TẤT CẢ đơn khớp bộ lọc, không phân trang (khác `listOrdersForAdmin`, luôn phân trang) */
+export async function listAllOrdersForAdmin(filters: AdminOrderFilters): Promise<AdminOrderSummaryDto[]> {
+  const where = { status: filters.status, paymentStatus: filters.paymentStatus, paymentMethod: filters.paymentMethod };
+  const rows = await prisma.order.findMany({
+    where,
+    include: orderSummaryInclude,
+    orderBy: { createdAt: "desc" },
+    take: EXPORT_ROW_LIMIT,
+  });
+  return rows.map(toAdminOrderSummaryDto);
+}
+
 /**
  * Nhân viên xác nhận tay đã nhận được tiền (chuyển khoản ngân hàng / MoMo — không có callback tự động
  * như VNPay). Cùng logic với `applyVnpayCallback` khi thành công: đơn còn PENDING thì lên CONFIRMED,

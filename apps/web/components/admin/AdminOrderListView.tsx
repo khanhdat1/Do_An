@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, CloudOff, LoaderCircle, PackageSearch, ShieldAlert } from "lucide-react";
+import { ChevronLeft, ChevronRight, CloudOff, Download, LoaderCircle, PackageSearch, ShieldAlert } from "lucide-react";
 import AdminBadge from "@/components/admin/AdminBadge";
 import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
 import { useToast } from "@/components/providers/ToastProvider";
-import { adminApiFetch, errorMessage } from "@/lib/admin-api-client";
+import { adminApiFetch, downloadAdminFile, errorMessage } from "@/lib/admin-api-client";
 import { formatPrice } from "@/lib/format";
 import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE, PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL, PAYMENT_STATUS_TONE } from "@/lib/data/orders";
 import type { AdminOrderSummary, OrderStatus, Paginated } from "@/types";
@@ -61,6 +61,8 @@ export default function AdminOrderListView() {
   // Đổi tab/bộ lọc/trang tự đổi query nên effect bên dưới tự chạy lại; nhưng "Xác nhận đã nhận tiền" không
   // đổi query nào cả (vẫn tab/trang đó) — cần một giá trị đổi riêng để buộc effect gọi lại API.
   const [refreshTick, setRefreshTick] = useState(0);
+  const [exporting, setExporting] = useState(false);
+  const toast = useToast();
 
   function changeTab(next: Tab) {
     setTab(next);
@@ -82,6 +84,21 @@ export default function AdminOrderListView() {
   function refresh() {
     setState({ status: "loading" });
     setRefreshTick((tick) => tick + 1);
+  }
+
+  async function exportOrders() {
+    const query = new URLSearchParams();
+    if (tab === "PENDING") query.set("paymentStatus", "PENDING");
+    if (statusFilter !== "ALL") query.set("status", statusFilter);
+
+    setExporting(true);
+    try {
+      await downloadAdminFile(`/api/admin/orders/export?${query}`);
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setExporting(false);
+    }
   }
 
   const allowed = user ? user.permissions.includes("orders:read") : null;
@@ -160,6 +177,16 @@ export default function AdminOrderListView() {
             ))}
           </select>
         </label>
+
+        <button
+          type="button"
+          onClick={exportOrders}
+          disabled={exporting}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-bold text-slate-600 transition hover:border-brand-300 hover:bg-brand-500/5 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {exporting ? <LoaderCircle className="size-4 animate-spin" /> : <Download className="size-4" />}
+          {exporting ? "Đang xuất..." : "Xuất Excel"}
+        </button>
       </div>
 
       {state.status === "loading" ? (

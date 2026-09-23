@@ -311,6 +311,7 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | GET | `/api/payments/methods` | Phương thức thanh toán nào đang bật (`{ cod, vnpay, bankTransfer, momo }`, `false` nếu thiếu cấu hình) |
 | GET | `/api/payments/vnpay/return`, `/api/payments/vnpay/ipn` | VNPay gọi về sau khi thanh toán (mục 9 bên dưới) — không gọi trực tiếp từ frontend |
 | GET | `/api/admin/orders?status=&paymentStatus=&paymentMethod=&page=` | Danh sách đơn cho quản trị — cần quyền `orders:read` |
+| GET | `/api/admin/orders/export?status=&paymentStatus=&paymentMethod=` | File `.xlsx` TẤT CẢ đơn khớp bộ lọc (không phân trang, đúng số liệu danh sách trên) — cần quyền `orders:read` |
 | GET | `/api/admin/orders/:orderCode` | Chi tiết đầy đủ một đơn: mã vận đơn, ghi chú nội bộ, mọi lượt thanh toán, lịch sử kèm tên người đổi trạng thái — cần quyền `orders:read` |
 | POST | `/api/admin/orders/:orderCode/confirm-payment` | Đánh dấu đã nhận được tiền chuyển khoản/MoMo — không có cổng nào tự báo như VNPay — cần quyền `orders:write` |
 | PATCH | `/api/admin/orders/:orderCode/status` | `{ status, note? }` — chuyển tiến ĐÚNG MỘT bước theo vòng đời (PENDING→CONFIRMED→PACKING→SHIPPING→DELIVERED); CANCELLED/RETURNED có endpoint riêng — cần quyền `orders:write` |
@@ -756,6 +757,8 @@ kho) sẽ ghi thêm khi thao tác tương ứng được xây.
   đưa ghi chú nội bộ hay lý do huỷ/hoàn vào (phiếu này có thể lọt tới tay đơn vị vận chuyển hoặc khách).
 - **Lịch sử đầy đủ kèm người thực hiện**: `OrderStatusHistory.changedBy` giờ có quan hệ Prisma thật tới
   `User`, trang chi tiết hiện tên nhân viên ở từng dòng thời gian.
+- **Xuất Excel** (nút "Xuất Excel" trên trang danh sách): tải file `.xlsx` TẤT CẢ đơn khớp đúng bộ lọc
+  tab/trạng thái đang chọn (không chỉ trang đang xem) — dùng cho đối soát kế toán.
 
 ### Quản lý sản phẩm và kho hàng (Đợt 3)
 
