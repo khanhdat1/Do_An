@@ -8,12 +8,14 @@ import {
   cancelOrderAsAdmin,
   confirmOrderPayment,
   getOrderForAdmin,
+  listAllOrdersForAdmin,
   listOrdersForAdmin,
   markOrderRefunded,
   returnOrder,
   updateOrderInternalNote,
   updateOrderTrackingNumber,
 } from "../services/admin-order.service.js";
+import { buildOrdersReportWorkbook } from "../services/admin-order-export.service.js";
 
 /**
  * Quản trị đơn hàng: xem danh sách/chi tiết, xác nhận thanh toán thủ công, chuyển trạng thái theo vòng
@@ -49,6 +51,22 @@ adminOrdersRouter.get("/", requirePermission("orders:read"), async (req, res, ne
   try {
     const { page, pageSize, status, paymentStatus, paymentMethod } = listQuery.parse(req.query);
     res.json(await listOrdersForAdmin({ status, paymentStatus, paymentMethod }, page, pageSize));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/** GET /api/admin/orders/export?status=&paymentStatus=&paymentMethod= — TẤT CẢ đơn khớp bộ lọc (không phân trang). Đặt TRƯỚC /:orderCode để "export" không bị khớp nhầm thành mã đơn */
+adminOrdersRouter.get("/export", requirePermission("orders:read"), async (req, res, next) => {
+  try {
+    const { status, paymentStatus, paymentMethod } = listQuery.omit({ page: true, pageSize: true }).parse(req.query);
+    const orders = await listAllOrdersForAdmin({ status, paymentStatus, paymentMethod });
+    const buffer = await buildOrdersReportWorkbook(orders, { status, paymentStatus, paymentMethod });
+
+    const today = new Date().toISOString().slice(0, 10);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="don-hang_${today}.xlsx"`);
+    res.send(Buffer.from(buffer));
   } catch (error) {
     next(error);
   }

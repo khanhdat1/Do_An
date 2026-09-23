@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import type { AdminDashboardSummaryDto, DashboardGranularityDto } from "../types/dto.js";
+import { formatDate, formatDateTime, HEADER_FILL, ORDER_STATUS_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL, styleHeaderRow, VND_FORMAT } from "./excel-report.utils.js";
 
 const GRANULARITY_LABEL: Record<DashboardGranularityDto, string> = {
   day: "Ngày",
@@ -7,50 +8,6 @@ const GRANULARITY_LABEL: Record<DashboardGranularityDto, string> = {
   month: "Tháng",
   year: "Năm",
 };
-
-const ORDER_STATUS_LABEL: Record<string, string> = {
-  PENDING: "Chờ xác nhận",
-  CONFIRMED: "Đã xác nhận",
-  PACKING: "Đang đóng gói",
-  SHIPPING: "Đang giao",
-  DELIVERED: "Đã giao",
-  CANCELLED: "Đã huỷ",
-  RETURNED: "Đã hoàn trả",
-};
-
-const PAYMENT_STATUS_LABEL: Record<string, string> = {
-  PENDING: "Chưa thanh toán",
-  PAID: "Đã thanh toán",
-  FAILED: "Thất bại",
-  REFUNDED: "Đã hoàn tiền",
-  CANCELLED: "Đã huỷ",
-};
-
-const PAYMENT_METHOD_LABEL: Record<string, string> = {
-  COD: "Tiền mặt khi nhận hàng",
-  VNPAY: "VNPay",
-  BANK_TRANSFER: "Chuyển khoản",
-  MOMO: "MoMo",
-};
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
-
-const HEADER_FILL: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE2E8F0" } };
-const VND_FORMAT = "#,##0";
-
-function styleHeaderRow(row: ExcelJS.Row): void {
-  row.eachCell((cell) => {
-    cell.font = { bold: true };
-    cell.fill = HEADER_FILL;
-    cell.border = { bottom: { style: "thin", color: { argb: "FFCBD5E1" } } };
-  });
-}
 
 /**
  * Sheet "Tổng quan": ghi rõ khoảng thời gian + cách tính, khớp đúng phần giải thích trên giao diện
