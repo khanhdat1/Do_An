@@ -683,3 +683,23 @@ export interface AdminDashboardSummary {
   lowStock: DashboardLowStock[];
   recentOrders: AdminOrderSummary[];
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Quản lý khách hàng                                                        */
+/* -------------------------------------------------------------------------- */
+
+export interface AdminCustomerSummary {
+  id: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  isActive: boolean;
+  orderCount: number;
+  totalSpent: number;
+  createdAt: string;
+  lastLoginAt?: string;
+}
+
+export interface AdminCustomerDetail extends AdminCustomerSummary {
+  emailVerifiedAt?: string;
+}

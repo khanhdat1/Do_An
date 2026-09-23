@@ -698,3 +698,30 @@ export interface AdminDashboardSummaryDto {
   /** Đơn hàng gần đây nhất — luỹ kế, KHÔNG theo kỳ đang lọc */
   recentOrders: AdminOrderSummaryDto[];
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Quản lý khách hàng                                                        */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * `GET /api/admin/customers` — chỉ liệt kê tài khoản role CUSTOMER, không bao giờ chứa mật khẩu/2FA.
+ * `orderCount` đếm MỌI đơn (kể cả huỷ) để phản ánh đúng "đã từng đặt bao nhiêu đơn"; `totalSpent`
+ * CHỈ cộng đơn đang `paymentStatus = PAID` — đơn đã hoàn tiền chuyển sang REFUNDED nên tự động bị
+ * loại khỏi tổng này, không cần trừ riêng.
+ */
+export interface AdminCustomerSummaryDto {
+  id: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  isActive: boolean;
+  orderCount: number;
+  totalSpent: number;
+  createdAt: string;
+  lastLoginAt?: string;
+}
+
+/** `GET /api/admin/customers/:id` — hồ sơ đầy đủ hơn danh sách một chút (thêm email đã xác minh chưa) */
+export interface AdminCustomerDetailDto extends AdminCustomerSummaryDto {
+  emailVerifiedAt?: string;
+}
