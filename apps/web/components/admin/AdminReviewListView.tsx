@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, ChevronLeft, ChevronRight, CloudOff, LoaderCircle, MessageSquareText, ShieldAlert, Trash2 } from "lucide-react";
+import AdminBadge from "@/components/admin/AdminBadge";
 import RatingStars from "@/components/product/RatingStars";
 import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -149,7 +150,7 @@ export default function AdminReviewListView() {
 
   if (!user || allowed === null) {
     return (
-      <div className="surface-card flex items-center justify-center gap-2 p-10 text-sm text-slate-500">
+      <div className="admin-card flex items-center justify-center gap-2 p-10 text-sm text-slate-500">
         <LoaderCircle className="size-4.5 animate-spin" />
         Đang tải...
       </div>
@@ -158,7 +159,7 @@ export default function AdminReviewListView() {
 
   if (!allowed) {
     return (
-      <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
+      <div className="admin-card flex flex-col items-center px-6 py-14 text-center">
         <span className="grid size-16 place-items-center rounded-full bg-sale-500/10 text-sale-600">
           <ShieldAlert className="size-8" />
         </span>
@@ -170,14 +171,14 @@ export default function AdminReviewListView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
+      <div className="admin-card flex gap-2 p-3">
         {(["PENDING", "ALL"] as const).map((value) => (
           <button
             key={value}
             type="button"
             onClick={() => changeTab(value)}
             className={`rounded-lg px-3.5 py-2 text-sm font-bold transition ${
-              tab === value ? "bg-brand-500 text-white" : "bg-white text-slate-600 hover:bg-slate-100"
+              tab === value ? "bg-brand-500 text-white shadow-sm shadow-brand-500/30" : "text-slate-600 hover:bg-slate-100"
             }`}
           >
             {value === "PENDING" ? "Chờ duyệt" : "Tất cả"}
@@ -186,21 +187,21 @@ export default function AdminReviewListView() {
       </div>
 
       {state.status === "loading" ? (
-        <div className="surface-card flex items-center justify-center gap-2 p-10 text-sm text-slate-500">
+        <div className="admin-card flex items-center justify-center gap-2 p-10 text-sm text-slate-500">
           <LoaderCircle className="size-4.5 animate-spin" />
           Đang tải...
         </div>
       ) : null}
 
       {state.status === "error" ? (
-        <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
+        <div className="admin-card flex flex-col items-center px-6 py-14 text-center">
           <CloudOff className="size-8 text-slate-400" />
           <p className="mt-3 text-sm text-slate-500">Không tải được danh sách đánh giá. Vui lòng tải lại trang.</p>
         </div>
       ) : null}
 
       {state.status === "ready" && state.data.items.length === 0 ? (
-        <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
+        <div className="admin-card flex flex-col items-center px-6 py-14 text-center">
           <h2 className="text-lg font-bold text-slate-800">
             {tab === "PENDING" ? "Không có đánh giá nào chờ duyệt" : "Chưa có đánh giá nào"}
           </h2>
@@ -208,7 +209,7 @@ export default function AdminReviewListView() {
       ) : null}
 
       {state.status === "ready" && state.data.items.length > 0 ? (
-        <div className="surface-card divide-y divide-slate-100 p-2">
+        <div className="admin-card divide-y divide-slate-100 p-2">
           {state.data.items.map((review) => (
             <div key={review.id} className="p-3">
               <div className="flex flex-wrap items-start justify-between gap-2">
@@ -221,9 +222,9 @@ export default function AdminReviewListView() {
                     <RatingStars value={review.rating} size="sm" />
                     <span className="text-xs text-slate-400">{formatDate(review.createdAt)}</span>
                     {review.isApproved ? (
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">Đã duyệt</span>
+                      <AdminBadge tone="green">Đã duyệt</AdminBadge>
                     ) : (
-                      <span className="rounded-full bg-gold-400/15 px-2 py-0.5 text-[11px] font-bold text-gold-700">Chờ duyệt</span>
+                      <AdminBadge tone="amber">Chờ duyệt</AdminBadge>
                     )}
                   </div>
                 </div>
