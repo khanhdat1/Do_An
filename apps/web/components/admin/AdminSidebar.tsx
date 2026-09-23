@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, LayoutGrid, Package, ShieldCheck, Star, X } from "lucide-react";
+import { Boxes, LayoutDashboard, LayoutGrid, Package, ShieldCheck, Star, X } from "lucide-react";
 import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
 import { cn } from "@/lib/utils";
 import type { Permission } from "@/types";
@@ -13,10 +13,16 @@ interface NavItem {
   icon: typeof Package;
   /** Không có nghĩa là ai đã đăng nhập cũng thấy (vd trang bảo mật của chính mình) */
   permission?: Permission;
+  /** true = chỉ khớp active khi ĐÚNG đường dẫn này (dùng cho "/admin" — mọi trang quản trị khác cũng bắt đầu bằng "/admin/") */
+  exactMatch?: boolean;
 }
 
-/** Nhóm điều hướng — Đợt 4-6 sẽ thêm nhóm Báo cáo/Khách hàng/Cài đặt */
+/** Nhóm điều hướng — Đợt 5-6 sẽ thêm nhóm Khách hàng/Cài đặt */
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
+  {
+    label: "Tổng quan",
+    items: [{ href: "/admin", label: "Tổng quan", icon: LayoutDashboard, permission: "reports:read", exactMatch: true }],
+  },
   {
     label: "Vận hành",
     items: [
@@ -60,7 +66,7 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
             <p className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">{group.label}</p>
             <div className="space-y-1">
               {group.items.map((item) => {
-                const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+                const active = item.exactMatch ? pathname === item.href : pathname === item.href || pathname?.startsWith(`${item.href}/`);
                 const Icon = item.icon;
                 return (
                   <Link

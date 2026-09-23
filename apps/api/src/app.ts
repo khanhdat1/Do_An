@@ -8,6 +8,7 @@ import { errorHandler, notFoundHandler } from "./middleware/errors.js";
 import { originGuard } from "./middleware/security.js";
 import { addressesRouter } from "./routes/addresses.routes.js";
 import { adminAuthRouter } from "./routes/admin-auth.routes.js";
+import { adminDashboardRouter } from "./routes/admin-dashboard.routes.js";
 import { adminOrdersRouter } from "./routes/admin-orders.routes.js";
 import { adminProductsRouter } from "./routes/admin-products.routes.js";
 import { adminReviewsRouter } from "./routes/admin-reviews.routes.js";
@@ -61,6 +62,7 @@ export function createApp() {
   app.use("/api/order-lookup", orderLookupRouter);
   app.use("/api/payments", paymentsRouter);
   app.use("/api/admin/auth", adminAuthRouter);
+  app.use("/api/admin/dashboard", adminDashboardRouter);
   app.use("/api/admin/orders", adminOrdersRouter);
   app.use("/api/admin/products", adminProductsRouter);
   app.use("/api/admin/reviews", adminReviewsRouter);
