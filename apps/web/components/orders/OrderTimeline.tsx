@@ -29,7 +29,10 @@ export default function OrderTimeline({ events }: { events: OrderStatusEvent[] }
             <div className="min-w-0 pb-0.5">
               <p className="text-sm font-semibold text-slate-800">{ORDER_STATUS_LABEL[event.status]}</p>
               {event.note ? <p className="mt-0.5 text-xs text-slate-500">{event.note}</p> : null}
-              <p className="mt-0.5 text-xs text-slate-400">{formatEventTime(event.createdAt)}</p>
+              <p className="mt-0.5 text-xs text-slate-400">
+                {formatEventTime(event.createdAt)}
+                {event.changedByName ? ` · ${event.changedByName}` : ""}
+              </p>
             </div>
           </li>
         );

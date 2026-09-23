@@ -362,6 +362,8 @@ export interface OrderItemDto {
 export interface OrderStatusEventDto {
   status: OrderStatusDto;
   note?: string;
+  /** Tên nhân viên đã đổi trạng thái này — chỉ có ở trang quản trị, khách hàng không cần biết */
+  changedByName?: string;
   createdAt: string;
 }
 
@@ -430,7 +432,7 @@ export interface PaymentMethodsDto {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Quản trị đơn hàng (xác nhận thanh toán thủ công)                          */
+/*  Quản trị đơn hàng — vòng đời đầy đủ                                       */
 /* -------------------------------------------------------------------------- */
 
 /** Dòng gọn cho `GET /api/admin/orders` — thêm tên/SĐT người nhận so với `OrderSummaryDto` để nhân viên đối chiếu tiền vào */
@@ -444,6 +446,39 @@ export interface AdminOrderSummaryDto {
   recipientPhone: string;
   itemCount: number;
   createdAt: string;
+}
+
+/** Một lượt thử thanh toán — nhân viên xem đầy đủ hơn khách hàng (khách chỉ thấy trạng thái tổng hợp qua bankTransfer/momo) */
+export interface AdminPaymentRecordDto {
+  id: string;
+  method: PaymentMethodDto;
+  status: PaymentStatusDto;
+  amount: number;
+  transactionNo?: string;
+  paidAt?: string;
+  refundedAt?: string;
+  createdAt: string;
+}
+
+/**
+ * `GET /api/admin/orders/:code` — đầy đủ hơn `OrderDto`: mã vận đơn, ghi chú nội bộ, lý do huỷ/hoàn,
+ * mọi lượt thanh toán (không chỉ trạng thái tổng hợp), và các cờ cho biết nhân viên làm được thao tác gì
+ * TỪ TRẠNG THÁI HIỆN TẠI (server tính sẵn — frontend không tự suy luận vòng đời đơn).
+ */
+export interface AdminOrderDto extends OrderDto {
+  trackingNumber?: string;
+  internalNote?: string;
+  cancelReason?: string;
+  returnReason?: string;
+  payments: AdminPaymentRecordDto[];
+  /** Trạng thái kế tiếp có thể chuyển tới qua PATCH .../status — rỗng nếu đã ở trạng thái cuối (DELIVERED/CANCELLED/RETURNED) */
+  nextStatuses: OrderStatusDto[];
+  /** Nhân viên huỷ được rộng hơn khách tự huỷ (`canCancel`): tới trước khi giao xong, không đòi hỏi chưa thanh toán */
+  canAdminCancel: boolean;
+  /** Đang giao hoặc đã giao thì xử lý được yêu cầu hoàn hàng */
+  canReturn: boolean;
+  /** Đã thu tiền (PAID) và đơn đã huỷ/hoàn nhưng CHƯA đánh dấu hoàn tiền — đây là ghi nhận thủ công, không tự động chuyển tiền */
+  canMarkRefunded: boolean;
 }
 
 /* -------------------------------------------------------------------------- */

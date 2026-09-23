@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, CloudOff, LoaderCircle, PackageSearch, ShieldAlert } from "lucide-react";
 import OrderStatusBadge from "@/components/orders/OrderStatusBadge";
 import PaymentStatusBadge from "@/components/orders/PaymentStatusBadge";
@@ -8,10 +9,11 @@ import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { adminApiFetch, errorMessage } from "@/lib/admin-api-client";
 import { formatPrice } from "@/lib/format";
-import { PAYMENT_METHOD_LABEL } from "@/lib/data/orders";
-import type { AdminOrderSummary, Paginated } from "@/types";
+import { ORDER_STATUS_LABEL, PAYMENT_METHOD_LABEL } from "@/lib/data/orders";
+import type { AdminOrderSummary, OrderStatus, Paginated } from "@/types";
 
 const PAGE_SIZE = 20;
+const STATUS_FILTER_OPTIONS: (OrderStatus | "ALL")[] = ["ALL", "PENDING", "CONFIRMED", "PACKING", "SHIPPING", "DELIVERED", "CANCELLED", "RETURNED"];
 
 type Tab = "PENDING" | "ALL";
 type State = { status: "loading" } | { status: "error" } | { status: "ready"; data: Paginated<AdminOrderSummary> };
@@ -54,14 +56,21 @@ function ConfirmButton({ orderCode, onConfirmed }: { orderCode: string; onConfir
 export default function AdminOrderListView() {
   const { user } = useAdminAuth();
   const [tab, setTab] = useState<Tab>("PENDING");
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | "ALL">("ALL");
   const [page, setPage] = useState(1);
   const [state, setState] = useState<State>({ status: "loading" });
-  // Đổi tab/trang tự đổi query nên effect bên dưới tự chạy lại; nhưng "Xác nhận đã nhận tiền" không đổi
-  // query nào cả (vẫn tab/trang đó) — cần một giá trị đổi riêng để buộc effect gọi lại API.
+  // Đổi tab/bộ lọc/trang tự đổi query nên effect bên dưới tự chạy lại; nhưng "Xác nhận đã nhận tiền" không
+  // đổi query nào cả (vẫn tab/trang đó) — cần một giá trị đổi riêng để buộc effect gọi lại API.
   const [refreshTick, setRefreshTick] = useState(0);
 
   function changeTab(next: Tab) {
     setTab(next);
+    setPage(1);
+    setState({ status: "loading" });
+  }
+
+  function changeStatusFilter(next: OrderStatus | "ALL") {
+    setStatusFilter(next);
     setPage(1);
     setState({ status: "loading" });
   }
@@ -84,6 +93,7 @@ export default function AdminOrderListView() {
 
     const query = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
     if (tab === "PENDING") query.set("paymentStatus", "PENDING");
+    if (statusFilter !== "ALL") query.set("status", statusFilter);
 
     adminApiFetch<Paginated<AdminOrderSummary>>(`/api/admin/orders?${query}`)
       .then((data) => {
@@ -96,7 +106,7 @@ export default function AdminOrderListView() {
     return () => {
       cancelled = true;
     };
-  }, [allowed, tab, page, refreshTick]);
+  }, [allowed, tab, statusFilter, page, refreshTick]);
 
   if (!user || allowed === null) {
     return (
@@ -121,19 +131,36 @@ export default function AdminOrderListView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
-        {(["PENDING", "ALL"] as const).map((value) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => changeTab(value)}
-            className={`rounded-lg px-3.5 py-2 text-sm font-bold transition ${
-              tab === value ? "bg-brand-500 text-white" : "bg-white text-slate-600 hover:bg-slate-100"
-            }`}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-2">
+          {(["PENDING", "ALL"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => changeTab(value)}
+              className={`rounded-lg px-3.5 py-2 text-sm font-bold transition ${
+                tab === value ? "bg-brand-500 text-white" : "bg-white text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {value === "PENDING" ? "Chờ xác nhận thanh toán" : "Tất cả (theo thanh toán)"}
+            </button>
+          ))}
+        </div>
+
+        <label className="flex items-center gap-2 text-sm text-slate-600">
+          Trạng thái đơn:
+          <select
+            value={statusFilter}
+            onChange={(event) => changeStatusFilter(event.target.value as OrderStatus | "ALL")}
+            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 outline-none focus:border-brand-500"
           >
-            {value === "PENDING" ? "Chờ xác nhận" : "Tất cả"}
-          </button>
-        ))}
+            {STATUS_FILTER_OPTIONS.map((value) => (
+              <option key={value} value={value}>
+                {value === "ALL" ? "Tất cả" : ORDER_STATUS_LABEL[value]}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {state.status === "loading" ? (
@@ -177,8 +204,12 @@ export default function AdminOrderListView() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {state.data.items.map((order) => (
-                <tr key={order.orderCode}>
-                  <td className="whitespace-nowrap px-3 py-2.5 font-bold text-slate-800">{order.orderCode}</td>
+                <tr key={order.orderCode} className="transition hover:bg-slate-50">
+                  <td className="whitespace-nowrap px-3 py-2.5 font-bold text-slate-800">
+                    <Link href={`/admin/orders/${order.orderCode}`} className="hover:text-brand-600 hover:underline">
+                      {order.orderCode}
+                    </Link>
+                  </td>
                   <td className="px-3 py-2.5">
                     <p className="font-medium text-slate-700">{order.recipientName}</p>
                     <p className="text-xs text-slate-500">{order.recipientPhone}</p>
@@ -195,7 +226,11 @@ export default function AdminOrderListView() {
                   <td className="whitespace-nowrap px-3 py-2.5">
                     {order.paymentStatus === "PENDING" ? (
                       <ConfirmButton orderCode={order.orderCode} onConfirmed={refresh} />
-                    ) : null}
+                    ) : (
+                      <Link href={`/admin/orders/${order.orderCode}`} className="text-xs font-bold text-brand-600 hover:underline">
+                        Xem chi tiết
+                      </Link>
+                    )}
                   </td>
                 </tr>
               ))}
