@@ -319,6 +319,10 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | PATCH | `/api/admin/orders/:orderCode/tracking-number` | `{ trackingNumber }` — chuỗi rỗng để xoá — cần quyền `orders:write` |
 | PATCH | `/api/admin/orders/:orderCode/internal-note` | `{ internalNote }` — chuỗi rỗng để xoá; không hiện ở phiếu in hay cho khách hàng — cần quyền `orders:write` |
 | GET | `/api/admin/dashboard/summary?granularity=&from=&to=` | Trang tổng quan: doanh thu (4 mốc), số đơn/sản phẩm bán/khách hàng/đơn chờ xử lý, biểu đồ theo kỳ, sản phẩm bán chạy, sắp hết hàng, đơn gần đây — thiếu `from`/`to` thì dùng khoảng mặc định theo `granularity` — chỉ OWNER/MANAGER, cần quyền `reports:read` |
+| GET | `/api/admin/customers?search=&locked=&page=&pageSize=` | Danh sách khách hàng (chỉ role `CUSTOMER`), kèm số đơn/tổng chi tiêu; `search` khớp tên/email/SĐT, `locked=true/false` lọc theo trạng thái khoá — cần quyền `customers:read` |
+| GET | `/api/admin/customers/:id` | Hồ sơ một khách hàng — không bao giờ trả mật khẩu — cần quyền `customers:read` |
+| GET | `/api/admin/customers/:id/orders?page=&pageSize=` | Lịch sử mua hàng của khách hàng đó — cần quyền `customers:read` |
+| PATCH | `/api/admin/customers/:id/lock` | `{ isActive, reason? }` — khoá/mở khoá tài khoản; có hiệu lực ở lần đăng nhập/làm mới phiên kế tiếp (không thu hồi access token đang dùng dở, tối đa 15 phút) — cần quyền `customers:write` |
 | POST | `/api/admin/auth/login` | `{ email, password, remember? }` — đăng nhập khu quản trị (JWT/cookie **riêng hoàn toàn** với khách hàng). Tài khoản có role `CUSTOMER` luôn bị từ chối. Nếu tài khoản đã bật 2FA: trả `{ status: "2fa-required", pendingToken }`, CHƯA đăng nhập |
 | POST | `/api/admin/auth/login/verify-2fa` | `{ pendingToken, code }` — bước 2 khi tài khoản đã bật 2FA, `pendingToken` sống 60 giây |
 | POST | `/api/admin/auth/refresh`, `/api/admin/auth/logout` | Làm mới / thu hồi phiên đăng nhập quản trị — độc lập hoàn toàn với `/api/auth/*` của khách hàng |
@@ -788,15 +792,36 @@ vẫn tự chuyển sang mục đầu tiên họ có quyền, như trước Đ�
 - **Chưa làm ở đợt này**: xuất báo cáo ra Excel/CSV (thuộc mục 7 của yêu cầu gốc, không nằm trong "trang
   tổng quan" — để dành cho lúc làm phần báo cáo/cài đặt).
 
-### Tình trạng — đã xong Đợt 1-4/6
+### Quản lý khách hàng (Đợt 5)
+
+`/admin/customers` (chỉ OWNER/MANAGER — quyền `customers:read`/`customers:write`; ẩn khỏi sidebar và
+chặn cả hai phía client/server với vai trò khác):
+
+- Danh sách chỉ gồm tài khoản role `CUSTOMER` (không đụng tới tài khoản quản trị khác — đó thuộc quyền
+  `admins:manage`, chưa làm). Tìm theo tên/email/SĐT, lọc theo trạng thái khoá.
+- Mỗi dòng/hồ sơ hiện **số đơn** (đếm MỌI đơn kể cả đơn huỷ, để biết "đã từng đặt bao nhiêu đơn") và
+  **tổng chi tiêu** (CHỈ cộng đơn đang `paymentStatus = PAID` — đơn đã hoàn tiền chuyển sang `REFUNDED`
+  nên tự động không tính, khớp đúng cách tính "đã thanh toán" của trang tổng quan Đợt 4).
+- Hồ sơ chi tiết có lịch sử mua hàng đầy đủ (mọi trạng thái, không chỉ đơn đã thanh toán), liên kết thẳng
+  sang trang chi tiết đơn ở `/admin/orders`.
+- **Khoá/mở khoá tài khoản** — dùng lại đúng cột `User.isActive` đã có sẵn từ đầu dự án (đăng nhập VÀ làm
+  mới phiên đều đã kiểm tra cột này). Vì access token không tra DB mỗi request, khách đang có access
+  token còn hạn (tối đa 15 phút) vẫn dùng được tới khi hết hạn hoặc họ làm mới phiên — không bị đá ra
+  ngay lập tức; giao diện nói rõ điều này khi bấm khoá, không giả vờ có hiệu lực tức thì.
+- **Bảo vệ dữ liệu cá nhân**: không endpoint/màn hình nào trả về mật khẩu hay mã bí mật 2FA — hồ sơ chỉ
+  gồm tên/email/SĐT/ngày đăng ký/lần đăng nhập gần nhất và số liệu đơn hàng.
+- **Chưa làm ở đợt này**: tạo tài khoản khách hàng thủ công từ phía admin (khách tự đăng ký), sửa thông
+  tin cá nhân thay khách hàng.
+
+### Tình trạng — đã xong Đợt 1-5/6
 
 Đã xong: đăng nhập/phân quyền tách biệt (Đợt 1), khung giao diện `/admin` (sidebar theo quyền, tương
 thích di động), duyệt đánh giá (`/admin/reviews`), toàn bộ quản lý đơn hàng (Đợt 2), quản lý sản
-phẩm/kho hàng (Đợt 3), và trang tổng quan doanh thu ở trên (Đợt 4).
+phẩm/kho hàng (Đợt 3), trang tổng quan doanh thu (Đợt 4), và quản lý khách hàng ở trên (Đợt 5).
 
-**Chưa làm** (roadmap các đợt sau, xem lịch sử trò chuyện lúc lập kế hoạch để biết chi tiết từng đợt):
-xuất báo cáo Excel/CSV, quản lý khách hàng (danh sách, khoá/mở khoá), giao diện quản trị mã giảm giá
-(backend `/api/vouchers*` đã có sẵn từ trước), quản trị nội dung (banner/menu/bài viết/trang tĩnh).
+**Chưa làm** (roadmap đợt cuối, xem lịch sử trò chuyện lúc lập kế hoạch để biết chi tiết): xuất báo cáo
+Excel/CSV, giao diện quản trị mã giảm giá (backend `/api/vouchers*` đã có sẵn từ trước), quản trị nội
+dung (banner/menu/bài viết/trang tĩnh).
 
 ## 12. Tài khoản mẫu
 
@@ -828,5 +853,5 @@ xuất báo cáo Excel/CSV, quản lý khách hàng (danh sách, khoá/mở kho�
 - [x] **Admin Dashboard — Đợt 2** (mục 11): quản lý đơn hàng đầy đủ vòng đời (7 trạng thái tiến tuần tự, mã vận đơn, ghi chú nội bộ không lộ ra ngoài, in đơn, huỷ/hoàn theo quyền kèm hoàn kho đúng loại, đánh dấu hoàn tiền thủ công — không giả vờ tự động, lịch sử đổi trạng thái kèm tên người thực hiện)
 - [x] **Admin Dashboard — Đợt 3** (mục 11): quản lý sản phẩm (thêm/sửa/ẩn/lưu trữ, duyệt sản phẩm DRAFT, ẩn/lưu trữ có hiệu lực ngay trên trang bán) và tồn kho (nhập/xuất/điều chỉnh theo kiểm kê, cảnh báo sắp hết theo ngưỡng riêng từng sản phẩm, không cho tồn kho âm)
 - [x] **Admin Dashboard — Đợt 4** (mục 11): trang tổng quan doanh thu (biểu đồ ngày/tuần/tháng/năm + lọc khoảng thời gian, phân biệt tổng đơn/đã thu/hoàn/doanh thu thuần, sản phẩm bán chạy/sắp hết hàng/đơn gần đây) — **chưa làm** xuất báo cáo Excel/CSV (để dành phần báo cáo/cài đặt sau)
-- [ ] **Admin Dashboard — Đợt 5**: quản lý khách hàng (danh sách, lịch sử mua, khoá/mở khoá tài khoản)
+- [x] **Admin Dashboard — Đợt 5** (mục 11): quản lý khách hàng (danh sách có tìm kiếm/lọc theo trạng thái khoá, lịch sử mua hàng, tổng chi tiêu tính đúng theo đơn đã thanh toán, khoá/mở khoá tài khoản, không hiển thị mật khẩu)
 - [ ] **Admin Dashboard — Đợt 6**: giao diện quản trị mã giảm giá (backend `/api/vouchers*` đã có sẵn, chỉ còn làm CRUD), quản trị nội dung (banner/menu/bài viết/trang tĩnh)

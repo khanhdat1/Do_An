@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, LayoutDashboard, LayoutGrid, Package, ShieldCheck, Star, X } from "lucide-react";
+import { Boxes, LayoutDashboard, LayoutGrid, Package, ShieldCheck, Star, Users, X } from "lucide-react";
 import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
 import { cn } from "@/lib/utils";
 import type { Permission } from "@/types";
@@ -17,7 +17,7 @@ interface NavItem {
   exactMatch?: boolean;
 }
 
-/** Nhóm điều hướng — Đợt 5-6 sẽ thêm nhóm Khách hàng/Cài đặt */
+/** Nhóm điều hướng — Đợt 6 sẽ thêm mã giảm giá/nội dung vào nhóm Vận hành hoặc nhóm riêng */
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Tổng quan",
@@ -27,6 +27,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "Vận hành",
     items: [
       { href: "/admin/orders", label: "Đơn hàng", icon: Package, permission: "orders:read" },
+      { href: "/admin/customers", label: "Khách hàng", icon: Users, permission: "customers:read" },
       { href: "/admin/products", label: "Sản phẩm", icon: Boxes, permission: "products:read" },
       { href: "/admin/reviews", label: "Đánh giá", icon: Star, permission: "products:read" },
     ],

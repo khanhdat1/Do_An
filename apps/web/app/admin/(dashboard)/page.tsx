@@ -20,6 +20,7 @@ export default function AdminIndexPage() {
   useEffect(() => {
     if (!user || showDashboard) return;
     if (user.permissions.includes("orders:read")) router.replace("/admin/orders");
+    else if (user.permissions.includes("customers:read")) router.replace("/admin/customers");
     else if (user.permissions.includes("products:read")) router.replace("/admin/products");
     else router.replace("/admin/2fa");
   }, [user, showDashboard, router]);
