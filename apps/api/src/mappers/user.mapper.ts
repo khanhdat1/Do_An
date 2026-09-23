@@ -1,5 +1,6 @@
 import type { OAuthProvider, User } from "@pczone/db";
-import type { AuthUserDto, LinkedProviderDto } from "../types/dto.js";
+import { permissionsOf } from "../middleware/permissions.js";
+import type { AdminUserDto, AuthUserDto, LinkedProviderDto } from "../types/dto.js";
 
 /** Chọn lọc từng trường một: thêm cột nhạy cảm vào User cũng không thể vô tình lộ ra ngoài. */
 export function toAuthUserDto(user: User): AuthUserDto {
@@ -10,6 +11,19 @@ export function toAuthUserDto(user: User): AuthUserDto {
     phone: user.phone ?? undefined,
     avatarUrl: user.avatarUrl ?? undefined,
     role: user.role,
+    createdAt: user.createdAt.toISOString(),
+  };
+}
+
+/** Không lộ totpSecret (dù đã bật hay chưa) — chỉ trả true/false đã bật hay chưa */
+export function toAdminUserDto(user: User): AdminUserDto {
+  return {
+    id: user.id,
+    email: user.email,
+    fullName: user.fullName,
+    role: user.role,
+    permissions: permissionsOf(user.role),
+    totpEnabled: user.totpEnabledAt !== null,
     createdAt: user.createdAt.toISOString(),
   };
 }

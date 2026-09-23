@@ -58,6 +58,14 @@ export const loginLimiter = limiter({
   message: "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút.",
 });
 
+/** Đăng nhập quản trị: tài khoản có quyền lực hơn khách hàng nên trần thấp hơn hẳn loginLimiter */
+export const adminLoginLimiter = limiter({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  skipSuccessfulRequests: true,
+  message: "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút.",
+});
+
 export const registerLimiter = limiter({
   windowMs: 60 * 60 * 1000,
   limit: 10,

@@ -10,14 +10,14 @@ import {
   wasRemembered,
 } from "./token.service.js";
 
-const BCRYPT_COST = 12;
+export const BCRYPT_COST = 12;
 
 /**
  * Hash hợp lệ của một chuỗi không ai biết. Khi email không tồn tại vẫn phải
  * chạy bcrypt.compare với hash này, để thời gian phản hồi của "sai email" và
  * "sai mật khẩu" giống nhau — kẻ tấn công không dò được email nào đã đăng ký.
  */
-const DUMMY_HASH = "$2b$12$OeBTJkIOm/aJr9DvZFkA5Od3XENL.ltkTpU35IytbDc8KOE2VGBBG";
+export const DUMMY_HASH = "$2b$12$OeBTJkIOm/aJr9DvZFkA5Od3XENL.ltkTpU35IytbDc8KOE2VGBBG";
 
 /**
  * Hai tab cùng gọi /refresh trong một khoảng rất ngắn (mở lại trình duyệt
@@ -64,17 +64,20 @@ export async function createUnusablePasswordHash(): Promise<string> {
   return bcrypt.hash(randomBytes(32).toString("base64url"), BCRYPT_COST);
 }
 
-/** Tạo phiên mới: một access token (JWT) + một refresh token (lưu hash vào DB) */
-export async function issueSession(
-  user: User,
+/**
+ * Phần dùng CHUNG cho phiên khách hàng lẫn phiên admin (admin-auth.service.ts): tạo một dòng
+ * refresh token trong DB, dọn các dòng cũ đã hết hạn/đã thu hồi của chính người dùng này. Không
+ * quan tâm "khách hàng hay admin" — điều đó chỉ nằm ở việc hàm gọi nó ký access token bằng
+ * `signAccessToken` hay `signAdminAccessToken` sau đó.
+ */
+export async function createRefreshTokenRow(
+  user: { id: string },
   context: SessionContext,
-  remember = true,
-): Promise<AuthResult> {
+  remember: boolean,
+): Promise<string> {
   const now = Date.now();
   const { token: refreshToken, tokenHash } = generateRefreshToken();
 
-  // Mỗi lần refresh sinh một dòng mới, nên phải dọn dòng đã hết hạn / đã thu hồi
-  // của chính người dùng này, nếu không bảng RefreshToken phình mãi.
   await prisma.refreshToken.deleteMany({
     where: {
       userId: user.id,
@@ -95,6 +98,16 @@ export async function issueSession(
     },
   });
 
+  return refreshToken;
+}
+
+/** Tạo phiên mới: một access token (JWT) + một refresh token (lưu hash vào DB) */
+export async function issueSession(
+  user: User,
+  context: SessionContext,
+  remember = true,
+): Promise<AuthResult> {
+  const refreshToken = await createRefreshTokenRow(user, context, remember);
   return { user, accessToken: signAccessToken(user), refreshToken, remember };
 }
 
@@ -152,13 +165,12 @@ export async function loginUser(
 }
 
 /**
- * Đổi refresh token lấy cặp token mới (xoay vòng): token cũ bị thu hồi ngay,
- * nên một refresh token bị đánh cắp chỉ dùng được cho tới lần người thật refresh kế tiếp.
+ * Kiểm tra + xoay vòng một refresh token (thu hồi token cũ, trả về user để hàm gọi tự ký access
+ * token phù hợp — khách hàng hay admin). Dùng chung cho cả hai phía, giống `createRefreshTokenRow`.
  */
-export async function refreshSession(
+export async function rotateRefreshToken(
   refreshToken: string,
-  context: SessionContext,
-): Promise<AuthResult> {
+): Promise<{ user: User; remember: boolean }> {
   const record = await prisma.refreshToken.findUnique({
     where: { tokenHash: hashToken(refreshToken) },
     include: { user: true },
@@ -181,7 +193,19 @@ export async function refreshSession(
     });
   }
 
-  return issueSession(record.user, context, wasRemembered(record));
+  return { user: record.user, remember: wasRemembered(record) };
+}
+
+/**
+ * Đổi refresh token lấy cặp token mới (xoay vòng): token cũ bị thu hồi ngay,
+ * nên một refresh token bị đánh cắp chỉ dùng được cho tới lần người thật refresh kế tiếp.
+ */
+export async function refreshSession(
+  refreshToken: string,
+  context: SessionContext,
+): Promise<AuthResult> {
+  const { user, remember } = await rotateRefreshToken(refreshToken);
+  return issueSession(user, context, remember);
 }
 
 /** Đăng xuất: xoá hẳn dòng refresh token (không để lại token đã thu hồi có thể bị dùng lại) */

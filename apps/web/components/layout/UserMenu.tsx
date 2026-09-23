@@ -140,15 +140,15 @@ export default function UserMenu() {
             </Link>
           </div>
 
-          {user.role === "ADMIN" || user.role === "STAFF" ? (
+          {user.role !== "CUSTOMER" ? (
             <div className="border-t border-slate-100 p-1.5 text-sm">
               <Link
-                href="/quan-tri/don-hang"
+                href="/admin/login"
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-2.5 rounded-lg px-3 py-2 font-medium transition hover:bg-slate-100"
               >
                 <ShieldCheck className="size-4 text-slate-400" />
-                Quản trị đơn hàng
+                Trang quản trị
               </Link>
             </div>
           ) : null}

@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, CloudOff, LoaderCircle, PackageSearch, ShieldAlert } from "lucide-react";
-import { useRequireAuth } from "@/components/auth/useRequireAuth";
 import OrderStatusBadge from "@/components/orders/OrderStatusBadge";
 import PaymentStatusBadge from "@/components/orders/PaymentStatusBadge";
+import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
 import { useToast } from "@/components/providers/ToastProvider";
-import { apiFetch, errorMessage } from "@/lib/api-client";
+import { adminApiFetch, errorMessage } from "@/lib/admin-api-client";
 import { formatPrice } from "@/lib/format";
 import { PAYMENT_METHOD_LABEL } from "@/lib/data/orders";
 import type { AdminOrderSummary, Paginated } from "@/types";
@@ -28,7 +28,7 @@ function ConfirmButton({ orderCode, onConfirmed }: { orderCode: string; onConfir
   async function handleConfirm() {
     setBusy(true);
     try {
-      await apiFetch(`/api/admin/orders/${orderCode}/confirm-payment`, { method: "POST", body: {} });
+      await adminApiFetch(`/api/admin/orders/${orderCode}/confirm-payment`, { method: "POST", body: {} });
       toast.success(`Đã xác nhận thanh toán đơn ${orderCode}`);
       onConfirmed();
     } catch (error) {
@@ -50,9 +50,9 @@ function ConfirmButton({ orderCode, onConfirmed }: { orderCode: string; onConfir
   );
 }
 
-/** Danh sách đơn hàng cho nhân viên/quản trị xác nhận thanh toán thủ công (MoMo, chuyển khoản) — trang `/quan-tri/don-hang` */
+/** Danh sách đơn hàng cho nhân viên/quản trị xác nhận thanh toán thủ công (MoMo, chuyển khoản) — trang `/admin/orders` */
 export default function AdminOrderListView() {
-  const user = useRequireAuth("/quan-tri/don-hang");
+  const { user } = useAdminAuth();
   const [tab, setTab] = useState<Tab>("PENDING");
   const [page, setPage] = useState(1);
   const [state, setState] = useState<State>({ status: "loading" });
@@ -76,7 +76,7 @@ export default function AdminOrderListView() {
     setRefreshTick((tick) => tick + 1);
   }
 
-  const allowed = user ? user.role === "ADMIN" || user.role === "STAFF" : null;
+  const allowed = user ? user.permissions.includes("orders:read") : null;
 
   useEffect(() => {
     if (!allowed) return;
@@ -85,7 +85,7 @@ export default function AdminOrderListView() {
     const query = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
     if (tab === "PENDING") query.set("paymentStatus", "PENDING");
 
-    apiFetch<Paginated<AdminOrderSummary>>(`/api/admin/orders?${query}`)
+    adminApiFetch<Paginated<AdminOrderSummary>>(`/api/admin/orders?${query}`)
       .then((data) => {
         if (!cancelled) setState({ status: "ready", data });
       })

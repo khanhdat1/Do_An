@@ -27,7 +27,15 @@ import FormError from "./FormError";
 import { FacebookIcon, GoogleIcon } from "./SocialIcons";
 import { useRequireAuth } from "./useRequireAuth";
 
-const ROLE_LABEL = { CUSTOMER: "Khách hàng", STAFF: "Nhân viên", ADMIN: "Quản trị viên" } as const;
+const ROLE_LABEL = {
+  CUSTOMER: "Khách hàng",
+  STAFF: "Nhân viên",
+  ADMIN: "Quản trị viên",
+  OWNER: "Chủ website",
+  MANAGER: "Quản lý",
+  ORDER_STAFF: "Nhân viên đơn hàng",
+  PRODUCT_STAFF: "Nhân viên sản phẩm",
+} as const;
 
 const PROVIDERS: { key: SocialProvider; label: string; Icon: typeof GoogleIcon }[] = [
   { key: "google", label: "Google", Icon: GoogleIcon },

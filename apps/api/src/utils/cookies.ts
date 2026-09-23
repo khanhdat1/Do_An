@@ -53,6 +53,32 @@ export function clearAuthCookies(res: Response) {
   res.clearCookie(REFRESH_COOKIE, { ...baseOptions, path: REFRESH_PATH });
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Phiên đăng nhập quản trị — cookie KHÁC TÊN + KHÁC PATH hoàn toàn với phía  */
+/*  khách hàng ở trên, để đăng xuất/đăng nhập bên này không đụng bên kia.     */
+/* -------------------------------------------------------------------------- */
+
+export const ADMIN_ACCESS_COOKIE = "pcz_admin_access";
+export const ADMIN_REFRESH_COOKIE = "pcz_admin_refresh";
+/** Cả hai đều chỉ đi kèm request tới /api/admin — không lẫn vào các API công khai/khách hàng */
+const ADMIN_PATH = "/api/admin";
+
+export function setAdminAuthCookies(
+  res: Response,
+  tokens: { accessToken: string; refreshToken: string },
+  options: { remember?: boolean } = {},
+) {
+  const lifetime = (options.remember ?? true) ? { maxAge: REFRESH_TOKEN_TTL_MS } : {};
+
+  res.cookie(ADMIN_ACCESS_COOKIE, tokens.accessToken, { ...baseOptions, path: ADMIN_PATH, ...lifetime });
+  res.cookie(ADMIN_REFRESH_COOKIE, tokens.refreshToken, { ...baseOptions, path: ADMIN_PATH, ...lifetime });
+}
+
+export function clearAdminAuthCookies(res: Response) {
+  res.clearCookie(ADMIN_ACCESS_COOKIE, { ...baseOptions, path: ADMIN_PATH });
+  res.clearCookie(ADMIN_REFRESH_COOKIE, { ...baseOptions, path: ADMIN_PATH });
+}
+
 /** Cookie định danh giỏ hàng của khách chưa đăng nhập (giá trị = Cart.sessionId) */
 export function setGuestCartCookie(res: Response, sessionId: string) {
   res.cookie(GUEST_CART_COOKIE, sessionId, {

@@ -221,7 +221,7 @@ export interface SearchSuggestions {
 /*  Xác thực                                                                  */
 /* -------------------------------------------------------------------------- */
 
-export type UserRole = "CUSTOMER" | "STAFF" | "ADMIN";
+export type UserRole = "CUSTOMER" | "STAFF" | "ADMIN" | "OWNER" | "MANAGER" | "ORDER_STAFF" | "PRODUCT_STAFF";
 
 export interface AuthUser {
   id: string;
@@ -231,6 +231,38 @@ export interface AuthUser {
   avatarUrl?: string;
   role: UserRole;
   createdAt: string;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Quản trị — đăng nhập/phiên (tách biệt phía khách hàng ở trên)             */
+/* -------------------------------------------------------------------------- */
+
+export type Permission =
+  | "orders:read"
+  | "orders:write"
+  | "products:read"
+  | "products:write"
+  | "customers:read"
+  | "customers:write"
+  | "reports:read"
+  | "settings:write"
+  | "admins:manage";
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  fullName: string;
+  role: UserRole;
+  permissions: Permission[];
+  totpEnabled: boolean;
+  createdAt: string;
+}
+
+export type AdminLoginResult = { status: "ok"; user: AdminUser } | { status: "2fa-required"; pendingToken: string };
+
+export interface TotpSetupResult {
+  secret: string;
+  qrCodeDataUrl: string;
 }
 
 /** Nhà cung cấp đăng nhập mạng xã hội; trùng `:provider` trên đường dẫn /api/auth/:provider */

@@ -26,6 +26,12 @@ export function wasRemembered(record: { createdAt: Date; expiresAt: Date }): boo
 }
 
 const ISSUER = "pczone-api";
+/** Issuer riêng cho phiên quản trị — cùng khoá bí mật, nhưng jwt.verify ghim issuer nên một token
+ * ký cho phía khách hàng không bao giờ xác minh được ở phía admin và ngược lại. */
+const ADMIN_ISSUER = "pczone-admin-api";
+/** Token tạm giữa bước 1 (đúng mật khẩu) và bước 2 (đúng mã 2FA) của đăng nhập admin — không phải
+ * access token thật, không set cookie, chỉ đi trong body response rồi POST lại ngay sau đó. */
+const TWO_FA_PENDING_TTL_SECONDS = 60;
 
 export interface AccessTokenClaims {
   userId: string;
@@ -56,6 +62,53 @@ export function verifyAccessToken(token: string): AccessTokenClaims {
   }
 
   return { userId: payload.sub, role: payload.role as UserRole };
+}
+
+/** Giống signAccessToken nhưng issuer riêng (pcz_admin_access cookie) — xem ADMIN_ISSUER ở trên */
+export function signAdminAccessToken(user: { id: string; role: UserRole }): string {
+  return jwt.sign({ role: user.role }, env.jwtSecret, {
+    algorithm: "HS256",
+    issuer: ADMIN_ISSUER,
+    subject: user.id,
+    expiresIn: ACCESS_TOKEN_TTL_SECONDS,
+  });
+}
+
+export function verifyAdminAccessToken(token: string): AccessTokenClaims {
+  const payload = jwt.verify(token, env.jwtSecret, {
+    algorithms: ["HS256"],
+    issuer: ADMIN_ISSUER,
+  });
+
+  if (typeof payload === "string" || !payload.sub || typeof payload.role !== "string") {
+    throw new Error("Access token thiếu claim bắt buộc");
+  }
+
+  return { userId: payload.sub, role: payload.role as UserRole };
+}
+
+/** Bước 1 đăng nhập admin (đúng mật khẩu, tài khoản có bật 2FA) ký token tạm này thay vì cấp cookie ngay */
+export function sign2faPendingToken(userId: string): string {
+  return jwt.sign({ purpose: "2fa-pending" }, env.jwtSecret, {
+    algorithm: "HS256",
+    issuer: ADMIN_ISSUER,
+    subject: userId,
+    expiresIn: TWO_FA_PENDING_TTL_SECONDS,
+  });
+}
+
+/** Ném lỗi nếu sai/hết hạn/không phải loại token này (vd lỡ gửi nhầm access token thật vào đây) */
+export function verify2faPendingToken(token: string): { userId: string } {
+  const payload = jwt.verify(token, env.jwtSecret, {
+    algorithms: ["HS256"],
+    issuer: ADMIN_ISSUER,
+  });
+
+  if (typeof payload === "string" || !payload.sub || payload.purpose !== "2fa-pending") {
+    throw new Error("Token xác thực 2 bước không hợp lệ");
+  }
+
+  return { userId: payload.sub };
 }
 
 /**

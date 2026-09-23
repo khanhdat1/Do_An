@@ -1,7 +1,7 @@
 import type { UserRole } from "@pczone/db";
 import type { Request, RequestHandler } from "express";
-import { verifyAccessToken, type AccessTokenClaims } from "../services/token.service.js";
-import { ACCESS_COOKIE, readCookie } from "../utils/cookies.js";
+import { verifyAccessToken, verifyAdminAccessToken, type AccessTokenClaims } from "../services/token.service.js";
+import { ACCESS_COOKIE, ADMIN_ACCESS_COOKIE, readCookie } from "../utils/cookies.js";
 import { ForbiddenError, UnauthorizedError } from "./errors.js";
 
 /** Trình duyệt gửi qua cookie; công cụ như curl / Postman có thể gửi header Bearer */
@@ -45,8 +45,28 @@ export const requireAuth: RequestHandler = (req, _res, next) => {
 };
 
 /**
+ * Bản dành cho khu quản trị: đọc cookie `pcz_admin_access` riêng (KHÔNG phải `pcz_access` của
+ * khách hàng) và xác minh bằng issuer riêng (`verifyAdminAccessToken`) — một token ký cho phía
+ * khách hàng không bao giờ qua được đây dù cùng khoá bí mật, và ngược lại. Dùng cho MỌI route
+ * `/api/admin/*`, đặt trước `requireAuth`/`requirePermission`. Không đọc header Bearer (khu quản
+ * trị chỉ dùng cookie, không cần hỗ trợ gọi bằng công cụ như customer API).
+ */
+export const authenticateAdmin: RequestHandler = (req, _res, next) => {
+  const token = readCookie(req, ADMIN_ACCESS_COOKIE);
+  if (!token) return next();
+
+  try {
+    req.auth = verifyAdminAccessToken(token);
+    next();
+  } catch {
+    next(new UnauthorizedError("Phiên đăng nhập đã hết hạn"));
+  }
+};
+
+/**
  * Chặn route chỉ dành cho nhân viên/quản trị. Đặt SAU `authenticate` + `requireAuth`.
- * Dùng cho `/api/admin/*` — trang quản trị xác nhận thanh toán thủ công (MoMo, chuyển khoản).
+ * @deprecated Dùng cho các route quản trị CŨ (trước khi có phiên đăng nhập admin tách biệt) — route
+ * mới dùng `authenticateAdmin` + `requirePermission` (middleware/permissions.ts) thay cho hàm này.
  */
 export function requireRole(...roles: UserRole[]): RequestHandler {
   return (req, _res, next) => {
