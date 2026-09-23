@@ -379,6 +379,8 @@ export interface OrderItem {
 export interface OrderStatusEvent {
   status: OrderStatus;
   note?: string;
+  /** Tên nhân viên đã đổi trạng thái này — chỉ có ở trang quản trị */
+  changedByName?: string;
   createdAt: string;
 }
 
@@ -456,6 +458,34 @@ export interface AdminOrderSummary {
   recipientPhone: string;
   itemCount: number;
   createdAt: string;
+}
+
+/** Một lượt thử thanh toán — nhân viên xem đầy đủ hơn khách hàng */
+export interface AdminPaymentRecord {
+  id: string;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  amount: number;
+  transactionNo?: string;
+  paidAt?: string;
+  refundedAt?: string;
+  createdAt: string;
+}
+
+/** `GET /api/admin/orders/:code` — đầy đủ hơn `Order`: mã vận đơn, ghi chú nội bộ, lý do huỷ/hoàn, mọi lượt thanh toán */
+export interface AdminOrder extends Order {
+  trackingNumber?: string;
+  internalNote?: string;
+  cancelReason?: string;
+  returnReason?: string;
+  payments: AdminPaymentRecord[];
+  /** Trạng thái kế tiếp có thể chuyển tới — rỗng nếu đã ở trạng thái cuối */
+  nextStatuses: OrderStatus[];
+  /** Nhân viên huỷ được rộng hơn khách tự huỷ (`canCancel`) */
+  canAdminCancel: boolean;
+  canReturn: boolean;
+  /** Đã thu tiền và đơn đã huỷ/hoàn nhưng CHƯA đánh dấu hoàn tiền */
+  canMarkRefunded: boolean;
 }
 
 /* -------------------------------------------------------------------------- */

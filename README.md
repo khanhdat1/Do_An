@@ -301,8 +301,15 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | GET | `/api/order-lookup?code=&phone=` | Tra cứu đơn hàng công khai (không cần đăng nhập), phải khớp cả mã đơn lẫn số điện thoại nhận hàng |
 | GET | `/api/payments/methods` | Phương thức thanh toán nào đang bật (`{ cod, vnpay, bankTransfer, momo }`, `false` nếu thiếu cấu hình) |
 | GET | `/api/payments/vnpay/return`, `/api/payments/vnpay/ipn` | VNPay gọi về sau khi thanh toán (mục 9 bên dưới) — không gọi trực tiếp từ frontend |
-| GET | `/api/admin/orders?paymentStatus=&paymentMethod=&page=` | Danh sách đơn cho nhân viên xác nhận thanh toán thủ công — cần quyền `orders:read` |
+| GET | `/api/admin/orders?status=&paymentStatus=&paymentMethod=&page=` | Danh sách đơn cho quản trị — cần quyền `orders:read` |
+| GET | `/api/admin/orders/:orderCode` | Chi tiết đầy đủ một đơn: mã vận đơn, ghi chú nội bộ, mọi lượt thanh toán, lịch sử kèm tên người đổi trạng thái — cần quyền `orders:read` |
 | POST | `/api/admin/orders/:orderCode/confirm-payment` | Đánh dấu đã nhận được tiền chuyển khoản/MoMo — không có cổng nào tự báo như VNPay — cần quyền `orders:write` |
+| PATCH | `/api/admin/orders/:orderCode/status` | `{ status, note? }` — chuyển tiến ĐÚNG MỘT bước theo vòng đời (PENDING→CONFIRMED→PACKING→SHIPPING→DELIVERED); CANCELLED/RETURNED có endpoint riêng — cần quyền `orders:write` |
+| POST | `/api/admin/orders/:orderCode/cancel` | `{ reason? }` — nhân viên huỷ đơn (rộng hơn khách tự huỷ: tới trước khi giao xong, không đòi hỏi chưa thanh toán), hoàn kho + mã giảm giá — cần quyền `orders:write` |
+| POST | `/api/admin/orders/:orderCode/return` | `{ reason? }` — khách trả hàng đã nhận (hoặc giao không thành công), chỉ khi đơn đã ở trạng thái đang giao/đã giao, hoàn kho kiểu `RETURN` — cần quyền `orders:write` |
+| POST | `/api/admin/orders/:orderCode/mark-refunded` | `{ note? }` — ghi nhận THỦ CÔNG đã chuyển tiền lại cho khách, không tự động qua cổng nào; chỉ dùng khi đơn đã huỷ/hoàn và đã từng thu tiền — cần quyền `orders:write` |
+| PATCH | `/api/admin/orders/:orderCode/tracking-number` | `{ trackingNumber }` — chuỗi rỗng để xoá — cần quyền `orders:write` |
+| PATCH | `/api/admin/orders/:orderCode/internal-note` | `{ internalNote }` — chuỗi rỗng để xoá; không hiện ở phiếu in hay cho khách hàng — cần quyền `orders:write` |
 | POST | `/api/admin/auth/login` | `{ email, password, remember? }` — đăng nhập khu quản trị (JWT/cookie **riêng hoàn toàn** với khách hàng). Tài khoản có role `CUSTOMER` luôn bị từ chối. Nếu tài khoản đã bật 2FA: trả `{ status: "2fa-required", pendingToken }`, CHƯA đăng nhập |
 | POST | `/api/admin/auth/login/verify-2fa` | `{ pendingToken, code }` — bước 2 khi tài khoản đã bật 2FA, `pendingToken` sống 60 giây |
 | POST | `/api/admin/auth/refresh`, `/api/admin/auth/logout` | Làm mới / thu hồi phiên đăng nhập quản trị — độc lập hoàn toàn với `/api/auth/*` của khách hàng |
@@ -623,9 +630,11 @@ mọi lưới sản phẩm biết ngay trạng thái ban đầu mà không phả
 Chỉ khách **đã mua và thanh toán xong** mới đánh giá được — cụ thể là có ít nhất một đơn
 `paymentStatus: PAID` chứa sản phẩm đó mà **chưa dùng để đánh giá lần nào** (`Review.orderId` +
 `@@unique([productId, userId, orderId])`: mua ở nhiều đơn khác nhau thì đánh giá được từng đó lần,
-mỗi đơn một lần). Dùng mốc "đã thanh toán" thay vì "đã giao hàng" vì hệ thống hiện chưa có bước cập
-nhật trạng thái giao hàng thật (mục 11, Đợt 2) — `paymentStatus` chuyển sang `PAID` khi VNPay báo về, hoặc
-nhân viên xác nhận tay ở `/admin/orders` (áp dụng cho cả COD, không chỉ chuyển khoản/MoMo).
+mỗi đơn một lần). Dùng mốc "đã thanh toán" thay vì "đã giao hàng" — `paymentStatus` chuyển sang `PAID`
+khi VNPay báo về, hoặc nhân viên xác nhận tay ở `/admin/orders` (áp dụng cho cả COD, không chỉ chuyển
+khoản/MoMo). Hệ thống nay đã có đủ trạng thái giao hàng thật (mục 11, Đợt 2), nhưng tiêu chí đánh giá
+CHỦ Ý chưa đổi theo: bắt khách chờ tới khi nhân viên tự tay bấm đủ 4-5 bước mới cho đánh giá là một
+quyết định sản phẩm cần cân nhắc riêng, chưa nằm trong phạm vi Đợt 2 — đây là điểm có thể xem lại sau.
 
 Đánh giá gửi lên luôn ở trạng thái **chờ duyệt** (`isApproved: false`), không hiện công khai ngay —
 nhân viên vào `/admin/reviews` (cần quyền `products:read`/`products:write` — mục 11) duyệt / xoá / trả
@@ -694,21 +703,43 @@ bật 2FA thì đăng nhập luôn cần thêm bước nhập mã 6 số (endpoi
 
 Giới hạn **5 lần đăng nhập sai / 15 phút** theo IP (`adminLoginLimiter`, chặt hơn giới hạn 10 lần của
 khách hàng). Các thao tác quan trọng được ghi vào bảng `AdminAuditLog` (ai, làm gì, trên đối tượng nào,
-lúc nào) — hiện đã ghi khi bật/tắt 2FA; các đợt sau (đơn hàng, sản phẩm, tồn kho) sẽ ghi thêm khi thao
-tác tương ứng được xây.
+lúc nào) — hiện đã ghi khi bật/tắt 2FA và mọi thao tác đơn hàng bên dưới; các đợt sau (sản phẩm, tồn
+kho) sẽ ghi thêm khi thao tác tương ứng được xây.
 
-### Tình trạng — đây mới là Đợt 1/6
+### Quản lý đơn hàng — vòng đời đầy đủ (Đợt 2)
 
-Đã xong: đăng nhập/phân quyền tách biệt (trên), khung giao diện `/admin` (sidebar theo quyền, tương
-thích di động), 2 trang đã có chuyển sang hệ thống mới — **xem đơn hàng + xác nhận thanh toán thủ công**
-(`/admin/orders`) và **duyệt đánh giá** (`/admin/reviews`).
+`/admin/orders` (danh sách, lọc theo trạng thái đơn/thanh toán/phương thức) → bấm vào một đơn để tới
+`/admin/orders/[code]` (chi tiết):
+
+- **7 trạng thái** đúng theo `OrderStatus` đã có sẵn trong schema từ đầu dự án: chờ xác nhận → đã xác
+  nhận → đang đóng gói → đang giao → đã giao, cộng hai nhánh rẽ đã huỷ / đã hoàn. Nút hành động chính
+  luôn chỉ cho phép **tiến đúng một bước** (server kiểm bằng `FORWARD_NEXT_STATUS`, không cho nhảy cóc),
+  mỗi bước tự ghi lại đúng mốc thời gian (`confirmedAt`/`packedAt`/`shippedAt`/`deliveredAt`).
+- **Huỷ đơn** (nhân viên huỷ được tới trước khi giao xong, rộng hơn nút tự huỷ của khách — không đòi
+  hỏi chưa thanh toán) hoàn kho kiểu `ADJUST` + hoàn lượt mã giảm giá nếu có. **Xử lý hoàn hàng** (chỉ
+  khi đơn đang giao/đã giao) hoàn kho kiểu `RETURN`, không hoàn mã giảm giá (đơn đã hoàn tất giao dịch).
+  Cả hai đều hỏi lại kèm ô lý do trước khi thực hiện.
+- **Không tự động hoàn tiền**: huỷ/hoàn một đơn đã thu tiền (`paymentStatus: PAID`) không tự đổi trạng
+  thái thanh toán — nút riêng **"Đánh dấu đã hoàn tiền"** chỉ ghi nhận bút toán thủ công (nhân viên xác
+  nhận đã tự chuyển khoản lại), giao diện nói rõ đây không phải chuyển tiền tự động qua cổng nào, đúng
+  nguyên tắc "không giả lập thông báo thành công" khi chưa có tích hợp hoàn tiền thật.
+- **Mã vận đơn** và **ghi chú nội bộ** sửa trực tiếp tại trang chi tiết. Ghi chú nội bộ **không** xuất
+  hiện ở phiếu in hay bất kỳ API nào khách hàng gọi được — chỉ nhân viên/quản trị viên thấy.
+- **In đơn** (`/admin/orders/[code]/print`, mở tab riêng): phiếu giao hàng gọn để in, cũng chủ ý không
+  đưa ghi chú nội bộ hay lý do huỷ/hoàn vào (phiếu này có thể lọt tới tay đơn vị vận chuyển hoặc khách).
+- **Lịch sử đầy đủ kèm người thực hiện**: `OrderStatusHistory.changedBy` giờ có quan hệ Prisma thật tới
+  `User`, trang chi tiết hiện tên nhân viên ở từng dòng thời gian.
+
+### Tình trạng — đã xong Đợt 1-2/6
+
+Đã xong: đăng nhập/phân quyền tách biệt (Đợt 1), khung giao diện `/admin` (sidebar theo quyền, tương
+thích di động), duyệt đánh giá (`/admin/reviews`), và toàn bộ quản lý đơn hàng ở trên (Đợt 2).
 
 **Chưa làm** (roadmap các đợt sau, xem lịch sử trò chuyện lúc lập kế hoạch để biết chi tiết từng đợt):
-quản lý vòng đời đơn hàng đầy đủ (7 trạng thái, mã vận đơn, ghi chú nội bộ, in đơn, huỷ/hoàn), quản lý
-sản phẩm (thêm/sửa/ẩn/lưu trữ) và tồn kho (nhập/xuất/điều chỉnh, cảnh báo sắp hết), trang tổng quan
-doanh thu (biểu đồ theo ngày/tuần/tháng/năm, phân biệt doanh thu thuần) và xuất báo cáo Excel/CSV, quản
-lý khách hàng (danh sách, khoá/mở khoá), giao diện quản trị mã giảm giá (backend `/api/vouchers*` đã có
-sẵn từ trước), quản trị nội dung (banner/menu/bài viết/trang tĩnh).
+quản lý sản phẩm (thêm/sửa/ẩn/lưu trữ) và tồn kho (nhập/xuất/điều chỉnh, cảnh báo sắp hết), trang tổng
+quan doanh thu (biểu đồ theo ngày/tuần/tháng/năm, phân biệt doanh thu thuần) và xuất báo cáo Excel/CSV,
+quản lý khách hàng (danh sách, khoá/mở khoá), giao diện quản trị mã giảm giá (backend `/api/vouchers*`
+đã có sẵn từ trước), quản trị nội dung (banner/menu/bài viết/trang tĩnh).
 
 ## 12. Tài khoản mẫu
 
@@ -737,7 +768,7 @@ sẵn từ trước), quản trị nội dung (banner/menu/bài viết/trang tĩ
 - [ ] Cổng thanh toán thật cho thẻ quốc tế / trả góp (MoMo Business API, OnePay...) — mỗi cổng cần tự đăng ký tài khoản sandbox riêng như VNPay; thẻ ATM/Visa/Master nội địa đã dùng được ngay qua VNPay (mục 9)
 - [ ] Service AI (Python/FastAPI): AI Search, AI Chat, AI Build PC
 - [x] **Admin Dashboard — Đợt 1/6** (mục 11): đăng nhập/phân quyền tách biệt hoàn toàn khỏi khách hàng (`/admin/login`, cookie/JWT riêng), 4 vai trò quản trị + kiểm tra quyền theo từng route ở server, 2FA (TOTP) tự nguyện, giới hạn đăng nhập sai, nhật ký thao tác (`AdminAuditLog`), khung giao diện `/admin` (sidebar theo quyền, tương thích di động), script tạo tài khoản quản trị an toàn (`create-admin.mts`); 2 trang quản trị cũ (xem đơn hàng, duyệt đánh giá) đã chuyển sang hệ thống mới
-- [ ] **Admin Dashboard — Đợt 2**: quản lý đơn hàng đầy đủ vòng đời (7 trạng thái, mã vận đơn, ghi chú nội bộ, in đơn, huỷ/hoàn theo quyền, lịch sử thay đổi)
+- [x] **Admin Dashboard — Đợt 2** (mục 11): quản lý đơn hàng đầy đủ vòng đời (7 trạng thái tiến tuần tự, mã vận đơn, ghi chú nội bộ không lộ ra ngoài, in đơn, huỷ/hoàn theo quyền kèm hoàn kho đúng loại, đánh dấu hoàn tiền thủ công — không giả vờ tự động, lịch sử đổi trạng thái kèm tên người thực hiện)
 - [ ] **Admin Dashboard — Đợt 3**: quản lý sản phẩm (thêm/sửa/ẩn/lưu trữ, duyệt sản phẩm DRAFT) và tồn kho (nhập/xuất/điều chỉnh, cảnh báo sắp hết)
 - [ ] **Admin Dashboard — Đợt 4**: trang tổng quan doanh thu (biểu đồ ngày/tuần/tháng/năm, phân biệt tổng đơn/đã thu/hoàn/doanh thu thuần) và xuất báo cáo Excel/CSV
 - [ ] **Admin Dashboard — Đợt 5**: quản lý khách hàng (danh sách, lịch sử mua, khoá/mở khoá tài khoản)

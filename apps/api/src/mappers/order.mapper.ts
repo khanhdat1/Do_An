@@ -1,8 +1,10 @@
-import type { Order, OrderStatusHistory, Prisma } from "@pczone/db";
+import type { Order, OrderStatus, OrderStatusHistory, Prisma } from "@pczone/db";
 import { env } from "../env.js";
 import { buildBankQrUrl, isBankTransferConfigured, isMomoConfigured } from "../services/manual-payment.service.js";
 import type {
+  AdminOrderDto,
   AdminOrderSummaryDto,
+  AdminPaymentRecordDto,
   OrderDto,
   OrderItemDto,
   OrderStatusEventDto,
@@ -87,7 +89,14 @@ function manualPaymentInfoOf(
   return {};
 }
 
-export function toOrderDto(order: OrderWithRelations): OrderDto {
+/**
+ * `historyMapper` mặc định bỏ qua tên người đổi trạng thái (khách hàng không cần biết nhân viên nào) —
+ * `toAdminOrderDto` bên dưới truyền `toAdminStatusEventDto` để có thêm `changedByName`.
+ */
+export function toOrderDto(
+  order: OrderWithRelations,
+  historyMapper: (event: OrderWithRelations["statusHistory"][number]) => OrderStatusEventDto = toStatusEventDto,
+): OrderDto {
   return {
     orderCode: order.orderCode,
     status: order.status,
@@ -111,7 +120,7 @@ export function toOrderDto(order: OrderWithRelations): OrderDto {
     },
     customerNote: order.customerNote ?? undefined,
     items: order.items.map(toOrderItemDto),
-    statusHistory: order.statusHistory.map(toStatusEventDto),
+    statusHistory: order.statusHistory.map(historyMapper),
     createdAt: order.createdAt.toISOString(),
   };
 }
@@ -157,5 +166,83 @@ export function toAdminOrderSummaryDto(order: OrderSummaryRow): AdminOrderSummar
     recipientPhone: order.recipientPhone,
     itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
     createdAt: order.createdAt.toISOString(),
+  };
+}
+
+/** Trạng thái kế tiếp khi chuyển "tiến" một bước bình thường — KHÔNG gồm CANCELLED/RETURNED (có API riêng, kèm hoàn kho + lý do) */
+export const FORWARD_NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
+  PENDING: "CONFIRMED",
+  CONFIRMED: "PACKING",
+  PACKING: "SHIPPING",
+  SHIPPING: "DELIVERED",
+};
+
+/** Nhân viên huỷ được rộng hơn khách tự huỷ: tới trước khi giao xong, không đòi hỏi chưa thanh toán */
+export function canAdminCancelOrder(status: OrderStatus): boolean {
+  return status === "PENDING" || status === "CONFIRMED" || status === "PACKING" || status === "SHIPPING";
+}
+
+/** Chỉ xử lý "hoàn hàng" khi đơn thực sự đã được gửi đi */
+export function canReturnOrder(status: OrderStatus): boolean {
+  return status === "SHIPPING" || status === "DELIVERED";
+}
+
+/** GET /api/admin/orders/:code — thêm changedByUser (tên nhân viên) vào lịch sử và toàn bộ lượt thanh toán */
+export const adminOrderInclude = {
+  items: { include: { product: { select: { slug: true } } }, orderBy: { createdAt: "asc" } },
+  statusHistory: {
+    include: { changedByUser: { select: { fullName: true } } },
+    orderBy: { createdAt: "asc" },
+  },
+  payments: { orderBy: { createdAt: "asc" } },
+  voucher: { select: { code: true } },
+} satisfies Prisma.OrderInclude;
+
+export type AdminOrderWithRelations = Prisma.OrderGetPayload<{ include: typeof adminOrderInclude }>;
+
+/**
+ * `changedByUser` khai báo OPTIONAL (không lấy thẳng từ `AdminOrderWithRelations`) để kiểu tham số này
+ * tương thích ngược với `toOrderDto`'s `historyMapper` (nhận dòng KHÔNG có include quan hệ này) — nếu
+ * bắt buộc có, TypeScript coi hai kiểu hàm nghịch biến và báo lỗi không gán được.
+ */
+function toAdminStatusEventDto(
+  event: OrderWithRelations["statusHistory"][number] & { changedByUser?: { fullName: string } | null },
+): OrderStatusEventDto {
+  return {
+    status: event.toStatus,
+    note: event.note ?? undefined,
+    changedByName: event.changedByUser?.fullName,
+    createdAt: event.createdAt.toISOString(),
+  };
+}
+
+function toAdminPaymentRecordDto(payment: AdminOrderWithRelations["payments"][number]): AdminPaymentRecordDto {
+  return {
+    id: payment.id,
+    method: payment.method,
+    status: payment.status,
+    amount: toNumber(payment.amount),
+    transactionNo: payment.transactionNo ?? undefined,
+    paidAt: payment.paidAt?.toISOString(),
+    refundedAt: payment.refundedAt?.toISOString(),
+    createdAt: payment.createdAt.toISOString(),
+  };
+}
+
+export function toAdminOrderDto(order: AdminOrderWithRelations): AdminOrderDto {
+  const base = toOrderDto(order, toAdminStatusEventDto);
+  const nextStatus = FORWARD_NEXT_STATUS[order.status];
+
+  return {
+    ...base,
+    trackingNumber: order.trackingNumber ?? undefined,
+    internalNote: order.internalNote ?? undefined,
+    cancelReason: order.cancelReason ?? undefined,
+    returnReason: order.returnReason ?? undefined,
+    payments: order.payments.map(toAdminPaymentRecordDto),
+    nextStatuses: nextStatus ? [nextStatus] : [],
+    canAdminCancel: canAdminCancelOrder(order.status),
+    canReturn: canReturnOrder(order.status),
+    canMarkRefunded: order.paymentStatus === "PAID" && (order.status === "CANCELLED" || order.status === "RETURNED"),
   };
 }

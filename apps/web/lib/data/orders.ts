@@ -27,6 +27,14 @@ export const ORDER_STATUS_TONE: Record<OrderStatus, Tone> = {
 /** Thứ tự các bước bình thường của một đơn (không tính hai nhánh rẽ CANCELLED / RETURNED) — dùng vẽ dòng thời gian */
 export const ORDER_STEPS: OrderStatus[] = ["PENDING", "CONFIRMED", "PACKING", "SHIPPING", "DELIVERED"];
 
+/** Chữ trên nút chuyển đơn sang trạng thái này — khoá theo trạng thái ĐÍCH (order.nextStatuses trả từ API) */
+export const ORDER_ADVANCE_LABEL: Partial<Record<OrderStatus, string>> = {
+  CONFIRMED: "Xác nhận đơn hàng",
+  PACKING: "Bắt đầu đóng gói",
+  SHIPPING: "Bắt đầu giao hàng",
+  DELIVERED: "Đánh dấu đã giao thành công",
+};
+
 export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
   PENDING: "Chưa thanh toán",
   PAID: "Đã thanh toán",

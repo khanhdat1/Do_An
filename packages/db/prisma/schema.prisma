@@ -413,6 +413,7 @@ model User {
   voucherUses   VoucherRedemption[]
   inventoryTxs  InventoryTransaction[]
   adminAuditLogs AdminAuditLog[]
+  orderStatusChanges OrderStatusHistory[] @relation("OrderStatusChangedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -576,6 +577,7 @@ model Order {
   shippingAddress  String  @db.VarChar(300)
   customerNote     String? @db.VarChar(500)
   internalNote     String? @db.VarChar(500) // ghi chú nội bộ của nhân viên
+  trackingNumber   String? @db.VarChar(100) // mã vận đơn
 
   voucherId String?
   voucher   Voucher? @relation(fields: [voucherId], references: [id], onDelete: SetNull)
@@ -586,11 +588,14 @@ model Order {
   inventoryTxs  InventoryTransaction[]
   reviews       Review[]
 
-  confirmedAt DateTime?
-  shippedAt   DateTime?
-  deliveredAt DateTime?
-  cancelledAt DateTime?
-  cancelReason String? @db.VarChar(300)
+  confirmedAt  DateTime?
+  packedAt     DateTime?
+  shippedAt    DateTime?
+  deliveredAt  DateTime?
+  cancelledAt  DateTime?
+  cancelReason String?   @db.VarChar(300)
+  returnedAt   DateTime?
+  returnReason String?   @db.VarChar(300)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -632,7 +637,8 @@ model OrderStatusHistory {
   fromStatus OrderStatus?
   toStatus   OrderStatus
   note       String?      @db.VarChar(300)
-  changedBy  String? // userId của nhân viên, hoặc null nếu hệ thống tự đổi
+  changedBy  String? // userId của nhân viên, hoặc null nếu hệ thống tự đổi / khách tự huỷ
+  changedByUser User? @relation("OrderStatusChangedBy", fields: [changedBy], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
