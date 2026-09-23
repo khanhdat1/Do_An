@@ -8,6 +8,7 @@ import { errorHandler, notFoundHandler } from "./middleware/errors.js";
 import { originGuard } from "./middleware/security.js";
 import { addressesRouter } from "./routes/addresses.routes.js";
 import { adminAuthRouter } from "./routes/admin-auth.routes.js";
+import { adminBannersRouter } from "./routes/admin-banners.routes.js";
 import { adminCustomersRouter } from "./routes/admin-customers.routes.js";
 import { adminDashboardRouter } from "./routes/admin-dashboard.routes.js";
 import { adminOrdersRouter } from "./routes/admin-orders.routes.js";
@@ -15,6 +16,7 @@ import { adminProductsRouter } from "./routes/admin-products.routes.js";
 import { adminReviewsRouter } from "./routes/admin-reviews.routes.js";
 import { adminVouchersRouter } from "./routes/admin-vouchers.routes.js";
 import { authRouter } from "./routes/auth.routes.js";
+import { bannersRouter } from "./routes/banners.routes.js";
 import { cartRouter } from "./routes/cart.routes.js";
 import { categoriesRouter } from "./routes/categories.routes.js";
 import { oauthRouter } from "./routes/oauth.routes.js";
@@ -54,6 +56,7 @@ export function createApp() {
   app.use("/api/categories", categoriesRouter);
   app.use("/api/search", searchRouter);
   app.use("/api/vouchers", vouchersRouter);
+  app.use("/api/banners", bannersRouter);
   app.use("/api/auth", authRouter);
   // Sau authRouter để /api/auth/me, /login... khớp trước; :provider chỉ nhận google | facebook
   app.use("/api/auth", oauthRouter);
@@ -64,6 +67,7 @@ export function createApp() {
   app.use("/api/order-lookup", orderLookupRouter);
   app.use("/api/payments", paymentsRouter);
   app.use("/api/admin/auth", adminAuthRouter);
+  app.use("/api/admin/banners", adminBannersRouter);
   app.use("/api/admin/customers", adminCustomersRouter);
   app.use("/api/admin/dashboard", adminDashboardRouter);
   app.use("/api/admin/orders", adminOrdersRouter);

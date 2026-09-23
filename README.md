@@ -284,6 +284,7 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | POST \| DELETE | `/api/wishlist/:productId` | Thêm / xoá một sản phẩm khỏi yêu thích |
 | GET | `/api/vouchers` | Mã giảm giá công khai đang áp dụng được (không cần đăng nhập) |
 | GET | `/api/vouchers/preview?code=&subtotal=` | Xem trước số tiền được giảm trước khi đặt hàng (cần đăng nhập, để kiểm tra lượt dùng của riêng người đó) |
+| GET | `/api/banners` | Dải banner khuyến mãi trang chủ đang hiện được (đã đăng + trong khoảng ngày hiệu lực), công khai |
 | GET | `/api/products/:slug/reviews?page=&pageSize=` | Đánh giá ĐÃ DUYỆT của một sản phẩm, công khai, mới nhất trước |
 | GET | `/api/products/:slug/reviews/eligibility` | Đã mua (đơn thanh toán xong) và còn đơn nào chưa dùng để đánh giá không (cần đăng nhập) |
 | POST | `/api/products/:slug/reviews` | Gửi đánh giá `{ rating, title?, content? }` — chỉ khách có đơn `paymentStatus=PAID` chứa sản phẩm này; vào hàng chờ duyệt, chưa hiện công khai ngay |
@@ -327,6 +328,10 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | GET | `/api/admin/vouchers/:id` | Chi tiết một mã | cần quyền `vouchers:read` |
 | POST | `/api/admin/vouchers`, PATCH `/api/admin/vouchers/:id` | Tạo/sửa mã — `code` tự viết hoa, kiểm mã trùng, `%` phải 1-100 — cần quyền `vouchers:write` |
 | DELETE | `/api/admin/vouchers/:id` | Chỉ xoá được mã CHƯA từng dùng (`usageCount = 0`); mã đã dùng phải tắt (`isActive=false`) thay vì xoá, để giữ lịch sử đối soát — cần quyền `vouchers:write` |
+| GET | `/api/admin/banners` | Mọi banner (nháp + đã đăng) — cần quyền `content:read` |
+| POST | `/api/admin/banners/upload-image` | Multipart field `image` (JPEG/PNG/WEBP/GIF, tối đa 5MB) — trả `{url}` để đưa vào form tạo/sửa banner — cần quyền `content:write` |
+| POST | `/api/admin/banners`, PATCH `/api/admin/banners/:id` | Tạo/sửa banner — cần quyền `content:write` |
+| DELETE | `/api/admin/banners/:id` | Không có bảng con tham chiếu, xoá thẳng — cần quyền `content:write` |
 | POST | `/api/admin/auth/login` | `{ email, password, remember? }` — đăng nhập khu quản trị (JWT/cookie **riêng hoàn toàn** với khách hàng). Tài khoản có role `CUSTOMER` luôn bị từ chối. Nếu tài khoản đã bật 2FA: trả `{ status: "2fa-required", pendingToken }`, CHƯA đăng nhập |
 | POST | `/api/admin/auth/login/verify-2fa` | `{ pendingToken, code }` — bước 2 khi tài khoản đã bật 2FA, `pendingToken` sống 60 giây |
 | POST | `/api/admin/auth/refresh`, `/api/admin/auth/logout` | Làm mới / thu hồi phiên đăng nhập quản trị — độc lập hoàn toàn với `/api/auth/*` của khách hàng |
@@ -831,19 +836,35 @@ trước và không đổi gì — đây chỉ là lớp quản trị (tạo/s�
 - Trạng thái hiển thị (Đang áp dụng / Sắp diễn ra / Đã hết hạn / Hết lượt / Đã tắt) tự suy ra từ
   `isActive` + khoảng ngày + lượt dùng, cùng logic trang công khai `/khuyen-mai` đang dùng để lọc mã còn
   áp dụng được — không phải một cột lưu riêng.
-- **Chưa làm ở đợt này**: quản trị nội dung (banner/menu/bài viết/trang tĩnh) — phần còn lại của Đợt 6,
-  cần chốt phạm vi cụ thể với người dùng trước khi làm (xem phần "Chưa làm" bên dưới).
+### Banner trang chủ (Đợt 6, phần 2/2)
 
-### Tình trạng — đã xong Đợt 1-5/6 + quản trị mã giảm giá (Đợt 6, phần 1/2)
+`/admin/banners` (chỉ OWNER/MANAGER — quyền `content:read`/`content:write`, mới thêm ở đợt này). Phạm
+vi chốt qua trao đổi với người dùng: chỉ làm banner trang chủ (không làm menu/bài viết/trang tĩnh —
+những mục còn lại trong ý tưởng "quản trị nội dung" ban đầu), nhưng làm **đầy đủ** cho riêng banner:
+
+- **Tải ảnh thật lên** (không chỉ dán URL) — `multer`, giới hạn 5MB, chỉ nhận JPEG/PNG/WEBP/GIF, đặt
+  tên file ngẫu nhiên (không dùng tên gốc, tránh path traversal/đè file), lưu vào
+  `apps/web/public/images/banners/`.
+- **Lên lịch hiển thị** (ngày bắt đầu/kết thúc, để trống = không giới hạn phía đó) VÀ **trạng thái
+  nháp/đã đăng** là hai điều kiện độc lập — banner chỉ thật sự hiện trên trang chủ khi vừa "Đã đăng"
+  vừa đang trong khoảng ngày (nếu có đặt), giống hệt cách mã giảm giá đang lọc "còn áp dụng được".
+- Dải banner (`PromoBannerCarousel`) hiện ngay dưới banner thương hiệu cố định (`HeroBanner` — khối
+  không đổi, không phải nội dung quản trị được) ở trang chủ, tự xoay vòng nếu có từ 2 banner đang hiện
+  trở lên; API tắt hoặc chưa có banner nào thì ẩn hẳn khối này, không hiện khung rỗng.
+- Xoá banner không cần chặn gì (khác mã giảm giá) — Banner không có bảng con nào tham chiếu tới.
+- **Chưa làm**: menu điều hướng, bài viết/thông báo, trang tĩnh (giới thiệu/liên hệ/chính sách) — các
+  mục còn lại của ý tưởng "quản trị nội dung" gốc, người dùng đã xác nhận chỉ cần banner ở đợt này.
+
+### Tình trạng — đã xong Đợt 1-6/6
 
 Đã xong: đăng nhập/phân quyền tách biệt (Đợt 1), khung giao diện `/admin` (sidebar theo quyền, tương
 thích di động), duyệt đánh giá (`/admin/reviews`), toàn bộ quản lý đơn hàng (Đợt 2), quản lý sản
-phẩm/kho hàng (Đợt 3), trang tổng quan doanh thu (Đợt 4), quản lý khách hàng (Đợt 5), và quản trị mã
-giảm giá ở trên (Đợt 6, phần 1/2).
+phẩm/kho hàng (Đợt 3), trang tổng quan doanh thu (Đợt 4), quản lý khách hàng (Đợt 5), quản trị mã giảm
+giá và banner trang chủ (Đợt 6) — toàn bộ lộ trình 6 đợt ban đầu.
 
-**Chưa làm**: xuất báo cáo Excel/CSV, quản trị nội dung (banner/menu/bài viết/trang tĩnh — nửa còn lại
-của Đợt 6, phạm vi cụ thể chưa chốt với người dùng vì đây là mục bị hoãn thiết kế chi tiết ngay từ lúc
-lập kế hoạch ban đầu).
+**Chưa làm**: xuất báo cáo Excel/CSV, menu/bài viết/trang tĩnh (phần "quản trị nội dung" ngoài banner —
+người dùng xác nhận không cần ở đợt này), điểm thưởng PCPoints/hạng thành viên (kế hoạch riêng, chưa
+chốt ngưỡng cụ thể).
 
 ## 12. Tài khoản mẫu
 
@@ -877,4 +898,4 @@ lập kế hoạch ban đầu).
 - [x] **Admin Dashboard — Đợt 4** (mục 11): trang tổng quan doanh thu (biểu đồ ngày/tuần/tháng/năm + lọc khoảng thời gian, phân biệt tổng đơn/đã thu/hoàn/doanh thu thuần, sản phẩm bán chạy/sắp hết hàng/đơn gần đây) — **chưa làm** xuất báo cáo Excel/CSV (để dành phần báo cáo/cài đặt sau)
 - [x] **Admin Dashboard — Đợt 5** (mục 11): quản lý khách hàng (danh sách có tìm kiếm/lọc theo trạng thái khoá, lịch sử mua hàng, tổng chi tiêu tính đúng theo đơn đã thanh toán, khoá/mở khoá tài khoản, không hiển thị mật khẩu)
 - [x] **Admin Dashboard — Đợt 6, phần 1/2** (mục 11): giao diện quản trị mã giảm giá (tạo/sửa/tắt/xoá — xoá bị chặn nếu mã đã được dùng, chỉ tắt được)
-- [ ] **Admin Dashboard — Đợt 6, phần 2/2**: quản trị nội dung (banner/menu/bài viết/trang tĩnh) — phạm vi chưa chốt
+- [x] **Admin Dashboard — Đợt 6, phần 2/2** (mục 11): banner trang chủ (tải ảnh thật lên, lên lịch hiển thị, nháp/đã đăng) — menu/bài viết/trang tĩnh xác nhận không làm ở đợt này

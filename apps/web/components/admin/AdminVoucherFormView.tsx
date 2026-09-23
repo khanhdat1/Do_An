@@ -7,6 +7,7 @@ import { ChevronLeft, CloudOff, LoaderCircle, ShieldAlert, Trash2 } from "lucide
 import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { ApiError, adminApiFetch, errorMessage } from "@/lib/admin-api-client";
+import { toDateInput } from "@/lib/format";
 import type { AdminVoucher, AdminVoucherInput, DiscountType } from "@/types";
 
 type LoadState = { status: "loading" } | { status: "not_found" } | { status: "error" } | { status: "ready"; voucher: AdminVoucher | null };
@@ -25,21 +26,6 @@ interface FormState {
   startsAt: string;
   endsAt: string;
   isActive: boolean;
-}
-
-/**
- * ISO datetime -> "YYYY-MM-DD" theo giờ ĐỊA PHƯƠNG (múi giờ Việt Nam UTC+7), không cắt chuỗi UTC.
- * `startsAt`/`endsAt` được ghi lên server không kèm "Z" (giờ địa phương, xem submit() bên dưới), nên
- * đọc ngược lại cũng phải qua bộ đọc theo giờ địa phương (`getFullYear`/`getMonth`/`getDate`) — cắt
- * thẳng chuỗi UTC (`iso.slice(0,10)`) làm ngày bắt đầu lùi lại 1 hôm mỗi lần mở form sửa (00:00 giờ VN
- * = 17:00 UTC hôm trước).
- */
-function toDateInput(iso: string): string {
-  const date = new Date(iso);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
 
 function emptyForm(): FormState {

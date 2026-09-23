@@ -40,6 +40,21 @@ export function formatCompactPrice(value: number): string {
   return `${sign}${abs}`;
 }
 
+/**
+ * ISO datetime -> "YYYY-MM-DD" cho <input type="date">, theo giờ ĐỊA PHƯƠNG (múi giờ Việt Nam
+ * UTC+7) — dùng `Date` getters (`getFullYear`/`getMonth`/`getDate`), KHÔNG cắt chuỗi UTC
+ * (`iso.slice(0,10)`). Các form admin ghi ngày lên server dạng giờ địa phương không kèm "Z"
+ * (`${date}T00:00:00`), nên đọc ngược lại cũng phải qua giờ địa phương — cắt thẳng chuỗi UTC sẽ làm
+ * ngày lùi lại 1 hôm (00:00 giờ VN = 17:00 UTC hôm trước). Dùng ở cả form mã giảm giá và form banner.
+ */
+export function toDateInput(iso: string): string {
+  const date = new Date(iso);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 /** Ghép giây thành cặp số 2 chữ số cho đồng hồ đếm ngược */
 export function splitCountdown(totalSeconds: number) {
   const safe = Math.max(0, totalSeconds);

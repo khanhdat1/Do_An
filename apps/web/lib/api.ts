@@ -1,4 +1,4 @@
-import type { Category, CategoryDetail, Paginated, Product, ProductDetail, SearchResult, Voucher } from "@/types";
+import type { Banner, Category, CategoryDetail, Paginated, Product, ProductDetail, SearchResult, Voucher } from "@/types";
 import type { SearchQuery } from "@/lib/search-query";
 import {
   bestSellerProducts,
@@ -292,5 +292,19 @@ export async function getCategories(): Promise<Category[]> {
 /** Mã công khai đang áp dụng được — trang `/khuyen-mai` */
 export async function getActiveVouchers(): Promise<Voucher[]> {
   const data = await apiGet<{ items: Voucher[] }>("/api/vouchers", { items: activeVouchers });
+  return data.items;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Banner trang chủ                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Dải banner khuyến mãi trang chủ. Không có dữ liệu mẫu dự phòng như sản phẩm/mã giảm giá — đây là
+ * nội dung admin tự đăng qua `/admin/banners`, không có phiên bản "demo" hợp lý để bịa; API tắt thì
+ * đơn giản không hiện dải banner này (component tự `return null` khi rỗng), không hiện banner giả.
+ */
+export async function getBanners(): Promise<Banner[]> {
+  const data = await apiGet<{ items: Banner[] }>("/api/banners", { items: [] });
   return data.items;
 }

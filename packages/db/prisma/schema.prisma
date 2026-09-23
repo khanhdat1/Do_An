@@ -945,3 +945,32 @@ model AiSearchLog {
   @@index([createdAt])
   @@index([userId, createdAt])
 }
+
+enum BannerStatus {
+  DRAFT
+  PUBLISHED
+}
+
+/// Banner khuyến mãi trang chủ (Đợt 6 phần 2 — quản trị nội dung). Tách biệt với HeroBanner
+/// (khối thương hiệu cố định, không phải nội dung quản trị được) — đây là dải banner xoay vòng
+/// hiện SAU HeroBanner, admin tự thêm/sửa/xoá, không cần sửa code.
+model Banner {
+  id String @id @default(cuid())
+
+  title    String? @db.VarChar(200)
+  subtitle String? @db.VarChar(300)
+  imageUrl String  @db.VarChar(500)
+  linkUrl  String? @db.VarChar(500)
+
+  displayOrder Int          @default(0)
+  status       BannerStatus @default(DRAFT)
+
+  // Lên lịch hiển thị — để trống = hiện ngay khi PUBLISHED / hiện vô thời hạn
+  startsAt DateTime?
+  endsAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, startsAt, endsAt])
+}

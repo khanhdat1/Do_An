@@ -246,6 +246,8 @@ export type Permission =
   | "customers:write"
   | "vouchers:read"
   | "vouchers:write"
+  | "content:read"
+  | "content:write"
   | "reports:read"
   | "settings:write"
   | "admins:manage";
@@ -741,4 +743,42 @@ export interface AdminVoucherInput {
   startsAt: string;
   endsAt: string;
   isActive: boolean;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Banner trang chủ (quản trị nội dung — Đợt 6 phần 2)                       */
+/* -------------------------------------------------------------------------- */
+
+export type BannerStatus = "DRAFT" | "PUBLISHED";
+
+export interface Banner {
+  id: string;
+  title?: string;
+  subtitle?: string;
+  imageUrl: string;
+  linkUrl?: string;
+}
+
+export interface AdminBanner {
+  id: string;
+  title?: string;
+  subtitle?: string;
+  imageUrl: string;
+  linkUrl?: string;
+  displayOrder: number;
+  status: BannerStatus;
+  startsAt?: string;
+  endsAt?: string;
+  createdAt: string;
+}
+
+export interface AdminBannerInput {
+  title?: string;
+  subtitle?: string;
+  imageUrl: string;
+  linkUrl?: string;
+  displayOrder: number;
+  status: BannerStatus;
+  startsAt?: string;
+  endsAt?: string;
 }

@@ -1,5 +1,6 @@
 import TrustStrip from "@/components/layout/TrustStrip";
 import HeroBanner from "@/components/home/HeroBanner";
+import PromoBannerCarousel from "@/components/home/PromoBannerCarousel";
 import CategorySection from "@/components/home/CategorySection";
 import FlashSaleSection from "@/components/home/FlashSaleSection";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
@@ -18,6 +19,7 @@ export default function HomePage() {
     <>
       <TrustStrip />
       <HeroBanner />
+      <PromoBannerCarousel />
       <CategorySection />
       <FlashSaleSection />
       <FeaturedProducts />
