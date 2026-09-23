@@ -133,7 +133,7 @@ export interface CategoryDetailDto {
 /*  Xác thực                                                                  */
 /* -------------------------------------------------------------------------- */
 
-export type UserRoleDto = "CUSTOMER" | "STAFF" | "ADMIN";
+export type UserRoleDto = "CUSTOMER" | "STAFF" | "ADMIN" | "OWNER" | "MANAGER" | "ORDER_STAFF" | "PRODUCT_STAFF";
 
 /** Thông tin người dùng trả cho frontend. Tuyệt đối không có passwordHash. */
 export interface AuthUserDto {
@@ -144,6 +144,43 @@ export interface AuthUserDto {
   avatarUrl?: string;
   role: UserRoleDto;
   createdAt: string;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Quản trị — đăng nhập/phiên (phía admin, tách biệt phía khách hàng ở trên) */
+/* -------------------------------------------------------------------------- */
+
+export type PermissionDto =
+  | "orders:read"
+  | "orders:write"
+  | "products:read"
+  | "products:write"
+  | "customers:read"
+  | "customers:write"
+  | "reports:read"
+  | "settings:write"
+  | "admins:manage";
+
+/** `GET /api/admin/auth/me` và kết quả đăng nhập admin thành công */
+export interface AdminUserDto {
+  id: string;
+  email: string;
+  fullName: string;
+  role: UserRoleDto;
+  permissions: PermissionDto[];
+  totpEnabled: boolean;
+  createdAt: string;
+}
+
+/** `POST /api/admin/auth/login` — đúng mật khẩu nhưng có bật 2FA thì chưa cấp phiên ngay */
+export type AdminLoginResultDto =
+  | { status: "ok"; user: AdminUserDto }
+  | { status: "2fa-required"; pendingToken: string };
+
+/** `POST /api/admin/auth/2fa/setup` */
+export interface TotpSetupResultDto {
+  secret: string;
+  qrCodeDataUrl: string;
 }
 
 /** Một tài khoản Google / Facebook đã liên kết với người dùng (GET /api/auth/providers) */

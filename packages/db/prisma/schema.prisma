@@ -29,8 +29,16 @@ datasource db {
 
 enum UserRole {
   CUSTOMER
+  /// Không còn dùng cho tài khoản mới — giữ lại trong enum để không phải migration co dữ liệu
+  /// cũ; dùng OWNER/MANAGER/ORDER_STAFF/PRODUCT_STAFF bên dưới cho toàn bộ tài khoản quản trị.
   STAFF
+  /// @deprecated xem STAFF
   ADMIN
+
+  OWNER // chủ website — toàn quyền
+  MANAGER // quản lý — toàn quyền trừ tạo/phân quyền tài khoản admin khác và đổi cài đặt cửa hàng
+  ORDER_STAFF // nhân viên xử lý đơn hàng — chỉ quyền trên đơn hàng
+  PRODUCT_STAFF // nhân viên quản lý sản phẩm — chỉ quyền trên sản phẩm/tồn kho
 }
 
 enum OAuthProvider {
@@ -388,6 +396,10 @@ model User {
   emailVerifiedAt DateTime?
   lastLoginAt     DateTime?
 
+  // --- 2FA (chỉ tài khoản quản trị dùng, tự nguyện bật) --------------------
+  totpSecret    String? @db.VarChar(100) // base32, sinh lúc /2fa/setup — CHƯA bật cho tới khi confirm
+  totpEnabledAt DateTime?
+
   addresses     Address[]
   refreshTokens RefreshToken[]
   oauthAccounts OAuthAccount[]
@@ -400,12 +412,34 @@ model User {
   searchLogs    AiSearchLog[]
   voucherUses   VoucherRedemption[]
   inventoryTxs  InventoryTransaction[]
+  adminAuditLogs AdminAuditLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([role, isActive])
   @@index([phone])
+}
+
+/// Nhật ký thao tác quản trị — ghi tường minh ở cuối mỗi service thao tác quan trọng (cùng
+/// transaction), không dùng middleware ẩn, để giữ đủ ngữ cảnh trước/sau cho từng loại thao tác.
+model AdminAuditLog {
+  id String @id @default(cuid())
+
+  actorId   String
+  actor     User   @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  actorRole UserRole // chụp lại lúc thao tác — vai trò của actor có thể đổi sau đó
+
+  action     String  @db.VarChar(100) // vd "order.status_changed", "product.updated"
+  targetType String  @db.VarChar(50) // vd "Order", "Product", "User"
+  targetId   String? @db.VarChar(50)
+  metadata   Json? // vd {"from":"PENDING","to":"CONFIRMED"}
+  ip         String? @db.VarChar(50)
+
+  createdAt DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([targetType, targetId])
 }
 
 model Address {

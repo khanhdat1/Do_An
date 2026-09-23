@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, ChevronLeft, ChevronRight, CloudOff, LoaderCircle, MessageSquareText, ShieldAlert, Trash2 } from "lucide-react";
-import { useRequireAuth } from "@/components/auth/useRequireAuth";
 import RatingStars from "@/components/product/RatingStars";
+import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
 import { useToast } from "@/components/providers/ToastProvider";
-import { apiFetch, errorMessage } from "@/lib/api-client";
+import { adminApiFetch, errorMessage } from "@/lib/admin-api-client";
 import type { AdminReviewSummary, Paginated } from "@/types";
 
 const PAGE_SIZE = 20;
@@ -29,7 +29,7 @@ function ReplyBox({ reviewId, existingReply, onReplied }: { reviewId: string; ex
     if (!reply.trim()) return;
     setBusy(true);
     try {
-      await apiFetch(`/api/admin/reviews/${reviewId}/reply`, { method: "POST", body: { reply: reply.trim() } });
+      await adminApiFetch(`/api/admin/reviews/${reviewId}/reply`, { method: "POST", body: { reply: reply.trim() } });
       toast.success("Đã lưu phản hồi");
       setOpen(false);
       onReplied();
@@ -79,9 +79,9 @@ function ReplyBox({ reviewId, existingReply, onReplied }: { reviewId: string; ex
   );
 }
 
-/** Danh sách đánh giá cho nhân viên/quản trị duyệt / xoá / trả lời — trang `/quan-tri/danh-gia` */
+/** Danh sách đánh giá cho nhân viên/quản trị duyệt / xoá / trả lời — trang `/admin/reviews` */
 export default function AdminReviewListView() {
-  const user = useRequireAuth("/quan-tri/danh-gia");
+  const { user } = useAdminAuth();
   const [tab, setTab] = useState<Tab>("PENDING");
   const [page, setPage] = useState(1);
   const [state, setState] = useState<State>({ status: "loading" });
@@ -103,7 +103,7 @@ export default function AdminReviewListView() {
     setRefreshTick((tick) => tick + 1);
   }
 
-  const allowed = user ? user.role === "ADMIN" || user.role === "STAFF" : null;
+  const allowed = user ? user.permissions.includes("products:read") : null;
 
   useEffect(() => {
     if (!allowed) return;
@@ -112,7 +112,7 @@ export default function AdminReviewListView() {
     const query = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
     if (tab === "PENDING") query.set("isApproved", "false");
 
-    apiFetch<Paginated<AdminReviewSummary>>(`/api/admin/reviews?${query}`)
+    adminApiFetch<Paginated<AdminReviewSummary>>(`/api/admin/reviews?${query}`)
       .then((data) => {
         if (!cancelled) setState({ status: "ready", data });
       })
@@ -129,7 +129,7 @@ export default function AdminReviewListView() {
 
   async function handleApprove(id: string) {
     try {
-      await apiFetch(`/api/admin/reviews/${id}/approve`, { method: "POST", body: {} });
+      await adminApiFetch(`/api/admin/reviews/${id}/approve`, { method: "POST", body: {} });
       toast.success("Đã duyệt đánh giá");
       refresh();
     } catch (error) {
@@ -139,7 +139,7 @@ export default function AdminReviewListView() {
 
   async function handleDelete(id: string) {
     try {
-      await apiFetch(`/api/admin/reviews/${id}`, { method: "DELETE" });
+      await adminApiFetch(`/api/admin/reviews/${id}`, { method: "DELETE" });
       toast.success("Đã xoá đánh giá");
       refresh();
     } catch (error) {

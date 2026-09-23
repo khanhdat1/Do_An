@@ -43,64 +43,8 @@ interface ApiRequest {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Phiên hết hạn                                                             */
-/* -------------------------------------------------------------------------- */
-
-const sessionExpiredListeners = new Set<() => void>();
-
-/** AuthProvider đăng ký ở đây để chuyển UI về trạng thái khách khi refresh thất bại */
-export function onSessionExpired(listener: () => void): () => void {
-  sessionExpiredListeners.add(listener);
-  return () => {
-    sessionExpiredListeners.delete(listener);
-  };
-}
-
-/** Các endpoint tự trả 401 vì lý do riêng (sai mật khẩu...) — không được đi thử refresh */
-const NO_REFRESH_PATHS = new Set([
-  "/api/auth/login",
-  "/api/auth/register",
-  "/api/auth/refresh",
-  "/api/auth/logout",
-]);
-
-let refreshInFlight: Promise<boolean> | null = null;
-
-/**
- * Đổi refresh token (cookie) lấy access token mới.
- * Nhiều request cùng gặp 401 một lúc sẽ dùng chung MỘT lần refresh: refresh
- * token xoay vòng sau mỗi lần dùng, gọi song song sẽ giẫm chân nhau.
- */
-function refreshSession(): Promise<boolean> {
-  refreshInFlight ??= fetch(`${API_BASE}/api/auth/refresh`, {
-    method: "POST",
-    credentials: "include",
-  })
-    .then((response) => response.ok)
-    .catch(() => false)
-    .finally(() => {
-      refreshInFlight = null;
-    });
-
-  return refreshInFlight;
-}
-
-/**
- * Làm mới phiên ngay, không chờ một request bị 401. Dùng trước khi rời trang bằng điều
- * hướng (vd. sang Facebook để liên kết): điều hướng không tự refresh được như fetch, mà
- * API cần thấy access token còn hạn. Trả về false nếu phiên đã chết, đồng thời báo
- * AuthProvider chuyển về trạng thái khách.
- */
-export async function renewSession(): Promise<boolean> {
-  const renewed = await refreshSession();
-  if (!renewed) {
-    for (const listener of sessionExpiredListeners) listener();
-  }
-  return renewed;
-}
-
-/* -------------------------------------------------------------------------- */
-/*  apiFetch                                                                  */
+/*  apiFetch (nhà máy dùng chung — bên dưới tạo bản cho khách hàng; xem         */
+/*  admin-api-client.ts cho bản admin, phiên riêng nên refresh path khác)     */
 /* -------------------------------------------------------------------------- */
 
 async function send(path: string, request: ApiRequest): Promise<Response> {
@@ -151,26 +95,94 @@ async function toApiError(response: Response): Promise<ApiError> {
   return new ApiError(message, response.status, fieldErrors);
 }
 
-/**
- * Gọi API và trả về JSON đã parse. Lỗi được ném dưới dạng `ApiError`.
- *
- * Khi gặp 401 (access token hết hạn) sẽ tự refresh rồi thử lại đúng một lần.
- * Nếu refresh thất bại, báo cho AuthProvider biết phiên đã chết, nhưng vẫn thử
- * lại request một lần nữa: server đã dọn cookie hỏng nên lần này request đi như
- * khách vãng lai (các endpoint giỏ hàng vẫn trả lời bình thường).
- */
-export async function apiFetch<T>(path: string, request: ApiRequest = {}): Promise<T> {
-  let response = await send(path, request);
+export interface ApiClientOptions {
+  /** Endpoint đổi refresh token cookie lấy access token mới */
+  refreshPath: string;
+  /** Các endpoint tự trả 401 vì lý do riêng (sai mật khẩu...) — không được đi thử refresh */
+  noRefreshPaths: Set<string>;
+}
 
-  if (response.status === 401 && !NO_REFRESH_PATHS.has(path)) {
-    const refreshed = await refreshSession();
-    if (!refreshed) {
-      for (const listener of sessionExpiredListeners) listener();
-    }
-    response = await send(path, request);
+/**
+ * Dựng một bộ `apiFetch`/`onSessionExpired`/`renewSession` hoàn chỉnh cho MỘT loại phiên đăng
+ * nhập. Khách hàng và admin có cookie/endpoint refresh khác nhau hoàn toàn (xem cookies.ts phía
+ * API) nên cần hai bộ độc lập — `admin-api-client.ts` gọi lại đúng hàm này với đường dẫn riêng
+ * thay vì chép lại logic bên dưới.
+ */
+export function createApiClient(options: ApiClientOptions) {
+  const sessionExpiredListeners = new Set<() => void>();
+  let refreshInFlight: Promise<boolean> | null = null;
+
+  function onSessionExpired(listener: () => void): () => void {
+    sessionExpiredListeners.add(listener);
+    return () => {
+      sessionExpiredListeners.delete(listener);
+    };
   }
 
-  if (!response.ok) throw await toApiError(response);
-  if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
+  /**
+   * Nhiều request cùng gặp 401 một lúc sẽ dùng chung MỘT lần refresh: refresh token xoay vòng
+   * sau mỗi lần dùng, gọi song song sẽ giẫm chân nhau.
+   */
+  function refreshSession(): Promise<boolean> {
+    refreshInFlight ??= fetch(`${API_BASE}${options.refreshPath}`, {
+      method: "POST",
+      credentials: "include",
+    })
+      .then((response) => response.ok)
+      .catch(() => false)
+      .finally(() => {
+        refreshInFlight = null;
+      });
+
+    return refreshInFlight;
+  }
+
+  /**
+   * Làm mới phiên ngay, không chờ một request bị 401. Dùng trước khi rời trang bằng điều
+   * hướng (vd. sang Facebook để liên kết): điều hướng không tự refresh được như fetch, mà
+   * API cần thấy access token còn hạn. Trả về false nếu phiên đã chết, đồng thời báo
+   * Provider chuyển về trạng thái khách.
+   */
+  async function renewSession(): Promise<boolean> {
+    const renewed = await refreshSession();
+    if (!renewed) {
+      for (const listener of sessionExpiredListeners) listener();
+    }
+    return renewed;
+  }
+
+  /**
+   * Gọi API và trả về JSON đã parse. Lỗi được ném dưới dạng `ApiError`.
+   *
+   * Khi gặp 401 (access token hết hạn) sẽ tự refresh rồi thử lại đúng một lần.
+   * Nếu refresh thất bại, báo phiên đã chết, nhưng vẫn thử lại request một lần nữa: server đã
+   * dọn cookie hỏng nên lần này request đi như khách vãng lai (các endpoint công khai vẫn trả lời
+   * bình thường).
+   */
+  async function apiFetch<T>(path: string, request: ApiRequest = {}): Promise<T> {
+    let response = await send(path, request);
+
+    if (response.status === 401 && !options.noRefreshPaths.has(path)) {
+      const refreshed = await refreshSession();
+      if (!refreshed) {
+        for (const listener of sessionExpiredListeners) listener();
+      }
+      response = await send(path, request);
+    }
+
+    if (!response.ok) throw await toApiError(response);
+    if (response.status === 204) return undefined as T;
+    return (await response.json()) as T;
+  }
+
+  return { apiFetch, onSessionExpired, renewSession };
 }
+
+const customerClient = createApiClient({
+  refreshPath: "/api/auth/refresh",
+  noRefreshPaths: new Set(["/api/auth/login", "/api/auth/register", "/api/auth/refresh", "/api/auth/logout"]),
+});
+
+export const apiFetch = customerClient.apiFetch;
+export const onSessionExpired = customerClient.onSessionExpired;
+export const renewSession = customerClient.renewSession;
