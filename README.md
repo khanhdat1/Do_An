@@ -56,7 +56,12 @@ pczone/
 │       └── types/dto.ts        hợp đồng dữ liệu với frontend
 │
 ├── apps/web/               Next.js 16 + TypeScript + Tailwind 4
-│   ├── app/                    trang chủ, danh mục (/danh-muc, /danh-muc/[slug]), tìm kiếm (/tim-kiem), chi tiết sản phẩm, so sánh (/so-sanh), giỏ hàng, yêu thích (/yeu-thich), khuyến mãi (/khuyen-mai), đặt hàng (/thanh-toan), đơn hàng (/don-hang/[code], /tai-khoan/don-hang, /tra-cuu-don-hang), quản trị (/quan-tri/don-hang, /quan-tri/danh-gia), đăng nhập / đăng ký, tài khoản
+│   ├── app/(site)/              MỌI route khách hàng: trang chủ, danh mục, tìm kiếm, chi tiết sản phẩm, so sánh
+│   │                            (/so-sanh), giỏ hàng, yêu thích (/yeu-thich), khuyến mãi (/khuyen-mai), đặt hàng
+│   │                            (/thanh-toan), đơn hàng, đăng nhập / đăng ký, tài khoản — có root layout riêng
+│   │                            (Header/Footer/CompareBar). Tên thư mục trong ngoặc không xuất hiện trên URL.
+│   ├── app/admin/               Khu QUẢN TRỊ — root layout độc lập, KHÔNG dùng chung Header/Footer với khách hàng
+│   │                            (xem mục 11). /admin/login đứng ngoài nhóm (dashboard) vì chưa cần sidebar.
 │   ├── components/             layout / home / category / search / product / cart / checkout / orders / vouchers / admin / auth / providers / ui
 │   ├── lib/category-query.ts   đọc / dựng bộ lọc trên URL của trang danh mục
 │   ├── lib/search-*.ts         câu tìm kiếm trên URL, gọi API gợi ý + lịch sử tìm kiếm ở trình duyệt, tô sáng từ khoá
@@ -282,7 +287,7 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | GET | `/api/products/:slug/reviews?page=&pageSize=` | Đánh giá ĐÃ DUYỆT của một sản phẩm, công khai, mới nhất trước |
 | GET | `/api/products/:slug/reviews/eligibility` | Đã mua (đơn thanh toán xong) và còn đơn nào chưa dùng để đánh giá không (cần đăng nhập) |
 | POST | `/api/products/:slug/reviews` | Gửi đánh giá `{ rating, title?, content? }` — chỉ khách có đơn `paymentStatus=PAID` chứa sản phẩm này; vào hàng chờ duyệt, chưa hiện công khai ngay |
-| GET \| POST \| DELETE | `/api/admin/reviews`, `/:id/approve`, `/:id`, `/:id/reply` | Duyệt / xoá / trả lời đánh giá — role ADMIN/STAFF (mục 9) |
+| GET \| POST \| DELETE | `/api/admin/reviews`, `/:id/approve`, `/:id`, `/:id/reply` | Duyệt / xoá / trả lời đánh giá — cần quyền `products:read`/`products:write` (mục 11) |
 | GET | `/api/addresses` | Sổ địa chỉ giao hàng của tài khoản hiện tại, mặc định đứng đầu (cần đăng nhập) |
 | POST | `/api/addresses` | Thêm địa chỉ mới |
 | PATCH | `/api/addresses/:addressId` | Sửa một địa chỉ |
@@ -296,8 +301,13 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | GET | `/api/order-lookup?code=&phone=` | Tra cứu đơn hàng công khai (không cần đăng nhập), phải khớp cả mã đơn lẫn số điện thoại nhận hàng |
 | GET | `/api/payments/methods` | Phương thức thanh toán nào đang bật (`{ cod, vnpay, bankTransfer, momo }`, `false` nếu thiếu cấu hình) |
 | GET | `/api/payments/vnpay/return`, `/api/payments/vnpay/ipn` | VNPay gọi về sau khi thanh toán (mục 9 bên dưới) — không gọi trực tiếp từ frontend |
-| GET | `/api/admin/orders?paymentStatus=&paymentMethod=&page=` | Danh sách đơn cho nhân viên xác nhận thanh toán thủ công (role ADMIN/STAFF) |
-| POST | `/api/admin/orders/:orderCode/confirm-payment` | Đánh dấu đã nhận được tiền chuyển khoản/MoMo — không có cổng nào tự báo như VNPay (role ADMIN/STAFF) |
+| GET | `/api/admin/orders?paymentStatus=&paymentMethod=&page=` | Danh sách đơn cho nhân viên xác nhận thanh toán thủ công — cần quyền `orders:read` |
+| POST | `/api/admin/orders/:orderCode/confirm-payment` | Đánh dấu đã nhận được tiền chuyển khoản/MoMo — không có cổng nào tự báo như VNPay — cần quyền `orders:write` |
+| POST | `/api/admin/auth/login` | `{ email, password, remember? }` — đăng nhập khu quản trị (JWT/cookie **riêng hoàn toàn** với khách hàng). Tài khoản có role `CUSTOMER` luôn bị từ chối. Nếu tài khoản đã bật 2FA: trả `{ status: "2fa-required", pendingToken }`, CHƯA đăng nhập |
+| POST | `/api/admin/auth/login/verify-2fa` | `{ pendingToken, code }` — bước 2 khi tài khoản đã bật 2FA, `pendingToken` sống 60 giây |
+| POST | `/api/admin/auth/refresh`, `/api/admin/auth/logout` | Làm mới / thu hồi phiên đăng nhập quản trị — độc lập hoàn toàn với `/api/auth/*` của khách hàng |
+| GET | `/api/admin/auth/me` | Tài khoản quản trị đang đăng nhập kèm `permissions` suy ra từ role; 401 nếu chưa đăng nhập (khác `/api/auth/me` của khách hàng — không trả `{user: null}`) |
+| POST | `/api/admin/auth/2fa/setup`, `/2fa/confirm`, `/2fa/disable` | Bật/tắt xác thực 2 bước (TOTP) cho chính tài khoản đang đăng nhập — tự nguyện, không bắt buộc (mục 11) |
 
 Tham số của `/api/products`:
 
@@ -587,7 +597,7 @@ cả — chỉ hiện QR + thông tin để khách tự chuyển khoản, sau đ
 
 Đơn tạo xong ở trạng thái `paymentStatus: PENDING`, trang chi tiết đơn hiện lại đúng QR/hướng dẫn này
 cho tới khi được xác nhận (mã hoá trong `OrderDto.bankTransfer`/`momo`, chỉ có khi còn `PENDING`). Trang
-`/quan-tri/don-hang` (role `ADMIN`/`STAFF` — tài khoản mẫu ở mục 10) liệt kê các đơn chờ xác nhận, bấm
+`/admin/orders` (cần quyền `orders:read`/`orders:write` — mục 11) liệt kê các đơn chờ xác nhận, bấm
 "Xác nhận đã nhận tiền" chuyển `Payment.status → PAID` và `Order.status → CONFIRMED` (logic dùng chung
 với nhánh thành công của `applyVnpayCallback`, chỉ khác là do người bấm thay vì VNPay gọi về).
 
@@ -614,24 +624,99 @@ Chỉ khách **đã mua và thanh toán xong** mới đánh giá được — c�
 `paymentStatus: PAID` chứa sản phẩm đó mà **chưa dùng để đánh giá lần nào** (`Review.orderId` +
 `@@unique([productId, userId, orderId])`: mua ở nhiều đơn khác nhau thì đánh giá được từng đó lần,
 mỗi đơn một lần). Dùng mốc "đã thanh toán" thay vì "đã giao hàng" vì hệ thống hiện chưa có bước cập
-nhật trạng thái giao hàng thật (mục 11) — `paymentStatus` chuyển sang `PAID` khi VNPay báo về, hoặc
-nhân viên xác nhận tay ở `/quan-tri/don-hang` (áp dụng cho cả COD, không chỉ chuyển khoản/MoMo).
+nhật trạng thái giao hàng thật (mục 11, Đợt 2) — `paymentStatus` chuyển sang `PAID` khi VNPay báo về, hoặc
+nhân viên xác nhận tay ở `/admin/orders` (áp dụng cho cả COD, không chỉ chuyển khoản/MoMo).
 
 Đánh giá gửi lên luôn ở trạng thái **chờ duyệt** (`isApproved: false`), không hiện công khai ngay —
-nhân viên vào `/quan-tri/danh-gia` (role ADMIN/STAFF) duyệt / xoá / trả lời. Chỉ đánh giá **đã duyệt**
+nhân viên vào `/admin/reviews` (cần quyền `products:read`/`products:write` — mục 11) duyệt / xoá / trả
+lời. Chỉ đánh giá **đã duyệt**
 mới được tính vào `Product.ratingAvg`/`ratingCount` (tính lại toàn bộ bằng `aggregate` mỗi lần duyệt
 hoặc xoá một đánh giá — `review.service.ts`'s `recomputeProductRating`), nên số sao hiển thị ở trang
 sản phẩm luôn phản ánh đúng các đánh giá thật đã được kiểm duyệt, không có số liệu bịa.
 
-## 11. Tài khoản mẫu
+## 11. Quản trị (Admin Dashboard)
 
-| Email | Mật khẩu | Quyền |
-| ----- | -------- | ----- |
-| admin@pczone.vn | admin123 | ADMIN |
+Khu `/admin` tách biệt **hoàn toàn** khỏi trang bán hàng — không chỉ khác giao diện mà khác cả phiên
+đăng nhập, để khách hàng không thể tự nâng quyền hay vô tình lẫn phiên với quản trị viên:
 
-Đổi mật khẩu ngay sau lần chạy đầu tiên.
+- **Cùng bảng `User`** (không có bảng `AdminUser` riêng) nhưng **JWT issuer khác** (`pczone-admin-api`
+  so với `pczone-api`) và **cookie khác tên/phạm vi hoàn toàn**: `pcz_admin_access`/`pcz_admin_refresh`
+  (path `/api/admin`) so với `pcz_access`/`pcz_refresh` của khách hàng. Đăng xuất bên này không ảnh
+  hưởng bên kia; token của bên này đem dùng cho bên kia bị từ chối (khác issuer).
+- **Giao diện độc lập**: `apps/web/app/admin/` là root layout thứ hai (route group `app/(site)/` chứa
+  toàn bộ trang khách hàng là root layout thứ nhất) — `/admin/*` không dùng chung Header/Footer/giỏ hàng
+  với trang bán hàng.
+- **Kiểm tra quyền ở server cho từng thao tác**, không chỉ chặn theo trang: mỗi route quan trọng tự khai
+  `requirePermission(...)` (`apps/api/src/middleware/permissions.ts`), ví dụ `GET /api/admin/orders` cần
+  `orders:read` nhưng `POST .../confirm-payment` cần `orders:write`.
 
-## 12. Việc còn lại
+### Vai trò và quyền
+
+| Role | Ý nghĩa | Quyền |
+| ---- | ------- | ----- |
+| `OWNER` | Chủ website | Toàn quyền, kể cả `admins:manage`/`settings:write` |
+| `MANAGER` | Quản lý | Toàn quyền trừ `admins:manage`/`settings:write` |
+| `ORDER_STAFF` | Nhân viên xử lý đơn hàng | Chỉ `orders:read`/`orders:write` |
+| `PRODUCT_STAFF` | Nhân viên quản lý sản phẩm | Chỉ `products:read`/`products:write` |
+| `ADMIN`, `STAFF` | Vai trò cũ trước khi có hệ thống này | Giữ lại để tương thích ngược, coi như toàn quyền (như `OWNER`) — không nên gán mới, dùng 4 vai trò trên |
+| `CUSTOMER` | Khách hàng | Không có quyền nào, bị chặn hẳn khỏi `/admin` và `/api/admin/*` dù biết đường dẫn |
+
+### Tạo tài khoản quản trị — cách AN TOÀN DUY NHẤT
+
+**Không có endpoint công khai nào tạo được tài khoản role khác `CUSTOMER`** — kể cả khi đã đăng nhập,
+người dùng thường không có cách nào tự nâng quyền. Tài khoản quản trị chỉ tạo được bằng script chạy tay
+trên máy chủ (đọc thẳng `.env`, không đi qua HTTP):
+
+```bash
+cd apps/api
+npx tsx src/scripts/create-admin.mts --email=owner@pczone.vn --password="MatKhauManhCuaBan123" --name="Chủ website" --role=OWNER
+```
+
+`--role` nhận `OWNER | MANAGER | ORDER_STAFF | PRODUCT_STAFF` (mặc định `OWNER`). Email đã tồn tại thì
+script **cập nhật** mật khẩu + role + tên thay vì tạo trùng — dùng lại được để đổi mật khẩu cho bất kỳ
+tài khoản quản trị nào khi cần, không chỉ lúc tạo lần đầu. Mật khẩu băm bằng bcrypt (cost 12) giống hệt
+đăng nhập khách hàng, không lưu bản gốc.
+
+> **Tài khoản mẫu `admin@pczone.vn` (mục "Tài khoản mẫu" cũ, role `ADMIN`) đã tự động đăng nhập được ở
+> `/admin/login` với toàn quyền** — role `ADMIN` được coi như `OWNER` trong bảng quyền ở trên, không cần
+> chạy script gì thêm để dùng thử. Nhưng mật khẩu `admin123` đã in công khai trong tài liệu này, **nên
+> đổi ngay** bằng đúng lệnh trên (`--email=admin@pczone.vn --role=OWNER` cùng mật khẩu mới) trước khi
+> dùng cho bất cứ việc gì ngoài chạy thử ở máy cá nhân.
+
+### Xác thực 2 bước (2FA / TOTP)
+
+Tự nguyện bật theo từng tài khoản ở `/admin/2fa` (không bắt buộc ngay từ đầu — phải đăng nhập bằng mật
+khẩu được trước đã). Dùng chuẩn TOTP qua thư viện `otplib` + `qrcode`, quét được bằng Google
+Authenticator/Authy — **không phụ thuộc dịch vụ ngoài nào** (không phải OTP qua email/SMS). Tài khoản đã
+bật 2FA thì đăng nhập luôn cần thêm bước nhập mã 6 số (endpoint `/api/admin/auth/login/verify-2fa`).
+
+### Bảo vệ đăng nhập và nhật ký thao tác
+
+Giới hạn **5 lần đăng nhập sai / 15 phút** theo IP (`adminLoginLimiter`, chặt hơn giới hạn 10 lần của
+khách hàng). Các thao tác quan trọng được ghi vào bảng `AdminAuditLog` (ai, làm gì, trên đối tượng nào,
+lúc nào) — hiện đã ghi khi bật/tắt 2FA; các đợt sau (đơn hàng, sản phẩm, tồn kho) sẽ ghi thêm khi thao
+tác tương ứng được xây.
+
+### Tình trạng — đây mới là Đợt 1/6
+
+Đã xong: đăng nhập/phân quyền tách biệt (trên), khung giao diện `/admin` (sidebar theo quyền, tương
+thích di động), 2 trang đã có chuyển sang hệ thống mới — **xem đơn hàng + xác nhận thanh toán thủ công**
+(`/admin/orders`) và **duyệt đánh giá** (`/admin/reviews`).
+
+**Chưa làm** (roadmap các đợt sau, xem lịch sử trò chuyện lúc lập kế hoạch để biết chi tiết từng đợt):
+quản lý vòng đời đơn hàng đầy đủ (7 trạng thái, mã vận đơn, ghi chú nội bộ, in đơn, huỷ/hoàn), quản lý
+sản phẩm (thêm/sửa/ẩn/lưu trữ) và tồn kho (nhập/xuất/điều chỉnh, cảnh báo sắp hết), trang tổng quan
+doanh thu (biểu đồ theo ngày/tuần/tháng/năm, phân biệt doanh thu thuần) và xuất báo cáo Excel/CSV, quản
+lý khách hàng (danh sách, khoá/mở khoá), giao diện quản trị mã giảm giá (backend `/api/vouchers*` đã có
+sẵn từ trước), quản trị nội dung (banner/menu/bài viết/trang tĩnh).
+
+## 12. Tài khoản mẫu
+
+| Email | Mật khẩu | Vai trò | Dùng để |
+| ----- | -------- | ------- | ------- |
+| admin@pczone.vn | admin123 | ADMIN (toàn quyền quản trị) | Đăng nhập cả `/dang-nhap` lẫn `/admin/login` — đổi mật khẩu ngay (mục 11) |
+
+## 13. Việc còn lại
 
 - [x] Trang danh sách sản phẩm theo danh mục (`/danh-muc/[slug]`, `/danh-muc`): lọc hãng / giá / còn hàng, sắp xếp, phân trang
 - [x] ~420 sản phẩm demo có ảnh thật, thông số và mô tả dài; nhóm Laptop và nhóm Gaming Gear (bàn phím, chuột, tai nghe, loa, ghế, bàn) đều 150 sản phẩm (xem "Dữ liệu demo" ở mục 4)
@@ -644,12 +729,16 @@ sản phẩm luôn phản ánh đúng các đánh giá thật đã được ki�
 - [x] Đặt hàng (`/thanh-toan`): sổ địa chỉ, tạo đơn có trừ kho trong transaction, huỷ đơn tự hoàn kho, lịch sử đơn (`/tai-khoan/don-hang`, `/don-hang/[code]`), tra cứu công khai (`/tra-cuu-don-hang`)
 - [x] Thanh toán VNPay Sandbox (mã ký/xác minh đầy đủ, có test; cần tự đăng ký tài khoản sandbox để bật — mục 9)
 - [x] Sản phẩm yêu thích (`/yeu-thich`) và mã giảm giá (`/khuyen-mai`, áp dụng được lúc đặt hàng)
-- [x] Đánh giá sản phẩm (`/san-pham/[slug]`, chỉ khách đã thanh toán mới gửi được, chờ duyệt ở `/quan-tri/danh-gia` mới hiện công khai — mục 10)
+- [x] Đánh giá sản phẩm (`/san-pham/[slug]`, chỉ khách đã thanh toán mới gửi được, chờ duyệt ở `/admin/reviews` mới hiện công khai — mục 10)
 - [x] So sánh sản phẩm (`/so-sanh`, tối đa 4 sản phẩm, chỉ lưu ở trình duyệt qua localStorage — không cần đăng nhập, không gọi API mới; bảng gộp mọi nhãn thông số của các sản phẩm đã chọn)
 - [ ] Điểm thưởng (PCPoints) và hạng thành viên — cần thêm bảng mới, "PCPoints VIP hoàn tiền 5%" hiện mới là chữ quảng cáo ở trang đăng nhập
 - [ ] Làm lại giao diện Tổng quan tài khoản / danh sách đơn hàng theo phong cách bảng điều khiển (thẻ số liệu, dòng thời gian ngang) — đã bàn hướng làm, chưa triển khai
-- [x] Chuyển khoản ngân hàng (QR VietQR tự điền số tiền/nội dung) và ví MoMo (số điện thoại) làm thủ công, không qua cổng — xác nhận tay ở `/quan-tri/don-hang` (mục 9)
+- [x] Chuyển khoản ngân hàng (QR VietQR tự điền số tiền/nội dung) và ví MoMo (số điện thoại) làm thủ công, không qua cổng — xác nhận tay ở `/admin/orders` (mục 9, 11)
 - [ ] Cổng thanh toán thật cho thẻ quốc tế / trả góp (MoMo Business API, OnePay...) — mỗi cổng cần tự đăng ký tài khoản sandbox riêng như VNPay; thẻ ATM/Visa/Master nội địa đã dùng được ngay qua VNPay (mục 9)
 - [ ] Service AI (Python/FastAPI): AI Search, AI Chat, AI Build PC
-- [x] Trang quản trị xác nhận thanh toán thủ công (`/quan-tri/don-hang`, role ADMIN/STAFF)
-- [ ] Trang quản trị đầy đủ: duyệt sản phẩm DRAFT, cập nhật trạng thái giao hàng (đóng gói / đang giao / đã giao), đối soát thanh toán lệch
+- [x] **Admin Dashboard — Đợt 1/6** (mục 11): đăng nhập/phân quyền tách biệt hoàn toàn khỏi khách hàng (`/admin/login`, cookie/JWT riêng), 4 vai trò quản trị + kiểm tra quyền theo từng route ở server, 2FA (TOTP) tự nguyện, giới hạn đăng nhập sai, nhật ký thao tác (`AdminAuditLog`), khung giao diện `/admin` (sidebar theo quyền, tương thích di động), script tạo tài khoản quản trị an toàn (`create-admin.mts`); 2 trang quản trị cũ (xem đơn hàng, duyệt đánh giá) đã chuyển sang hệ thống mới
+- [ ] **Admin Dashboard — Đợt 2**: quản lý đơn hàng đầy đủ vòng đời (7 trạng thái, mã vận đơn, ghi chú nội bộ, in đơn, huỷ/hoàn theo quyền, lịch sử thay đổi)
+- [ ] **Admin Dashboard — Đợt 3**: quản lý sản phẩm (thêm/sửa/ẩn/lưu trữ, duyệt sản phẩm DRAFT) và tồn kho (nhập/xuất/điều chỉnh, cảnh báo sắp hết)
+- [ ] **Admin Dashboard — Đợt 4**: trang tổng quan doanh thu (biểu đồ ngày/tuần/tháng/năm, phân biệt tổng đơn/đã thu/hoàn/doanh thu thuần) và xuất báo cáo Excel/CSV
+- [ ] **Admin Dashboard — Đợt 5**: quản lý khách hàng (danh sách, lịch sử mua, khoá/mở khoá tài khoản)
+- [ ] **Admin Dashboard — Đợt 6**: giao diện quản trị mã giảm giá (backend `/api/vouchers*` đã có sẵn, chỉ còn làm CRUD), quản trị nội dung (banner/menu/bài viết/trang tĩnh)
