@@ -549,3 +549,90 @@ export interface AdminReviewSummaryDto {
   adminReply?: string;
   createdAt: string;
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Quản trị sản phẩm và kho hàng                                             */
+/* -------------------------------------------------------------------------- */
+
+export type ProductStatusDto = "DRAFT" | "ACTIVE" | "HIDDEN" | "DISCONTINUED";
+
+/** Dòng gọn cho `GET /api/admin/products` — thấy được mọi trạng thái, giá vốn, tồn kho tuyệt đối (khách hàng không thấy) */
+export interface AdminProductSummaryDto {
+  id: string;
+  slug: string;
+  sku: string;
+  name: string;
+  image?: string;
+  categoryName: string;
+  brand?: string;
+  status: ProductStatusDto;
+  sellingPrice: number;
+  costPrice?: number;
+  inventoryQuantity: number;
+  reservedQuantity: number;
+  lowStockThreshold: number;
+  /** true khi (tồn kho - đang giữ chỗ) <= lowStockThreshold */
+  lowStock: boolean;
+  soldCount: number;
+  updatedAt: string;
+}
+
+/** `GET /api/admin/products/:id` — đầy đủ để dựng form sửa */
+export interface AdminProductDetailDto extends AdminProductSummaryDto {
+  categoryId: string;
+  brandId?: string;
+  originalPrice?: number;
+  shortDescription?: string;
+  description?: string;
+  warrantyMonths?: number;
+  specifications: SpecRowDto[];
+  images: ProductImageDto[];
+  createdAt: string;
+}
+
+/** Body tạo/sửa sản phẩm — `POST`/`PATCH /api/admin/products(/:id)` */
+export interface AdminProductInput {
+  name: string;
+  sku: string;
+  categoryId: string;
+  brandId?: string;
+  sellingPrice: number;
+  costPrice?: number;
+  originalPrice?: number;
+  shortDescription?: string;
+  description?: string;
+  warrantyMonths?: number;
+  lowStockThreshold?: number;
+  specifications?: SpecRowDto[];
+}
+
+/** `GET /api/admin/products/meta/options` — danh mục/hãng phẳng cho ô chọn của form sản phẩm */
+export interface ProductFormOptionsDto {
+  categories: { id: string; name: string; path: string }[];
+  brands: { id: string; name: string }[];
+}
+
+export type InventoryTxTypeDto = "IMPORT" | "EXPORT" | "ADJUST" | "RETURN";
+
+/** Một dòng lịch sử kho — `GET /api/admin/products/:id/inventory` */
+export interface InventoryTransactionDto {
+  id: string;
+  type: InventoryTxTypeDto;
+  quantityChange: number;
+  quantityAfter: number;
+  unitCost?: number;
+  note?: string;
+  createdByName?: string;
+  orderCode?: string;
+  createdAt: string;
+}
+
+/**
+ * Body `POST /api/admin/products/:id/inventory` — nhân viên chỉ nhập tay IMPORT/EXPORT/ADJUST.
+ * RETURN luôn tự động theo đúng một đơn hàng cụ thể (Đợt 2), không nhập tay ở đây.
+ */
+export type InventoryAdjustmentInput =
+  | { type: "IMPORT"; quantity: number; unitCost?: number; note?: string }
+  | { type: "EXPORT"; quantity: number; note?: string }
+  /** `newQuantity` là số đếm được thực tế lúc kiểm kê — server tự tính chênh lệch, không bắt nhân viên tự trừ */
+  | { type: "ADJUST"; newQuantity: number; note?: string };

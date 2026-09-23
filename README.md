@@ -48,7 +48,7 @@ pczone/
 │       ├── app.ts              cấu hình middleware + gắn router
 │       ├── env.ts              đọc & kiểm tra biến môi trường
 │       ├── routes/             định nghĩa endpoint + kiểm tra tham số (zod)
-│       ├── services/           truy vấn Prisma, logic nghiệp vụ (sản phẩm, xác thực, giỏ hàng, địa chỉ, đơn hàng, VNPay, chuyển khoản/MoMo thủ công, quản trị đơn hàng, yêu thích, mã giảm giá, đánh giá + duyệt đánh giá)
+│       ├── services/           truy vấn Prisma, logic nghiệp vụ (sản phẩm, xác thực, giỏ hàng, địa chỉ, đơn hàng, VNPay, chuyển khoản/MoMo thủ công, quản trị đơn hàng, quản trị sản phẩm/kho hàng, yêu thích, mã giảm giá, đánh giá + duyệt đánh giá)
 │       ├── search/             bộ máy tìm kiếm: chuẩn hoá chữ, từ đồng nghĩa, lỗi gõ, mức giá, xếp hạng (có test: `npm test -w @pczone/api`)
 │       ├── mappers/            Prisma model → DTO cho frontend
 │       ├── middleware/         lỗi tập trung, nhận diện JWT, chống CSRF, giới hạn tần suất
@@ -288,6 +288,14 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | GET | `/api/products/:slug/reviews/eligibility` | Đã mua (đơn thanh toán xong) và còn đơn nào chưa dùng để đánh giá không (cần đăng nhập) |
 | POST | `/api/products/:slug/reviews` | Gửi đánh giá `{ rating, title?, content? }` — chỉ khách có đơn `paymentStatus=PAID` chứa sản phẩm này; vào hàng chờ duyệt, chưa hiện công khai ngay |
 | GET \| POST \| DELETE | `/api/admin/reviews`, `/:id/approve`, `/:id`, `/:id/reply` | Duyệt / xoá / trả lời đánh giá — cần quyền `products:read`/`products:write` (mục 11) |
+| GET | `/api/admin/products?status=&category=&brand=&search=&lowStockOnly=&page=` | Danh sách sản phẩm cho quản trị — thấy mọi trạng thái (kể cả DRAFT/HIDDEN/DISCONTINUED), giá vốn, tồn kho tuyệt đối — cần quyền `products:read` |
+| GET | `/api/admin/products/meta/options` | Danh mục/hãng dạng phẳng cho ô chọn của form sản phẩm — cần quyền `products:read` |
+| GET | `/api/admin/products/:id` | Chi tiết đầy đủ một sản phẩm để dựng form sửa — cần quyền `products:read` |
+| POST | `/api/admin/products` | Tạo sản phẩm mới — luôn vào trạng thái DRAFT, phải duyệt riêng mới hiện ra ngoài — cần quyền `products:write` |
+| PATCH | `/api/admin/products/:id` | Sửa thông tin sản phẩm (tên, SKU, giá, danh mục, mô tả, thông số...) — cần quyền `products:write` |
+| PATCH | `/api/admin/products/:id/status` | Đổi trạng thái: duyệt DRAFT→ACTIVE, ẩn (HIDDEN), lưu trữ/ngừng kinh doanh (DISCONTINUED) — cần quyền `products:write` |
+| GET | `/api/admin/products/:id/inventory?page=` | Lịch sử nhập/xuất/điều chỉnh/hoàn kho của một sản phẩm — cần quyền `products:read` |
+| POST | `/api/admin/products/:id/inventory` | Nhập/xuất/điều chỉnh tồn kho thủ công — server tự chặn kết quả âm — cần quyền `products:write` |
 | GET | `/api/addresses` | Sổ địa chỉ giao hàng của tài khoản hiện tại, mặc định đứng đầu (cần đăng nhập) |
 | POST | `/api/addresses` | Thêm địa chỉ mới |
 | PATCH | `/api/addresses/:addressId` | Sửa một địa chỉ |
@@ -730,16 +738,44 @@ kho) sẽ ghi thêm khi thao tác tương ứng được xây.
 - **Lịch sử đầy đủ kèm người thực hiện**: `OrderStatusHistory.changedBy` giờ có quan hệ Prisma thật tới
   `User`, trang chi tiết hiện tên nhân viên ở từng dòng thời gian.
 
-### Tình trạng — đã xong Đợt 1-2/6
+### Quản lý sản phẩm và kho hàng (Đợt 3)
+
+`/admin/products` (danh sách: tìm theo tên/SKU, lọc trạng thái, lọc sắp hết hàng) → bấm vào một sản
+phẩm để tới `/admin/products/[id]` (sửa) hoặc `/admin/products/new` (thêm mới):
+
+- **4 trạng thái sẵn có trong schema từ đầu dự án** (`ProductStatus`) khớp thẳng với yêu cầu
+  "thêm/sửa/ẩn/lưu trữ": DRAFT (nháp — sản phẩm mới luôn bắt đầu ở đây, kể cả hàng crawler chờ duyệt),
+  ACTIVE (đang bán), HIDDEN (tạm ẩn khỏi trang bán), DISCONTINUED (ngừng kinh doanh/lưu trữ). Đổi trạng
+  thái là một hành động RIÊNG (`PATCH .../status`), tách khỏi việc sửa thông tin thường, và có ghi
+  `AdminAuditLog`. Ẩn/ngừng kinh doanh một sản phẩm khiến nó biến mất khỏi `/api/products`, trang danh
+  mục và tìm kiếm NGAY LẬP TỨC (dùng lại nguyên `PUBLIC_FILTER` đã có từ trước, không cần sửa gì ở phía
+  khách hàng).
+- **Không có biến thể** (kích thước/màu) — quyết định đã chốt trước khi làm Đợt 1: linh kiện PC không
+  cần, giữ nguyên một tồn kho cho mỗi sản phẩm như toàn bộ hệ thống hiện tại.
+- **Tồn kho**: nhập kho / xuất kho thủ công (vd. hàng hỏng, dùng nội bộ) / điều chỉnh theo kiểm kê
+  thực tế (nhập đúng số đếm được, hệ thống tự tính chênh lệch) — cả ba đều dùng lại đúng bảng
+  `InventoryTransaction` đã có từ Đợt 2 (cùng cơ chế với xuất kho tự động lúc đặt hàng, hoàn kho lúc
+  huỷ/trả đơn), server luôn chặn kết quả âm. Cảnh báo sắp hết hàng dùng `lowStockThreshold` riêng của
+  từng sản phẩm (đã có sẵn trong schema, mặc định 5) — CỐ Ý so theo tồn kho vật lý, khác với
+  `inStock`/"sắp hết hàng" phía khách hàng (trừ thêm số đang giữ chỗ): một bên trả lời "khách mua được
+  không", một bên trả lời "có cần đặt hàng thêm không".
+- **Ảnh sản phẩm hiện chỉ xem, chưa tải lên được từ trang này** — ảnh vẫn quản lý qua pipeline riêng
+  của dự án (mục 4 "Ảnh sản phẩm": `npm run seed-images`, thư mục ảnh, kiểm tra chất lượng/checksum).
+  Xây một luồng tải ảnh trực tiếp mà bỏ qua các bước kiểm tra đó (needsReview, watermark, trùng nội
+  dung) sẽ phá vỡ nguyên tắc "chỉ dùng ảnh thật đã kiểm tra" của dự án — để lại cho một đợt riêng.
+- **Bảng thông số kỹ thuật** sửa được ngay trên form (thêm/xoá từng dòng nhãn–giá trị), ghi thẳng vào
+  cột `specifications` theo đúng định dạng mảng đã ưu tiên trong mapper (giữ thứ tự hiển thị).
+
+### Tình trạng — đã xong Đợt 1-3/6
 
 Đã xong: đăng nhập/phân quyền tách biệt (Đợt 1), khung giao diện `/admin` (sidebar theo quyền, tương
-thích di động), duyệt đánh giá (`/admin/reviews`), và toàn bộ quản lý đơn hàng ở trên (Đợt 2).
+thích di động), duyệt đánh giá (`/admin/reviews`), toàn bộ quản lý đơn hàng (Đợt 2), và quản lý sản
+phẩm/kho hàng ở trên (Đợt 3).
 
 **Chưa làm** (roadmap các đợt sau, xem lịch sử trò chuyện lúc lập kế hoạch để biết chi tiết từng đợt):
-quản lý sản phẩm (thêm/sửa/ẩn/lưu trữ) và tồn kho (nhập/xuất/điều chỉnh, cảnh báo sắp hết), trang tổng
-quan doanh thu (biểu đồ theo ngày/tuần/tháng/năm, phân biệt doanh thu thuần) và xuất báo cáo Excel/CSV,
-quản lý khách hàng (danh sách, khoá/mở khoá), giao diện quản trị mã giảm giá (backend `/api/vouchers*`
-đã có sẵn từ trước), quản trị nội dung (banner/menu/bài viết/trang tĩnh).
+trang tổng quan doanh thu (biểu đồ theo ngày/tuần/tháng/năm, phân biệt doanh thu thuần) và xuất báo cáo
+Excel/CSV, quản lý khách hàng (danh sách, khoá/mở khoá), giao diện quản trị mã giảm giá (backend
+`/api/vouchers*` đã có sẵn từ trước), quản trị nội dung (banner/menu/bài viết/trang tĩnh).
 
 ## 12. Tài khoản mẫu
 
@@ -769,7 +805,7 @@ quản lý khách hàng (danh sách, khoá/mở khoá), giao diện quản trị
 - [ ] Service AI (Python/FastAPI): AI Search, AI Chat, AI Build PC
 - [x] **Admin Dashboard — Đợt 1/6** (mục 11): đăng nhập/phân quyền tách biệt hoàn toàn khỏi khách hàng (`/admin/login`, cookie/JWT riêng), 4 vai trò quản trị + kiểm tra quyền theo từng route ở server, 2FA (TOTP) tự nguyện, giới hạn đăng nhập sai, nhật ký thao tác (`AdminAuditLog`), khung giao diện `/admin` (sidebar theo quyền, tương thích di động), script tạo tài khoản quản trị an toàn (`create-admin.mts`); 2 trang quản trị cũ (xem đơn hàng, duyệt đánh giá) đã chuyển sang hệ thống mới
 - [x] **Admin Dashboard — Đợt 2** (mục 11): quản lý đơn hàng đầy đủ vòng đời (7 trạng thái tiến tuần tự, mã vận đơn, ghi chú nội bộ không lộ ra ngoài, in đơn, huỷ/hoàn theo quyền kèm hoàn kho đúng loại, đánh dấu hoàn tiền thủ công — không giả vờ tự động, lịch sử đổi trạng thái kèm tên người thực hiện)
-- [ ] **Admin Dashboard — Đợt 3**: quản lý sản phẩm (thêm/sửa/ẩn/lưu trữ, duyệt sản phẩm DRAFT) và tồn kho (nhập/xuất/điều chỉnh, cảnh báo sắp hết)
+- [x] **Admin Dashboard — Đợt 3** (mục 11): quản lý sản phẩm (thêm/sửa/ẩn/lưu trữ, duyệt sản phẩm DRAFT, ẩn/lưu trữ có hiệu lực ngay trên trang bán) và tồn kho (nhập/xuất/điều chỉnh theo kiểm kê, cảnh báo sắp hết theo ngưỡng riêng từng sản phẩm, không cho tồn kho âm)
 - [ ] **Admin Dashboard — Đợt 4**: trang tổng quan doanh thu (biểu đồ ngày/tuần/tháng/năm, phân biệt tổng đơn/đã thu/hoàn/doanh thu thuần) và xuất báo cáo Excel/CSV
 - [ ] **Admin Dashboard — Đợt 5**: quản lý khách hàng (danh sách, lịch sử mua, khoá/mở khoá tài khoản)
 - [ ] **Admin Dashboard — Đợt 6**: giao diện quản trị mã giảm giá (backend `/api/vouchers*` đã có sẵn, chỉ còn làm CRUD), quản trị nội dung (banner/menu/bài viết/trang tĩnh)
