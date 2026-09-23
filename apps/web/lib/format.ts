@@ -30,6 +30,16 @@ export function formatNumber(value: number): string {
   return value.toLocaleString("vi-VN");
 }
 
+/** 15000000 -> "15tr", 1250000000 -> "1,3 tỷ" — trục biểu đồ/thẻ số liệu không đủ chỗ ghi đầy đủ như formatPrice */
+export function formatCompactPrice(value: number): string {
+  const sign = value < 0 ? "-" : "";
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000_000) return `${sign}${(abs / 1_000_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tỷ`;
+  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })}tr`;
+  if (abs >= 1_000) return `${sign}${(abs / 1_000).toLocaleString("vi-VN", { maximumFractionDigits: 0 })}k`;
+  return `${sign}${abs}`;
+}
+
 /** Ghép giây thành cặp số 2 chữ số cho đồng hồ đếm ngược */
 export function splitCountdown(totalSeconds: number) {
   const safe = Math.max(0, totalSeconds);

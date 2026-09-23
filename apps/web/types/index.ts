@@ -635,3 +635,51 @@ export type InventoryAdjustmentInput =
   | { type: "IMPORT"; quantity: number; unitCost?: number; note?: string }
   | { type: "EXPORT"; quantity: number; note?: string }
   | { type: "ADJUST"; newQuantity: number; note?: string };
+
+/* -------------------------------------------------------------------------- */
+/*  Trang tổng quan quản trị                                                  */
+/* -------------------------------------------------------------------------- */
+
+export type DashboardGranularity = "day" | "week" | "month" | "year";
+
+export interface DashboardChartPoint {
+  bucket: string;
+  label: string;
+  netRevenue: number;
+}
+
+export interface DashboardBestSeller {
+  productId: string;
+  slug: string;
+  name: string;
+  image?: string;
+  quantitySold: number;
+}
+
+export interface DashboardLowStock {
+  productId: string;
+  slug: string;
+  name: string;
+  image?: string;
+  inventoryQuantity: number;
+  lowStockThreshold: number;
+}
+
+/** `GET /api/admin/dashboard/summary` */
+export interface AdminDashboardSummary {
+  range: { from: string; to: string; granularity: DashboardGranularity };
+  revenue: {
+    grossOrderValue: number;
+    paidAmount: number;
+    refundedAmount: number;
+    netRevenue: number;
+  };
+  orderCount: number;
+  productsSoldCount: number;
+  totalCustomers: number;
+  pendingOrderCount: number;
+  chart: DashboardChartPoint[];
+  bestSellers: DashboardBestSeller[];
+  lowStock: DashboardLowStock[];
+  recentOrders: AdminOrderSummary[];
+}

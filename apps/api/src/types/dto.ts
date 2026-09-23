@@ -636,3 +636,65 @@ export type InventoryAdjustmentInput =
   | { type: "EXPORT"; quantity: number; note?: string }
   /** `newQuantity` là số đếm được thực tế lúc kiểm kê — server tự tính chênh lệch, không bắt nhân viên tự trừ */
   | { type: "ADJUST"; newQuantity: number; note?: string };
+
+/* -------------------------------------------------------------------------- */
+/*  Trang tổng quan quản trị (doanh thu, đơn hàng, sản phẩm, khách hàng)      */
+/* -------------------------------------------------------------------------- */
+
+export type DashboardGranularityDto = "day" | "week" | "month" | "year";
+
+/** Một điểm trên biểu đồ doanh thu — `bucket` sắp xếp được, `label` để hiện trên trục */
+export interface DashboardChartPointDto {
+  bucket: string;
+  label: string;
+  netRevenue: number;
+}
+
+export interface DashboardBestSellerDto {
+  productId: string;
+  slug: string;
+  name: string;
+  image?: string;
+  quantitySold: number;
+}
+
+export interface DashboardLowStockDto {
+  productId: string;
+  slug: string;
+  name: string;
+  image?: string;
+  inventoryQuantity: number;
+  lowStockThreshold: number;
+}
+
+/**
+ * `GET /api/admin/dashboard/summary` — chỉ OWNER/MANAGER xem được (quyền `reports:read`).
+ * `revenue` tách riêng 4 con số theo đúng yêu cầu: tổng giá trị đơn đặt trong kỳ (mọi trạng thái),
+ * tiền đã thanh toán trong kỳ, tiền đã hoàn trong kỳ, và doanh thu thuần = đã thanh toán - đã hoàn.
+ * Đơn huỷ hoặc chưa thanh toán không được tính vào `paidAmount`/`netRevenue`.
+ */
+export interface AdminDashboardSummaryDto {
+  range: { from: string; to: string; granularity: DashboardGranularityDto };
+  revenue: {
+    grossOrderValue: number;
+    paidAmount: number;
+    refundedAmount: number;
+    netRevenue: number;
+  };
+  /** Số đơn đặt trong kỳ (mọi trạng thái) */
+  orderCount: number;
+  /** Tổng số lượng sản phẩm trong các đơn KHÔNG bị huỷ, đặt trong kỳ */
+  productsSoldCount: number;
+  /** Tổng khách hàng đã đăng ký — luỹ kế, KHÔNG theo kỳ đang lọc */
+  totalCustomers: number;
+  /** Đơn đang chờ xử lý HIỆN TẠI (PENDING/CONFIRMED) — trạng thái hiện tại, KHÔNG theo kỳ đang lọc */
+  pendingOrderCount: number;
+  /** Doanh thu thuần theo từng mốc thời gian trong kỳ, đã điền đủ mốc kể cả khi không phát sinh gì */
+  chart: DashboardChartPointDto[];
+  /** Sản phẩm bán chạy nhất trong kỳ, theo tổng số lượng */
+  bestSellers: DashboardBestSellerDto[];
+  /** Sản phẩm sắp hết hàng — luỹ kế, KHÔNG theo kỳ đang lọc */
+  lowStock: DashboardLowStockDto[];
+  /** Đơn hàng gần đây nhất — luỹ kế, KHÔNG theo kỳ đang lọc */
+  recentOrders: AdminOrderSummaryDto[];
+}
