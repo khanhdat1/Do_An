@@ -320,6 +320,7 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | PATCH | `/api/admin/orders/:orderCode/tracking-number` | `{ trackingNumber }` — chuỗi rỗng để xoá — cần quyền `orders:write` |
 | PATCH | `/api/admin/orders/:orderCode/internal-note` | `{ internalNote }` — chuỗi rỗng để xoá; không hiện ở phiếu in hay cho khách hàng — cần quyền `orders:write` |
 | GET | `/api/admin/dashboard/summary?granularity=&from=&to=` | Trang tổng quan: doanh thu (4 mốc), số đơn/sản phẩm bán/khách hàng/đơn chờ xử lý, biểu đồ theo kỳ, sản phẩm bán chạy, sắp hết hàng, đơn gần đây — thiếu `from`/`to` thì dùng khoảng mặc định theo `granularity` — chỉ OWNER/MANAGER, cần quyền `reports:read` |
+| GET | `/api/admin/dashboard/export?granularity=&from=&to=` | File `.xlsx` đúng số liệu của `/summary` cùng tham số (5 sheet: Tổng quan, Doanh thu theo kỳ, Sản phẩm bán chạy, Sắp hết hàng, Đơn hàng gần đây) — cùng quyền `reports:read` |
 | GET | `/api/admin/customers?search=&locked=&page=&pageSize=` | Danh sách khách hàng (chỉ role `CUSTOMER`), kèm số đơn/tổng chi tiêu; `search` khớp tên/email/SĐT, `locked=true/false` lọc theo trạng thái khoá — cần quyền `customers:read` |
 | GET | `/api/admin/customers/:id` | Hồ sơ một khách hàng — không bao giờ trả mật khẩu — cần quyền `customers:read` |
 | GET | `/api/admin/customers/:id/orders?page=&pageSize=` | Lịch sử mua hàng của khách hàng đó — cần quyền `customers:read` |
@@ -798,8 +799,12 @@ vẫn tự chuyển sang mục đầu tiên họ có quyền, như trước Đ�
   theo bộ lọc khoảng thời gian đang chọn, khác 3 số liệu doanh thu/đơn/sản phẩm bán ở trên.
 - Sản phẩm bán chạy (theo kỳ) và sắp hết hàng (luỹ kế, dùng lại đúng `lowStockThreshold` của Đợt 3) hiện
   kèm ảnh + liên kết thẳng tới trang sửa sản phẩm.
-- **Chưa làm ở đợt này**: xuất báo cáo ra Excel/CSV (thuộc mục 7 của yêu cầu gốc, không nằm trong "trang
-  tổng quan" — để dành cho lúc làm phần báo cáo/cài đặt).
+- **Xuất báo cáo Excel** — nút "Xuất báo cáo Excel" cạnh bộ lọc ngày, tải file `.xlsx` đúng số liệu
+  đang xem (cùng `granularity`/khoảng ngày), 5 sheet: Tổng quan (8 chỉ số + giải thích cách tính),
+  Doanh thu theo kỳ (đúng dữ liệu biểu đồ), Sản phẩm bán chạy, Sắp hết hàng, Đơn hàng gần đây. Dựng
+  bằng `exceljs` ở phía server, dùng lại nguyên `getDashboardSummary` — không tính lại gì, không có
+  rủi ro lệch số giữa màn hình và file tải về. Xuất CSV riêng không làm thêm — file Excel mở được luôn
+  bằng Excel/Google Sheets/LibreOffice, không cần hai định dạng cho cùng một dữ liệu.
 
 ### Quản lý khách hàng (Đợt 5)
 
@@ -862,9 +867,8 @@ thích di động), duyệt đánh giá (`/admin/reviews`), toàn bộ quản l�
 phẩm/kho hàng (Đợt 3), trang tổng quan doanh thu (Đợt 4), quản lý khách hàng (Đợt 5), quản trị mã giảm
 giá và banner trang chủ (Đợt 6) — toàn bộ lộ trình 6 đợt ban đầu.
 
-**Chưa làm**: xuất báo cáo Excel/CSV, menu/bài viết/trang tĩnh (phần "quản trị nội dung" ngoài banner —
-người dùng xác nhận không cần ở đợt này), điểm thưởng PCPoints/hạng thành viên (kế hoạch riêng, chưa
-chốt ngưỡng cụ thể).
+**Chưa làm**: menu/bài viết/trang tĩnh (phần "quản trị nội dung" ngoài banner — người dùng xác nhận
+không cần ở đợt này), điểm thưởng PCPoints/hạng thành viên (kế hoạch riêng, chưa chốt ngưỡng cụ thể).
 
 ## 12. Tài khoản mẫu
 
@@ -895,7 +899,7 @@ chốt ngưỡng cụ thể).
 - [x] **Admin Dashboard — Đợt 1/6** (mục 11): đăng nhập/phân quyền tách biệt hoàn toàn khỏi khách hàng (`/admin/login`, cookie/JWT riêng), 4 vai trò quản trị + kiểm tra quyền theo từng route ở server, 2FA (TOTP) tự nguyện, giới hạn đăng nhập sai, nhật ký thao tác (`AdminAuditLog`), khung giao diện `/admin` (sidebar theo quyền, tương thích di động), script tạo tài khoản quản trị an toàn (`create-admin.mts`); 2 trang quản trị cũ (xem đơn hàng, duyệt đánh giá) đã chuyển sang hệ thống mới
 - [x] **Admin Dashboard — Đợt 2** (mục 11): quản lý đơn hàng đầy đủ vòng đời (7 trạng thái tiến tuần tự, mã vận đơn, ghi chú nội bộ không lộ ra ngoài, in đơn, huỷ/hoàn theo quyền kèm hoàn kho đúng loại, đánh dấu hoàn tiền thủ công — không giả vờ tự động, lịch sử đổi trạng thái kèm tên người thực hiện)
 - [x] **Admin Dashboard — Đợt 3** (mục 11): quản lý sản phẩm (thêm/sửa/ẩn/lưu trữ, duyệt sản phẩm DRAFT, ẩn/lưu trữ có hiệu lực ngay trên trang bán) và tồn kho (nhập/xuất/điều chỉnh theo kiểm kê, cảnh báo sắp hết theo ngưỡng riêng từng sản phẩm, không cho tồn kho âm)
-- [x] **Admin Dashboard — Đợt 4** (mục 11): trang tổng quan doanh thu (biểu đồ ngày/tuần/tháng/năm + lọc khoảng thời gian, phân biệt tổng đơn/đã thu/hoàn/doanh thu thuần, sản phẩm bán chạy/sắp hết hàng/đơn gần đây) — **chưa làm** xuất báo cáo Excel/CSV (để dành phần báo cáo/cài đặt sau)
+- [x] **Admin Dashboard — Đợt 4** (mục 11): trang tổng quan doanh thu (biểu đồ ngày/tuần/tháng/năm + lọc khoảng thời gian, phân biệt tổng đơn/đã thu/hoàn/doanh thu thuần, sản phẩm bán chạy/sắp hết hàng/đơn gần đây), xuất báo cáo Excel (`.xlsx`, 5 sheet, đúng số liệu đang xem)
 - [x] **Admin Dashboard — Đợt 5** (mục 11): quản lý khách hàng (danh sách có tìm kiếm/lọc theo trạng thái khoá, lịch sử mua hàng, tổng chi tiêu tính đúng theo đơn đã thanh toán, khoá/mở khoá tài khoản, không hiển thị mật khẩu)
 - [x] **Admin Dashboard — Đợt 6, phần 1/2** (mục 11): giao diện quản trị mã giảm giá (tạo/sửa/tắt/xoá — xoá bị chặn nếu mã đã được dùng, chỉ tắt được)
 - [x] **Admin Dashboard — Đợt 6, phần 2/2** (mục 11): banner trang chủ (tải ảnh thật lên, lên lịch hiển thị, nháp/đã đăng) — menu/bài viết/trang tĩnh xác nhận không làm ở đợt này

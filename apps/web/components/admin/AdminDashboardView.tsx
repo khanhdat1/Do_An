@@ -7,6 +7,7 @@ import {
   Banknote,
   Clock,
   CloudOff,
+  Download,
   LoaderCircle,
   PackageCheck,
   ShieldAlert,
@@ -17,7 +18,8 @@ import {
 import AdminBadge from "@/components/admin/AdminBadge";
 import ProductThumb from "@/components/product/ProductThumb";
 import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
-import { adminApiFetch } from "@/lib/admin-api-client";
+import { useToast } from "@/components/providers/ToastProvider";
+import { adminApiFetch, downloadAdminFile, errorMessage } from "@/lib/admin-api-client";
 import { formatCompactPrice, formatPrice } from "@/lib/format";
 import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE, PAYMENT_STATUS_LABEL, PAYMENT_STATUS_TONE } from "@/lib/data/orders";
 import type { AdminDashboardSummary, DashboardGranularity } from "@/types";
@@ -79,10 +81,12 @@ function StatCard({
 
 export default function AdminDashboardView() {
   const { user } = useAdminAuth();
+  const toast = useToast();
   const [granularity, setGranularity] = useState<DashboardGranularity>("day");
   const [from, setFrom] = useState<string | null>(null);
   const [to, setTo] = useState<string | null>(null);
   const [state, setState] = useState<State>({ status: "loading" });
+  const [exporting, setExporting] = useState(false);
 
   const allowedRead = user ? user.permissions.includes("reports:read") : null;
 
@@ -106,6 +110,21 @@ export default function AdminDashboardView() {
       cancelled = true;
     };
   }, [allowedRead, granularity, from, to]);
+
+  async function exportReport() {
+    const query = new URLSearchParams({ granularity });
+    if (from) query.set("from", from);
+    if (to) query.set("to", to);
+
+    setExporting(true);
+    try {
+      await downloadAdminFile(`/api/admin/dashboard/export?${query}`);
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setExporting(false);
+    }
+  }
 
   function changeGranularity(next: DashboardGranularity) {
     setGranularity(next);
@@ -183,6 +202,15 @@ export default function AdminDashboardView() {
                 className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm outline-none focus:border-brand-500 focus:bg-white"
               />
             </label>
+            <button
+              type="button"
+              onClick={exportReport}
+              disabled={exporting}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-bold text-slate-600 transition hover:border-brand-300 hover:bg-brand-500/5 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {exporting ? <LoaderCircle className="size-4 animate-spin" /> : <Download className="size-4" />}
+              {exporting ? "Đang xuất..." : "Xuất báo cáo Excel"}
+            </button>
           </div>
         ) : null}
       </div>
