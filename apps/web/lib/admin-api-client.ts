@@ -44,3 +44,30 @@ export async function uploadAdminImage(path: string, file: File): Promise<{ url:
 
   return response.json();
 }
+
+/**
+ * Tải file nhị phân (báo cáo Excel) và tự lưu về máy — `adminApiFetch` luôn parse JSON nên không
+ * dùng được cho response là file. Đọc tên file thật từ header `Content-Disposition` server đã đặt
+ * (kèm khoảng thời gian báo cáo) thay vì tự đoán tên ở phía trình duyệt.
+ */
+export async function downloadAdminFile(path: string): Promise<void> {
+  const response = await fetch(`${PUBLIC_API_URL}${path}`, { credentials: "include" });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    throw new ApiError(typeof payload?.message === "string" ? payload.message : `Máy chủ trả về lỗi ${response.status}`, response.status);
+  }
+
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const filename = /filename="([^"]+)"/.exec(disposition)?.[1] ?? "bao-cao.xlsx";
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
