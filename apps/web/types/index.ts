@@ -782,3 +782,29 @@ export interface AdminBannerInput {
   startsAt?: string;
   endsAt?: string;
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Quản lý tài khoản quản trị khác                                           */
+/* -------------------------------------------------------------------------- */
+
+export type AdminAssignableRole = "OWNER" | "MANAGER" | "ORDER_STAFF" | "PRODUCT_STAFF";
+
+export interface AdminAccount {
+  id: string;
+  email: string;
+  fullName: string;
+  role: UserRole;
+  isActive: boolean;
+  totpEnabled: boolean;
+  lastLoginAt?: string;
+  createdAt: string;
+}
+
+export interface AdminAccountInput {
+  email: string;
+  fullName: string;
+  /** Bắt buộc lúc tạo; để trống lúc sửa = giữ nguyên vai trò hiện tại */
+  role?: AdminAssignableRole;
+  /** Bắt buộc lúc tạo; để trống lúc sửa = giữ nguyên mật khẩu */
+  password?: string;
+}
