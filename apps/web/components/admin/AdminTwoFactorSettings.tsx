@@ -67,7 +67,7 @@ export default function AdminTwoFactorSettings() {
   if (!user) return null;
 
   return (
-    <div className="surface-card max-w-lg p-5">
+    <div className="admin-card max-w-lg p-5">
       <div className="flex items-center gap-3">
         <span
           className={`grid size-11 shrink-0 place-items-center rounded-xl ${

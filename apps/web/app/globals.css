@@ -92,6 +92,18 @@
     box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
   }
 
+  /*
+    Thẻ riêng cho khu quản trị (/admin) — bóng rõ hơn surface-card, không viền, bo góc lớn hơn
+    một chút. CHỈ dùng trong components/admin/**, không đụng tới giao diện khách hàng.
+  */
+  .admin-card {
+    background-color: #fff;
+    border-radius: 0.875rem;
+    box-shadow:
+      0 1px 3px 0 rgb(0 0 0 / 0.1),
+      0 1px 2px -1px rgb(0 0 0 / 0.1);
+  }
+
   /* Tiêu đề section in hoa kiểu kỹ thuật */
   .section-title {
     font-family: var(--font-display);
