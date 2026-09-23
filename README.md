@@ -338,6 +338,10 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | POST | `/api/admin/auth/refresh`, `/api/admin/auth/logout` | Làm mới / thu hồi phiên đăng nhập quản trị — độc lập hoàn toàn với `/api/auth/*` của khách hàng |
 | GET | `/api/admin/auth/me` | Tài khoản quản trị đang đăng nhập kèm `permissions` suy ra từ role; 401 nếu chưa đăng nhập (khác `/api/auth/me` của khách hàng — không trả `{user: null}`) |
 | POST | `/api/admin/auth/2fa/setup`, `/2fa/confirm`, `/2fa/disable` | Bật/tắt xác thực 2 bước (TOTP) cho chính tài khoản đang đăng nhập — tự nguyện, không bắt buộc (mục 11) |
+| GET | `/api/admin/accounts(/:id)` | Danh sách/chi tiết tài khoản quản trị KHÁC (không gồm khách hàng) — cần quyền `admins:manage` |
+| POST | `/api/admin/accounts`, PATCH `/api/admin/accounts/:id` | Tạo/sửa tài khoản — `role`/`password` bắt buộc lúc tạo, để trống lúc sửa = giữ nguyên; tự đổi vai trò chính mình bị chặn — cần quyền `admins:manage` |
+| PATCH | `/api/admin/accounts/:id/lock` | Khoá/mở khoá — tự khoá chính mình bị chặn — cần quyền `admins:manage` |
+| POST | `/api/admin/accounts/:id/disable-2fa` | Tắt 2FA HỘ một tài khoản khác — dùng khi họ mất thiết bị xác thực và không tự đăng nhập để tự tắt được nữa — cần quyền `admins:manage` |
 
 Tham số của `/api/products`:
 
@@ -860,12 +864,33 @@ những mục còn lại trong ý tưởng "quản trị nội dung" ban đầu)
 - **Chưa làm**: menu điều hướng, bài viết/thông báo, trang tĩnh (giới thiệu/liên hệ/chính sách) — các
   mục còn lại của ý tưởng "quản trị nội dung" gốc, người dùng đã xác nhận chỉ cần banner ở đợt này.
 
-### Tình trạng — đã xong Đợt 1-6/6
+### Tài khoản quản trị khác
+
+`/admin/accounts` (chỉ OWNER — quyền `admins:manage`, đã định nghĩa từ Đợt 1 nhưng chưa route nào
+kiểm tới; lấp nốt khoảng trống này của mục 1). Trước đây cách DUY NHẤT tạo thêm tài khoản quản trị là
+chạy `create-admin.mts` từ dòng lệnh — giờ có thêm giao diện, script vẫn giữ để tạo tài khoản đầu tiên
+khi triển khai mới (chưa có ai đăng nhập được để dùng giao diện):
+
+- Tạo/sửa email, họ tên, vai trò (Chủ website/Quản lý/Nhân viên đơn hàng/Nhân viên sản phẩm), đặt lại
+  mật khẩu hộ. Không xoá được, chỉ khoá/mở khoá — giữ nguyên `AdminAuditLog` (khoá ngoại kiểu CASCADE
+  lên `User`, xoá tài khoản sẽ xoá luôn lịch sử thao tác của người đó).
+- **Không tự đổi vai trò hay tự khoá được CHÍNH tài khoản đang đăng nhập** — tránh một OWNER lỡ tay hạ
+  quyền/khoá chính mình rồi không còn ai sửa lại được (chặn cả hai phía: ẩn nút trên giao diện và kiểm
+  lại ở server).
+- **Tắt 2FA HỘ** một tài khoản khác — lối thoát khi ai đó mất điện thoại/thiết bị xác thực và không
+  tự đăng nhập được nữa để tự tắt 2FA của chính mình.
+- Tài khoản `admin@pczone.vn` có sẵn từ bản seed đầu tiên vẫn giữ role `ADMIN` cũ (không gán được cho
+  tài khoản mới) — trang sửa tài khoản đó hiện rõ đang ở "vai trò cũ" và cho chọn một vai trò hiện tại
+  để chuyển đổi, nhưng KHÔNG bắt buộc phải chuyển ngay mới sửa/khoá được các trường khác (để trống vai
+  trò = giữ nguyên).
+
+### Tình trạng — đã xong Đợt 1-6/6 + quản lý tài khoản quản trị khác
 
 Đã xong: đăng nhập/phân quyền tách biệt (Đợt 1), khung giao diện `/admin` (sidebar theo quyền, tương
 thích di động), duyệt đánh giá (`/admin/reviews`), toàn bộ quản lý đơn hàng (Đợt 2), quản lý sản
 phẩm/kho hàng (Đợt 3), trang tổng quan doanh thu (Đợt 4), quản lý khách hàng (Đợt 5), quản trị mã giảm
-giá và banner trang chủ (Đợt 6) — toàn bộ lộ trình 6 đợt ban đầu.
+giá và banner trang chủ (Đợt 6) — toàn bộ lộ trình 6 đợt ban đầu — cùng quản lý tài khoản quản trị
+khác ở trên (lấp khoảng trống còn lại của mục 1).
 
 **Chưa làm**: menu/bài viết/trang tĩnh (phần "quản trị nội dung" ngoài banner — người dùng xác nhận
 không cần ở đợt này), điểm thưởng PCPoints/hạng thành viên (kế hoạch riêng, chưa chốt ngưỡng cụ thể).
@@ -903,3 +928,4 @@ không cần ở đợt này), điểm thưởng PCPoints/hạng thành viên (k
 - [x] **Admin Dashboard — Đợt 5** (mục 11): quản lý khách hàng (danh sách có tìm kiếm/lọc theo trạng thái khoá, lịch sử mua hàng, tổng chi tiêu tính đúng theo đơn đã thanh toán, khoá/mở khoá tài khoản, không hiển thị mật khẩu)
 - [x] **Admin Dashboard — Đợt 6, phần 1/2** (mục 11): giao diện quản trị mã giảm giá (tạo/sửa/tắt/xoá — xoá bị chặn nếu mã đã được dùng, chỉ tắt được)
 - [x] **Admin Dashboard — Đợt 6, phần 2/2** (mục 11): banner trang chủ (tải ảnh thật lên, lên lịch hiển thị, nháp/đã đăng) — menu/bài viết/trang tĩnh xác nhận không làm ở đợt này
+- [x] **Quản lý tài khoản quản trị khác** (mục 1): tạo/sửa/khoá/mở khoá, đặt lại mật khẩu hộ, tắt 2FA hộ — chặn tự đổi vai trò/tự khoá chính mình

@@ -809,3 +809,36 @@ export interface AdminBannerInput {
   startsAt?: string;
   endsAt?: string;
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Quản lý tài khoản quản trị khác (quyền `admins:manage`, chỉ OWNER)        */
+/* -------------------------------------------------------------------------- */
+
+/** 4 vai trò gán được cho tài khoản MỚI/khi SỬA — không gồm CUSTOMER hay ADMIN/STAFF cũ (chỉ giữ lại cho 1 dòng có sẵn, không cấp lại) */
+export type AdminAssignableRoleDto = "OWNER" | "MANAGER" | "ORDER_STAFF" | "PRODUCT_STAFF";
+
+/** `GET /api/admin/accounts(/:id)` — không bao giờ chứa mật khẩu hay totpSecret */
+export interface AdminAccountDto {
+  id: string;
+  email: string;
+  fullName: string;
+  role: UserRoleDto;
+  isActive: boolean;
+  totpEnabled: boolean;
+  lastLoginAt?: string;
+  createdAt: string;
+}
+
+/** Body `POST`/`PATCH /api/admin/accounts` — `password` bắt buộc lúc tạo, để trống lúc sửa = giữ nguyên mật khẩu cũ */
+/**
+ * `role`/`password` bắt buộc lúc TẠO (service tự kiểm, không phải kiểu dữ liệu — cùng type dùng
+ * chung cho sửa). Lúc SỬA cả hai đều optional: để trống `role` = giữ nguyên vai trò hiện tại (quan
+ * trọng cho tài khoản đang ở vai trò CŨ — ADMIN/STAFF — không ép phải chọn vai trò mới mới lưu được
+ * các trường khác), để trống `password` = giữ nguyên mật khẩu.
+ */
+export interface AdminAccountInput {
+  email: string;
+  fullName: string;
+  role?: AdminAssignableRoleDto;
+  password?: string;
+}

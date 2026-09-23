@@ -5,17 +5,7 @@ import { ChevronDown, LogOut } from "lucide-react";
 import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { errorMessage } from "@/lib/admin-api-client";
-import type { AdminUser } from "@/types";
-
-const ROLE_LABEL: Record<AdminUser["role"], string> = {
-  CUSTOMER: "Khách hàng",
-  ADMIN: "Quản trị viên",
-  STAFF: "Nhân viên",
-  OWNER: "Chủ website",
-  MANAGER: "Quản lý",
-  ORDER_STAFF: "Nhân viên đơn hàng",
-  PRODUCT_STAFF: "Nhân viên sản phẩm",
-};
+import { ROLE_LABEL } from "@/lib/data/admin-roles";
 
 /** Chữ cái đầu tên dùng làm avatar — không có ảnh đại diện riêng cho tài khoản quản trị */
 function initialsOf(fullName: string): string {
