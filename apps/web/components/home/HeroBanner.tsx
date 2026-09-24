@@ -87,7 +87,7 @@ export default function HeroBanner() {
                 </span>
               </p>
               <Link
-                href="/ai-advisor"
+                href="/tro-ly-ai"
                 className="flex shrink-0 items-center gap-2 rounded-lg bg-ink-850 px-3 py-2 ring-1 ring-white/10 transition hover:ring-gold-400/40"
               >
                 <span className="grid size-7 place-items-center rounded-md bg-brand-500/20">
