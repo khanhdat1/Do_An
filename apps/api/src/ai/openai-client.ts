@@ -18,21 +18,25 @@ function requireConfigured(): void {
   if (!isConfigured()) throw new ServiceUnavailableError("Tính năng AI chưa được cấu hình.");
 }
 
-/** OpenAI 429 khá hay gặp thoáng qua — thử lại đúng một lần trước khi báo lỗi hẳn */
-async function callWithRetry<T>(action: () => Promise<T>): Promise<T> {
-  try {
-    return await action();
-  } catch (error) {
-    if (error instanceof APIError && error.status === 429) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      try {
-        return await action();
-      } catch (retryError) {
-        throw mapError(retryError);
-      }
+/**
+ * 429 khá hay gặp thoáng qua. Mặc định thử lại đúng một lần (đủ cho các lời gọi người dùng đang chờ
+ * — `embed()`/`chatComplete()` — không nên bắt họ đợi lâu, thà báo lỗi để rơi về tìm kiếm thường còn
+ * hơn). `embedBatch()` dựng chỉ mục nền lúc khởi động thì không ai đang chờ trực tiếp, nên truyền
+ * `maxAttempts`/`delayMs` lớn hơn hẳn — đủ kiên nhẫn để vượt qua giới hạn free-tier của Gemini
+ * (xem `EMBED_BATCH_LIMIT`).
+ */
+async function callWithRetry<T>(action: () => Promise<T>, opts: { maxAttempts?: number; delayMs?: number } = {}): Promise<T> {
+  const { maxAttempts = 2, delayMs = 1000 } = opts;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await action();
+    } catch (error) {
+      const isRateLimited = error instanceof APIError && error.status === 429;
+      if (!isRateLimited || attempt === maxAttempts) throw mapError(error);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
-    throw mapError(error);
   }
+  throw new ServiceUnavailableError("Dịch vụ AI hiện không phản hồi được. Vui lòng thử lại sau.");
 }
 
 /**
@@ -58,12 +62,33 @@ export async function embed(text: string): Promise<number[]> {
   return embedding;
 }
 
-/** Gộp nhiều văn bản vào một lượt gọi — trả về đúng thứ tự đầu vào (sắp lại theo `index` cho chắc) */
+// Gemini giới hạn cứng 100 input/lượt gọi (BatchEmbedContentsRequest). Chia nhỏ hơn nữa (50) để một
+// chỗ nghẽn không huỷ mất công của nhiều sản phẩm cùng lúc — export ra để embedding-store.ts dùng
+// đúng cùng kích thước khi tự chia đợt ghi DB dần (chunk nào lỡ xong thì giữ nguyên, không mất).
+export const EMBED_BATCH_LIMIT = 50;
+
+/**
+ * Gộp nhiều văn bản, tự chia thành nhiều lượt gọi theo `EMBED_BATCH_LIMIT` — trả về đúng thứ tự đầu
+ * vào (sắp lại theo `index` cho chắc trong từng lượt).
+ *
+ * KHÔNG thử lại khi 429 (khác `embed()`/`chatComplete()` vẫn thử lại 1 lần): đã thực tế gặp free-tier
+ * Gemini báo "embed_content_free_tier_requests" — thời gian đề nghị chờ TĂNG DẦN qua mỗi lần thử lại
+ * (5.7s → 23.7s → 33.9s dù cách nhau chỉ vài chục giây), tức đây không phải kiểu giới hạn hồi nhanh
+ * theo phút mà thử lại vài giây là qua được — cứ thử lại chỉ tốn thêm quota (hoặc thêm request tính
+ * vào cùng hạn mức) mà không giúp gì. Thất bại thì dừng ngay, để `embedding-store.ts` tự nghỉ một lúc
+ * (`FAILURE_COOLDOWN_MS`) rồi mới thử lại toàn bộ, thay vì dội liên tục ngay trong một lượt dựng.
+ */
 export async function embedBatch(texts: string[]): Promise<number[][]> {
   requireConfigured();
   if (texts.length === 0) return [];
-  const response = await callWithRetry(() => openaiClient().embeddings.create({ model: env.ai.embeddingModel, input: texts }));
-  return [...response.data].sort((a, b) => a.index - b.index).map((item) => item.embedding);
+
+  const results: number[][] = [];
+  for (let i = 0; i < texts.length; i += EMBED_BATCH_LIMIT) {
+    const chunk = texts.slice(i, i + EMBED_BATCH_LIMIT);
+    const response = await callWithRetry(() => openaiClient().embeddings.create({ model: env.ai.embeddingModel, input: chunk }), { maxAttempts: 1 });
+    results.push(...[...response.data].sort((a, b) => a.index - b.index).map((item) => item.embedding));
+  }
+  return results;
 }
 
 export interface ChatMessage {
