@@ -158,7 +158,7 @@ export const env = {
   ai: {
     openaiApiKey: optional("OPENAI_API_KEY"),
     baseUrl: optional("OPENAI_BASE_URL"),
-    chatModel: optional("OPENAI_CHAT_MODEL") ?? "gemini-3.8-flash",
+    chatModel: optional("OPENAI_CHAT_MODEL") ?? "gemini-3.1-flash-lite",
     embeddingModel: optional("OPENAI_EMBEDDING_MODEL") ?? "gemini-embedding-2-preview",
   },
 };
