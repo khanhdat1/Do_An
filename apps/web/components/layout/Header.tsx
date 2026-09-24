@@ -32,7 +32,7 @@ export default function Header() {
         <div className="ml-auto flex shrink-0 items-center gap-2 lg:ml-0">
           {/* Thẻ AI Advisor – điểm khác biệt chính của PCZone */}
           <Link
-            href="/ai-advisor"
+            href="/tro-ly-ai"
             className="hidden items-center gap-2 rounded-xl bg-ink-800 px-3 py-2 ring-1 ring-white/10 transition hover:ring-gold-400/50 xl:flex"
           >
             <span className="grid size-8 place-items-center rounded-lg bg-brand-500/20">
