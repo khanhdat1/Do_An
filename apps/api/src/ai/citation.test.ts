@@ -31,6 +31,17 @@ const mouse = {
   name: "Chuột Logitech G102 Lightsync",
 };
 
+// Catalog PC lắp ráp thật đặt tên kiểu này — "PC Gaming PCZone" lặp lại ở MỌI ứng viên, không phân
+// biệt được sản phẩm nào. Đây là ca lỗi thật gặp khi test: một câu trả lời "chưa có hàng" (không nhắc
+// tên sản phẩm nào) vẫn bị trích dẫn nhầm 8 sản phẩm chỉ vì khớp "pc"/"gaming"/"pczone" chung chung.
+const pcCandidates = [
+  { productId: "prod-pc-i5-3050", name: "PC Gaming PCZone i5-12400F RTX 3050" },
+  { productId: "prod-pc-i7-5060", name: "PC Gaming PCZone i7-14700F RTX 5060" },
+  { productId: "prod-pc-i5-5060", name: "PC Gaming PCZone i5-12400F RTX 5060" },
+  { productId: "prod-pc-i3-6500xt", name: "PC Gaming PCZone i3-12100F RX 6500 XT" },
+  { productId: "prod-pc-i5-5060ti", name: "PC Gaming PCZone i5-12400F RTX 5060 Ti" },
+];
+
 console.log("\n[1] findCitedProductIds");
 {
   check(
@@ -78,6 +89,22 @@ console.log("\n[1] findCitedProductIds");
     "trả lời nhắc nhiều sản phẩm, giữ đúng thứ tự đầu vào (không phải thứ tự xuất hiện trong câu trả lời)",
     findCitedProductIds("So sánh giữa IdeaPad Slim 3 14IWC và ROG Strix G16 RTX4060 thì tuỳ nhu cầu của bạn.", [rogStrix, ideapad, mouse]),
     ["prod-rog-strix", "prod-ideapad"],
+  );
+
+  check(
+    "ca lỗi thật: trả lời 'chưa có hàng' không nhắc sản phẩm nào -> KHÔNG được trích dẫn dù nhiều ứng viên cùng chứa 'PC'/'Gaming'/'PCZone'",
+    findCitedProductIds("Chào bạn, hiện tại PCZone chưa có sản phẩm loa chuyên dụng cho phòng gaming. Bạn cần tư vấn thêm về PC hay chuột gaming không?", pcCandidates),
+    [],
+  );
+
+  check(
+    // "5060" là chuỗi con của "5060ti" sau compact() (bỏ dấu cách) — cùng bản chất so-nguyên-chuỗi
+    // với đánh đổi đã ghi nhận từ đầu ("tệ nhất là thừa một sản phẩm thật, không bao giờ là sản phẩm
+    // bịa"): bản RTX 5060 thường bị trích dẫn kèm theo dù câu trả lời chỉ nêu đúng bản "5060 Ti". Chấp
+    // nhận được — vẫn là 2 sản phẩm CÓ THẬT liên quan sát nhau, không phải trích dẫn sai lệch hẳn.
+    "cùng bộ ứng viên 'PC Gaming PCZone' ở trên, nhưng trả lời THẬT SỰ nêu tên một sản phẩm -> vẫn trích dẫn đúng sản phẩm đó (không bị lọc quá tay, dù kèm theo bản gần giống)",
+    findCitedProductIds("Mình gợi ý cấu hình i5-12400F RTX 5060 Ti, đủ mạnh cho nhu cầu của bạn.", pcCandidates),
+    ["prod-pc-i5-5060", "prod-pc-i5-5060ti"],
   );
 }
 
