@@ -41,7 +41,9 @@ app/                      # App Router
                           # (bộ lọc nằm trên URL, xem lib/category-query.ts)
   gio-hang/               # giỏ hàng
   dang-nhap/  dang-ky/    # đăng nhập / đăng ký (?next= để quay lại trang đang xem dở)
-  tai-khoan/              # hồ sơ, tài khoản liên kết (Google / Facebook), đăng xuất (yêu cầu đăng nhập)
+  quen-mat-khau/          # nhập email, gửi link đặt lại mật khẩu
+  dat-lai-mat-khau/       # đặt mật khẩu mới (?token= từ email)
+  tai-khoan/              # hồ sơ (xem/sửa), tài khoản liên kết (liên kết/huỷ liên kết), đăng xuất (yêu cầu đăng nhập)
   thanh-toan/             # trang giữ chỗ cho bước đặt hàng (yêu cầu đăng nhập)
 
 components/

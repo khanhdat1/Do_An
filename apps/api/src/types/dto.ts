@@ -143,6 +143,8 @@ export interface AuthUserDto {
   phone?: string;
   avatarUrl?: string;
   role: UserRoleDto;
+  /** false = chỉ đăng nhập được bằng mạng xã hội — frontend dùng để chặn huỷ liên kết cuối cùng */
+  hasPassword: boolean;
   createdAt: string;
 }
 

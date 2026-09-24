@@ -218,3 +218,17 @@ export async function findActiveUser(userId: string): Promise<User | null> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   return user?.isActive ? user : null;
 }
+
+export interface UpdateProfileInput {
+  fullName: string;
+  /** Chuỗi rỗng để xoá số điện thoại đã lưu */
+  phone?: string;
+}
+
+/** Sửa hồ sơ: chỉ tên và số điện thoại. Không cho đổi email ở đây — đó là danh tính đăng nhập/liên kết mạng xã hội, cần luồng riêng (xác minh lại) nếu làm sau này. */
+export async function updateProfile(userId: string, input: UpdateProfileInput): Promise<User> {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { fullName: input.fullName, phone: input.phone || null },
+  });
+}

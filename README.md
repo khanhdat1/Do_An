@@ -271,9 +271,13 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | POST | `/api/auth/refresh` | Đổi refresh token (cookie) lấy cặp token mới |
 | POST | `/api/auth/logout` | Thu hồi refresh token, xoá cookie |
 | GET | `/api/auth/me` | Người dùng hiện tại (`{ "user": null }` nếu chưa đăng nhập) |
+| PATCH | `/api/auth/me` | `{ fullName, phone? }` — sửa hồ sơ. Không đổi được email ở đây (mục 8) |
+| POST | `/api/auth/forgot-password` | `{ email }` — LUÔN trả cùng thông điệp bất kể email có tồn tại hay không, chống dò tài khoản đã đăng ký (mục 8) |
+| POST | `/api/auth/reset-password` | `{ token, password }` — đặt mật khẩu mới, đăng xuất khỏi MỌI thiết bị (mục 8) |
 | GET | `/api/auth/google`, `/api/auth/facebook` | Bắt đầu đăng nhập mạng xã hội (`?next=/gio-hang`), chuyển sang trang đồng ý. Thêm `?link=1` để người **đã đăng nhập** liên kết thêm tài khoản (mục 8) |
 | GET | `/api/auth/google/callback`, `/api/auth/facebook/callback` | Google / Facebook gọi về; đăng nhập (hoặc liên kết) xong chuyển về web |
 | GET | `/api/auth/providers` | Các tài khoản Google / Facebook đã liên kết với người dùng hiện tại (cần đăng nhập) |
+| DELETE | `/api/auth/providers/:provider` | Huỷ liên kết. Chặn (409) nếu đây là liên kết cuối cùng và tài khoản chưa có mật khẩu thật — sẽ mất hẳn đường đăng nhập (mục 8) |
 | GET | `/api/cart` | Giỏ hàng của khách / tài khoản hiện tại |
 | POST | `/api/cart/items` | Thêm vào giỏ `{ productId, quantity? }` (cộng dồn) |
 | PATCH | `/api/cart/items/:itemId` | Đặt số lượng `{ quantity }` |
@@ -559,7 +563,38 @@ Bấm "Liên kết" (trang Tài khoản)
 Quy tắc: mỗi tài khoản PCZone liên kết tối đa **một** tài khoản cho mỗi nhà cung cấp, và một tài
 khoản Google / Facebook chỉ thuộc **một** User. Mã lỗi riêng của luồng này: `oauth_login_required`
 (chưa đăng nhập, hoặc phiên đã đổi giữa chừng), `oauth_already_linked`, `oauth_provider_taken`.
-Chưa có nút *Hủy liên kết*.
+
+### Huỷ liên kết mạng xã hội
+
+Nút biểu tượng huỷ liên kết cạnh mỗi dòng "Đã liên kết" ở **Tài khoản → Tài khoản liên kết**, xác
+nhận hai bước (bấm lần nữa để chắc chắn) rồi gọi `DELETE /api/auth/providers/:provider`. **Chặn
+(409) khi đây là liên kết mạng xã hội CUỐI CÙNG và tài khoản chưa từng đặt mật khẩu thật** — huỷ
+lúc đó sẽ mất hẳn đường đăng nhập, không ai (kể cả người dùng) tự khôi phục được. Việc "có mật
+khẩu thật hay không" không suy được từ chính cột `passwordHash` (tài khoản chỉ đăng nhập mạng xã
+hội cũng có một hash hợp lệ, chỉ là của một chuỗi ngẫu nhiên không ai biết) nên có cột riêng
+`User.hasPassword`, cập nhật đúng ba chỗ mật khẩu thật sự được đặt: đăng ký thường, "nhận lại" tài
+khoản chưa xác minh (`claimUnverifiedUser` ở trên đặt lại thành `false` vì mật khẩu cũ bị vô hiệu
+hoá), và đặt lại mật khẩu qua email bên dưới. Chặn được kiểm tra cả hai phía: client ẩn nút (khoá
+icon thay vào, có tooltip) và server (nguồn chặn thật sự) khi bị bỏ qua.
+
+### Sửa hồ sơ
+
+`PATCH /api/auth/me` — chỉ họ tên và số điện thoại, ở ngay trang **Tài khoản** (nút "Sửa"). Không
+đổi được email ở đây: email là danh tính đăng nhập/đối chiếu liên kết mạng xã hội, đổi được cần
+luồng xác minh lại riêng, chưa làm.
+
+### Quên mật khẩu
+
+`/quen-mat-khau` (nhập email) → `POST /api/auth/forgot-password` **luôn trả cùng một thông điệp**
+bất kể email có tồn tại hay không, để không lộ tài khoản nào đã đăng ký. Có thật thì tạo một token
+ngẫu nhiên (chỉ lưu hash trong bảng `PasswordResetToken`, giống hệt cách `RefreshToken` đã làm),
+hết hạn sau 30 phút, gửi email chứa link `/dat-lai-mat-khau?token=...` qua
+[Resend](https://resend.com) (miễn phí 100 email/ngày). **Thiếu `RESEND_API_KEY` thì link chỉ in
+ra console của API thay vì gửi thật** — tính năng vẫn kiểm thử được ở máy chưa cấu hình, cùng
+nguyên tắc "thiếu khoá thì báo chưa cấu hình, không hỏng phần còn lại" như VNPay/Google/Facebook.
+`POST /api/auth/reset-password` kiểm token còn hạn + chưa dùng, đặt mật khẩu mới, đánh dấu
+`hasPassword=true`, và **đăng xuất khỏi mọi thiết bị** (xoá hết `RefreshToken` của tài khoản đó) —
+phòng trường hợp mật khẩu cũ đã bị lộ.
 
 ## 9. Đặt hàng và thanh toán — cách hoạt động
 
@@ -919,8 +954,9 @@ không cần ở đợt này), điểm thưởng PCPoints/hạng thành viên (k
 - [x] Tìm kiếm (`/tim-kiem`): ô tìm ở header có gợi ý khi gõ; trang kết quả hiểu không dấu, đồng nghĩa, lỗi gõ, mức giá trong câu; lọc danh mục / hãng / giá / còn hàng, sắp xếp, phân trang
 - [x] Trang chi tiết sản phẩm (`/san-pham/[slug]`)
 - [x] Đăng ký / đăng nhập (JWT + bcrypt), ghi nhớ đăng nhập, đăng nhập Google / Facebook, liên kết tài khoản mạng xã hội, trang tài khoản
-- [ ] Hủy liên kết tài khoản mạng xã hội (phải chặn hủy liên kết cuối cùng của tài khoản không có mật khẩu, kẻo mất đường đăng nhập)
-- [ ] Quên mật khẩu, xác minh email (cần gửi email; nút "Quên mật khẩu?" hiện mới chỉ báo tính năng đang phát triển)
+- [x] Hủy liên kết tài khoản mạng xã hội (chặn hủy liên kết cuối cùng của tài khoản chưa có mật khẩu thật, kẻo mất đường đăng nhập — mục 8)
+- [x] Quên mật khẩu (gửi email thật qua Resend, hoặc in link ra console nếu chưa cấu hình — mục 8) và sửa hồ sơ (họ tên/SĐT — mục 8)
+- [ ] Xác minh email lúc đăng ký (chưa gửi email xác minh; ảnh hưởng tới nhánh "nhận lại tài khoản chưa xác minh" ở mục 8, không ảnh hưởng đăng nhập/đặt hàng bình thường)
 - [x] Giỏ hàng (khách vãng lai + tài khoản, gộp giỏ khi đăng nhập)
 - [x] Đặt hàng (`/thanh-toan`): sổ địa chỉ, tạo đơn có trừ kho trong transaction, huỷ đơn tự hoàn kho, lịch sử đơn (`/tai-khoan/don-hang`, `/don-hang/[code]`), tra cứu công khai (`/tra-cuu-don-hang`)
 - [x] Thanh toán VNPay Sandbox (mã ký/xác minh đầy đủ, có test; cần tự đăng ký tài khoản sandbox để bật — mục 9)

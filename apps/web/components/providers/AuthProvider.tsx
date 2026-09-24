@@ -33,10 +33,16 @@ export interface RegisterInput {
   phone?: string;
 }
 
+export interface UpdateProfileInput {
+  fullName: string;
+  phone?: string;
+}
+
 interface AuthContextValue extends AuthState {
   login: (input: LoginInput) => Promise<AuthUser>;
   register: (input: RegisterInput) => Promise<AuthUser>;
   logout: () => Promise<void>;
+  updateProfile: (input: UpdateProfileInput) => Promise<AuthUser>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -108,9 +114,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState(ANONYMOUS);
   }, []);
 
+  const updateProfile = useCallback(async (input: UpdateProfileInput) => {
+    const { user } = await apiFetch<{ user: AuthUser }>("/api/auth/me", {
+      method: "PATCH",
+      body: input,
+    });
+    setState(authenticated(user));
+    return user;
+  }, []);
+
   const value = useMemo<AuthContextValue>(
-    () => ({ ...state, login, register, logout }),
-    [state, login, register, logout],
+    () => ({ ...state, login, register, logout, updateProfile }),
+    [state, login, register, logout, updateProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

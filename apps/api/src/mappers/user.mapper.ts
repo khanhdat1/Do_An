@@ -11,6 +11,7 @@ export function toAuthUserDto(user: User): AuthUserDto {
     phone: user.phone ?? undefined,
     avatarUrl: user.avatarUrl ?? undefined,
     role: user.role,
+    hasPassword: user.hasPassword,
     createdAt: user.createdAt.toISOString(),
   };
 }

@@ -1,4 +1,5 @@
-import { Prisma, prisma, type User } from "@pczone/db";
+import { Prisma, prisma, type OAuthProvider, type User } from "@pczone/db";
+import { ConflictError, NotFoundError, UnauthorizedError } from "../middleware/errors.js";
 import {
   createUnusablePasswordHash,
   findActiveUser,
@@ -119,6 +120,31 @@ export function listLinkedAccounts(userId: string) {
   });
 }
 
+/**
+ * Huỷ liên kết một tài khoản mạng xã hội. Chặn khi đây là CÁCH DUY NHẤT người dùng đăng nhập
+ * được — liên kết cuối cùng (`accounts.length === 1`) VÀ chưa có mật khẩu thật (`hasPassword`,
+ * xem ghi chú ở schema.prisma) — huỷ thì tài khoản mất hẳn đường vào, không ai (kể cả người dùng)
+ * tự khôi phục được.
+ */
+export async function unlinkProvider(userId: string, provider: OAuthProvider): Promise<void> {
+  const [user, accounts] = await Promise.all([
+    findActiveUser(userId),
+    prisma.oAuthAccount.findMany({ where: { userId } }),
+  ]);
+  if (!user) throw new UnauthorizedError("Bạn chưa đăng nhập");
+
+  const target = accounts.find((account) => account.provider === provider);
+  if (!target) throw new NotFoundError("Tài khoản này chưa liên kết với nhà cung cấp đó");
+
+  if (accounts.length === 1 && !user.hasPassword) {
+    throw new ConflictError(
+      "Đây là cách duy nhất bạn đăng nhập được. Hãy đặt mật khẩu hoặc liên kết thêm một tài khoản khác trước khi huỷ liên kết này.",
+    );
+  }
+
+  await prisma.oAuthAccount.delete({ where: { id: target.id } });
+}
+
 function assertUsable(user: User) {
   if (!user.isActive) throw new OAuthError("oauth_inactive");
 }
@@ -159,6 +185,7 @@ async function createSocialUser(profile: SocialProfile, email: string): Promise<
       data: {
         email,
         passwordHash,
+        hasPassword: false,
         fullName: pickName(profile, email),
         avatarUrl: cleanAvatar(profile.avatarUrl),
         // Chỉ đánh dấu đã xác minh khi nhà cung cấp bảo đảm; Facebook thì để trống
@@ -232,6 +259,7 @@ async function claimUnverifiedUser(user: User, profile: SocialProfile): Promise<
         where: { id: user.id },
         data: {
           passwordHash,
+          hasPassword: false,
           emailVerifiedAt: new Date(),
           lastLoginAt: new Date(),
           ...(user.avatarUrl ? {} : { avatarUrl: cleanAvatar(profile.avatarUrl) }),
