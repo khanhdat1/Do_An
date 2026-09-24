@@ -32,6 +32,19 @@ const MIN_TERM_LENGTH = 3;
 const MIN_MATCHED_TOKENS = 2;
 const MIN_MATCH_RATIO = 0.3;
 
+/**
+ * Token xuất hiện ở PHẦN LỚN ứng viên trong CÙNG một lượt truy hồi không phân biệt được sản phẩm nào —
+ * gặp thực tế: catalog PC lắp ráp đặt tên kiểu "PC Gaming PCZone i5-12400F RTX 3050", nên "pc"/
+ * "gaming"/"pczone" nằm trong hầu hết tên ứng viên mỗi khi hỏi về PC. Câu trả lời chỉ cần nhắc tên
+ * cửa hàng ("PCZone chưa có...") hoặc từ chung ("PC hay chuột gaming") — không hề nêu tên SẢN PHẨM
+ * nào — vẫn đủ khớp 2-3 token chung đó ở NHIỀU ứng viên cùng lúc, trích dẫn sai hàng loạt sản phẩm
+ * chưa từng được nhắc tới. Loại các token này TRƯỚC khi so khớp: nếu token xuất hiện ở từ một nửa số
+ * ứng viên trở lên, nó không mang tính phân biệt, không tính là bằng chứng đã nhắc tới sản phẩm đó.
+ */
+function commonTermThreshold(candidateCount: number): number {
+  return Math.max(2, Math.ceil(candidateCount * 0.5));
+}
+
 export interface CitationCandidate {
   productId: string;
   name: string;
@@ -42,14 +55,28 @@ export function findCitedProductIds(responseText: string, candidates: CitationCa
   const responseCompact = compact(responseText);
   if (!responseCompact) return [];
 
-  return candidates
-    .filter((candidate) => {
-      const terms = tokenize(candidate.name).filter((term) => term.length >= MIN_TERM_LENGTH);
-      if (terms.length === 0) return false;
+  const tokenized = candidates.map((candidate) => ({
+    candidate,
+    terms: tokenize(candidate.name).filter((term) => term.length >= MIN_TERM_LENGTH),
+  }));
 
-      const matched = terms.filter((term) => responseCompact.includes(term));
-      const threshold = Math.min(MIN_MATCHED_TOKENS, terms.length);
-      return matched.length >= threshold && matched.length / terms.length >= MIN_MATCH_RATIO;
+  const documentFrequency = new Map<string, number>();
+  for (const { terms } of tokenized) {
+    for (const term of new Set(terms)) {
+      documentFrequency.set(term, (documentFrequency.get(term) ?? 0) + 1);
+    }
+  }
+  const threshold = commonTermThreshold(candidates.length);
+  const isDistinctive = (term: string) => (documentFrequency.get(term) ?? 0) < threshold;
+
+  return tokenized
+    .filter(({ terms }) => {
+      const distinctiveTerms = terms.filter(isDistinctive);
+      if (distinctiveTerms.length === 0) return false;
+
+      const matched = distinctiveTerms.filter((term) => responseCompact.includes(term));
+      const matchThreshold = Math.min(MIN_MATCHED_TOKENS, distinctiveTerms.length);
+      return matched.length >= matchThreshold && matched.length / distinctiveTerms.length >= MIN_MATCH_RATIO;
     })
-    .map((candidate) => candidate.productId);
+    .map(({ candidate }) => candidate.productId);
 }
