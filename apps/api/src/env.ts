@@ -143,16 +143,22 @@ export const env = {
   },
 
   /**
-   * AI Search / AI Chat / AI Build PC — gọi OpenAI thật. Thiếu khoá thì AI Search tự lùi về đúng bộ
-   * tìm kiếm từ khoá đã có (không hỏng gì); AI Chat/Build PC báo rõ "chưa cấu hình" thay vì giả vờ
-   * chạy được — khác VNPay/email, đây CHÍNH LÀ tính năng chứ không phải tác dụng phụ. Tên model để
-   * biến môi trường (không hardcode phiên bản cụ thể — OpenAI đổi tên model khá nhanh); mặc định bên
-   * dưới đã xác nhận là chuỗi thật qua chính kiểu dữ liệu của gói `openai` cài trong dự án
-   * (`ChatModel`/`EmbeddingModel` trong node_modules/openai), không phải đoán.
+   * AI Search / AI Chat / AI Build PC — gọi qua gói `openai` (chuẩn "OpenAI-compatible", nhiều hãng
+   * hỗ trợ, không chỉ OpenAI thật). Thiếu khoá thì AI Search tự lùi về đúng bộ tìm kiếm từ khoá đã
+   * có (không hỏng gì); AI Chat/Build PC báo rõ "chưa cấu hình" thay vì giả vờ chạy được — khác
+   * VNPay/email, đây CHÍNH LÀ tính năng chứ không phải tác dụng phụ.
+   *
+   * `OPENAI_BASE_URL` để TRỐNG thì gói `openai` tự dùng thẳng địa chỉ thật của OpenAI — cố ý KHÔNG
+   * âm thầm mặc định sang hãng khác dù đang dùng Gemini (dự án này đang dùng gói miễn phí của Gemini
+   * qua lớp tương thích OpenAI của họ, https://ai.google.dev/gemini-api/docs/openai): một biến tên
+   * OPENAI_* mà lặng lẽ không gọi tới OpenAI sẽ gây bất ngờ khó chịu nếu sau này ai đó chỉ điền
+   * OPENAI_API_KEY (khoá OpenAI thật) mà không để ý biến base URL — README mục "Tìm kiếm bằng AI"
+   * ghi rõ giá trị cần điền cho từng hãng. Tên model cũng để biến môi trường, không hardcode.
    */
   ai: {
     openaiApiKey: optional("OPENAI_API_KEY"),
-    chatModel: optional("OPENAI_CHAT_MODEL") ?? "gpt-5.6-luna",
-    embeddingModel: optional("OPENAI_EMBEDDING_MODEL") ?? "text-embedding-3-small",
+    baseUrl: optional("OPENAI_BASE_URL"),
+    chatModel: optional("OPENAI_CHAT_MODEL") ?? "gemini-3.1-flash-lite",
+    embeddingModel: optional("OPENAI_EMBEDDING_MODEL") ?? "gemini-embedding-2-preview",
   },
 };

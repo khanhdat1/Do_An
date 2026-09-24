@@ -424,10 +424,14 @@ Bộ máy nằm ở `apps/api/src/search/`, chạy ngay trong tiến trình API,
 
 ### Tìm kiếm bằng AI (nút "AI Search")
 
-`GET /api/ai/search?q=...` — tìm bằng **embedding thật** (OpenAI), hiểu câu hỏi tự nhiên không trùng từ khoá chính xác:
+`GET /api/ai/search?q=...` — tìm bằng **embedding thật**, hiểu câu hỏi tự nhiên không trùng từ khoá chính xác:
 "laptop mỏng nhẹ cho sinh viên IT khoảng 20 triệu" ra kết quả hợp lý dù không sản phẩm nào ghi đúng các từ đó — khác
 bộ máy từ khoá ở trên, vốn chỉ khớp được đúng chữ (có sửa lỗi gõ/đồng nghĩa, nhưng không "hiểu" câu).
 
+- **Gọi qua gói `openai`** (chuẩn "OpenAI-compatible") nhưng **mặc định trỏ vào Gemini** (Google AI Studio) qua lớp
+  tương thích OpenAI của họ — có gói **miễn phí thật, không cần thẻ**, khác OpenAI thật (phải nạp tiền trước). Đổi
+  sang OpenAI thật hoặc hãng khác (Groq, OpenRouter...) thì đổi `OPENAI_BASE_URL`/tên model trong `.env`
+  (`.env.example` có ghi chú đầy đủ) — code không đổi, chỉ đổi cấu hình.
 - **Thiếu `OPENAI_API_KEY` thì nút "AI Search" tự lùi về đúng tìm kiếm từ khoá**, không báo lỗi — cùng nguyên tắc
   "thiếu cấu hình không hỏng phần còn lại" như VNPay/Google/Facebook/Resend. `usedAi: false` trong response là tín hiệu
   bình thường (chưa cấu hình HOẶC không có kết quả đủ liên quan), không phải lỗi.
@@ -443,10 +447,10 @@ bộ máy từ khoá ở trên, vốn chỉ khớp được đúng chữ (có s�
   được dùng thế nào.
 - Trang kết quả AI (`/tim-kiem?q=...&mode=ai`) đơn giản hơn hẳn trang tìm từ khoá: chỉ một lưới sản phẩm kèm dấu hiệu
   "gợi ý bởi AI", không facets/phân trang (không hợp với một danh sách top-20 theo độ liên quan ngữ nghĩa).
-- Lấy khoá tại [platform.openai.com](https://platform.openai.com) (cần thẻ/nạp tiền, khác Resend không cần thẻ) rồi
-  điền `OPENAI_API_KEY` vào `.env`. Tên model (`OPENAI_CHAT_MODEL`/`OPENAI_EMBEDDING_MODEL`) để biến môi trường, có
-  mặc định sẵn nhưng nên xác nhận lại tên model hiện có trên tài khoản trước khi dùng thật — OpenAI đổi tên model khá
-  nhanh.
+- Lấy khoá Gemini miễn phí tại [aistudio.google.com](https://aistudio.google.com) (mục "Get API key", dùng tài khoản
+  Google có sẵn) rồi điền `OPENAI_API_KEY` vào `.env`. Tên model (`OPENAI_CHAT_MODEL`/`OPENAI_EMBEDDING_MODEL`) để
+  biến môi trường, có mặc định sẵn nhưng nên xác nhận lại tên model hiện có trên tài khoản trước khi dùng thật — các
+  hãng AI đổi tên model khá nhanh.
 - **Đây là nền tảng dùng chung cho cả AI Chat và AI Build PC** (`apps/api/src/ai/retrieval.ts`) — hai tính năng đó
   chưa làm, xem mục 13.
 

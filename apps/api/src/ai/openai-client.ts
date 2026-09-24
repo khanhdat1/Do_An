@@ -4,7 +4,8 @@ import { ServiceUnavailableError } from "../middleware/errors.js";
 
 let client: OpenAI | null = null;
 function openaiClient(): OpenAI {
-  client ??= new OpenAI({ apiKey: env.ai.openaiApiKey });
+  // baseURL undefined -> gói `openai` tự dùng địa chỉ thật của OpenAI (xem ghi chú ở env.ts)
+  client ??= new OpenAI({ apiKey: env.ai.openaiApiKey, baseURL: env.ai.baseUrl });
   return client;
 }
 
