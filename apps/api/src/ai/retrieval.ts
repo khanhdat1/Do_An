@@ -43,9 +43,16 @@ export async function retrieveProducts(query: string, opts: RetrievalOptions = {
 
   if (!isConfigured() || !searchText) return { products: [], priceIntent };
 
-  const [queryVector, index] = await Promise.all([embed(searchText), getEmbeddingIndex()]);
-  const ranked = rankBySimilarity(queryVector, index.docs, opts.limit ?? DEFAULT_LIMIT);
-  const minScore = opts.minScore ?? DEFAULT_MIN_SCORE;
-
-  return { products: ranked.filter((item) => item.score >= minScore), priceIntent };
+  try {
+    const [queryVector, index] = await Promise.all([embed(searchText), getEmbeddingIndex()]);
+    const ranked = rankBySimilarity(queryVector, index.docs, opts.limit ?? DEFAULT_LIMIT);
+    const minScore = opts.minScore ?? DEFAULT_MIN_SCORE;
+    return { products: ranked.filter((item) => item.score >= minScore), priceIntent };
+  } catch (error) {
+    // Dịch vụ AI lỗi/hết quota giữa chừng (không phải do thiếu cấu hình): lùi về ĐÚNG như trường hợp
+    // chưa cấu hình — người dùng không nên thấy khác biệt gì ngoài việc kết quả tới từ tìm kiếm từ
+    // khoá thay vì AI. Lỗi vẫn được ghi log để tự kiểm tra ở server.
+    console.warn("[ai] retrieveProducts lỗi, lùi về tìm kiếm thường:", error instanceof Error ? error.message : error);
+    return { products: [], priceIntent };
+  }
 }
