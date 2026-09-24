@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, CloudOff, LoaderCircle, PackageSearch, Plus, ShieldAlert, TriangleAlert } from "lucide-react";
+import { ChevronLeft, ChevronRight, CloudOff, Download, LoaderCircle, PackageSearch, Plus, ShieldAlert, TriangleAlert } from "lucide-react";
 import AdminBadge from "@/components/admin/AdminBadge";
 import ProductThumb from "@/components/product/ProductThumb";
 import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
-import { adminApiFetch } from "@/lib/admin-api-client";
+import { useToast } from "@/components/providers/ToastProvider";
+import { adminApiFetch, downloadAdminFile, errorMessage } from "@/lib/admin-api-client";
 import { formatPrice } from "@/lib/format";
 import { PRODUCT_STATUS_LABEL, PRODUCT_STATUS_TONE } from "@/lib/data/product-status";
 import type { AdminProductSummary, Paginated, ProductStatus } from "@/types";
@@ -24,6 +25,8 @@ export default function AdminProductListView() {
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [state, setState] = useState<State>({ status: "loading" });
+  const [exporting, setExporting] = useState(false);
+  const toast = useToast();
 
   const allowedRead = user ? user.permissions.includes("products:read") : null;
   const canWrite = user ? user.permissions.includes("products:write") : false;
@@ -50,6 +53,22 @@ export default function AdminProductListView() {
   function goToPage(next: number) {
     setPage(next);
     setState({ status: "loading" });
+  }
+
+  async function exportProducts() {
+    const query = new URLSearchParams();
+    if (search) query.set("search", search);
+    if (statusFilter !== "ALL") query.set("status", statusFilter);
+    if (lowStockOnly) query.set("lowStockOnly", "true");
+
+    setExporting(true);
+    try {
+      await downloadAdminFile(`/api/admin/products/export?${query}`);
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setExporting(false);
+    }
   }
 
   useEffect(() => {
@@ -126,6 +145,16 @@ export default function AdminProductListView() {
           <input type="checkbox" checked={lowStockOnly} onChange={toggleLowStock} className="size-4 rounded border-slate-300 text-brand-500 focus:ring-brand-500/30" />
           Sắp hết hàng
         </label>
+
+        <button
+          type="button"
+          onClick={exportProducts}
+          disabled={exporting}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-bold text-slate-600 transition hover:border-brand-300 hover:bg-brand-500/5 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {exporting ? <LoaderCircle className="size-4 animate-spin" /> : <Download className="size-4" />}
+          {exporting ? "Đang xuất..." : "Xuất Excel"}
+        </button>
 
         {canWrite ? (
           <Link

@@ -290,6 +290,7 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | POST | `/api/products/:slug/reviews` | Gửi đánh giá `{ rating, title?, content? }` — chỉ khách có đơn `paymentStatus=PAID` chứa sản phẩm này; vào hàng chờ duyệt, chưa hiện công khai ngay |
 | GET \| POST \| DELETE | `/api/admin/reviews`, `/:id/approve`, `/:id`, `/:id/reply` | Duyệt / xoá / trả lời đánh giá — cần quyền `products:read`/`products:write` (mục 11) |
 | GET | `/api/admin/products?status=&category=&brand=&search=&lowStockOnly=&page=` | Danh sách sản phẩm cho quản trị — thấy mọi trạng thái (kể cả DRAFT/HIDDEN/DISCONTINUED), giá vốn, tồn kho tuyệt đối — cần quyền `products:read` |
+| GET | `/api/admin/products/export?status=&category=&brand=&search=&lowStockOnly=` | File `.xlsx` TẤT CẢ sản phẩm khớp bộ lọc (không phân trang, đúng số liệu danh sách trên) — cần quyền `products:read` |
 | GET | `/api/admin/products/meta/options` | Danh mục/hãng dạng phẳng cho ô chọn của form sản phẩm — cần quyền `products:read` |
 | GET | `/api/admin/products/:id` | Chi tiết đầy đủ một sản phẩm để dựng form sửa — cần quyền `products:read` |
 | POST | `/api/admin/products` | Tạo sản phẩm mới — luôn vào trạng thái DRAFT, phải duyệt riêng mới hiện ra ngoài — cần quyền `products:write` |
@@ -323,6 +324,7 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | GET | `/api/admin/dashboard/summary?granularity=&from=&to=` | Trang tổng quan: doanh thu (4 mốc), số đơn/sản phẩm bán/khách hàng/đơn chờ xử lý, biểu đồ theo kỳ, sản phẩm bán chạy, sắp hết hàng, đơn gần đây — thiếu `from`/`to` thì dùng khoảng mặc định theo `granularity` — chỉ OWNER/MANAGER, cần quyền `reports:read` |
 | GET | `/api/admin/dashboard/export?granularity=&from=&to=` | File `.xlsx` đúng số liệu của `/summary` cùng tham số (5 sheet: Tổng quan, Doanh thu theo kỳ, Sản phẩm bán chạy, Sắp hết hàng, Đơn hàng gần đây) — cùng quyền `reports:read` |
 | GET | `/api/admin/customers?search=&locked=&page=&pageSize=` | Danh sách khách hàng (chỉ role `CUSTOMER`), kèm số đơn/tổng chi tiêu; `search` khớp tên/email/SĐT, `locked=true/false` lọc theo trạng thái khoá — cần quyền `customers:read` |
+| GET | `/api/admin/customers/export?search=&locked=` | File `.xlsx` TẤT CẢ khách hàng khớp bộ lọc (không phân trang, đúng số liệu danh sách trên) — cần quyền `customers:read` |
 | GET | `/api/admin/customers/:id` | Hồ sơ một khách hàng — không bao giờ trả mật khẩu — cần quyền `customers:read` |
 | GET | `/api/admin/customers/:id/orders?page=&pageSize=` | Lịch sử mua hàng của khách hàng đó — cần quyền `customers:read` |
 | PATCH | `/api/admin/customers/:id/lock` | `{ isActive, reason? }` — khoá/mở khoá tài khoản; có hiệu lực ở lần đăng nhập/làm mới phiên kế tiếp (không thu hồi access token đang dùng dở, tối đa 15 phút) — cần quyền `customers:write` |
@@ -787,6 +789,9 @@ phẩm để tới `/admin/products/[id]` (sửa) hoặc `/admin/products/new` (
   dung) sẽ phá vỡ nguyên tắc "chỉ dùng ảnh thật đã kiểm tra" của dự án — để lại cho một đợt riêng.
 - **Bảng thông số kỹ thuật** sửa được ngay trên form (thêm/xoá từng dòng nhãn–giá trị), ghi thẳng vào
   cột `specifications` theo đúng định dạng mảng đã ưu tiên trong mapper (giữ thứ tự hiển thị).
+- **Xuất Excel** (nút "Xuất Excel" trên trang danh sách): tải file `.xlsx` TẤT CẢ sản phẩm khớp đúng bộ
+  lọc đang chọn (tìm kiếm/trạng thái/sắp hết hàng — không chỉ trang đang xem), gồm cả giá vốn và tồn kho
+  tuyệt đối — dùng lại nguyên `listAllProductsForAdmin`/`toAdminProductSummaryDto`, không tính lại gì.
 
 ### Trang tổng quan doanh thu (Đợt 4)
 
@@ -833,6 +838,9 @@ chặn cả hai phía client/server với vai trò khác):
   gồm tên/email/SĐT/ngày đăng ký/lần đăng nhập gần nhất và số liệu đơn hàng.
 - **Chưa làm ở đợt này**: tạo tài khoản khách hàng thủ công từ phía admin (khách tự đăng ký), sửa thông
   tin cá nhân thay khách hàng.
+- **Xuất Excel** (nút "Xuất Excel" trên trang danh sách): tải file `.xlsx` TẤT CẢ khách hàng khớp đúng bộ
+  lọc đang chọn (tìm kiếm/trạng thái khoá — không chỉ trang đang xem), cùng số đơn/tổng chi tiêu như màn
+  hình danh sách — dùng lại nguyên `listAllCustomersForAdmin`, không tính lại gì.
 
 ### Quản trị mã giảm giá (Đợt 6, phần 1/2)
 
@@ -926,9 +934,9 @@ không cần ở đợt này), điểm thưởng PCPoints/hạng thành viên (k
 - [ ] Service AI (Python/FastAPI): AI Search, AI Chat, AI Build PC
 - [x] **Admin Dashboard — Đợt 1/6** (mục 11): đăng nhập/phân quyền tách biệt hoàn toàn khỏi khách hàng (`/admin/login`, cookie/JWT riêng), 4 vai trò quản trị + kiểm tra quyền theo từng route ở server, 2FA (TOTP) tự nguyện, giới hạn đăng nhập sai, nhật ký thao tác (`AdminAuditLog`), khung giao diện `/admin` (sidebar theo quyền, tương thích di động), script tạo tài khoản quản trị an toàn (`create-admin.mts`); 2 trang quản trị cũ (xem đơn hàng, duyệt đánh giá) đã chuyển sang hệ thống mới
 - [x] **Admin Dashboard — Đợt 2** (mục 11): quản lý đơn hàng đầy đủ vòng đời (7 trạng thái tiến tuần tự, mã vận đơn, ghi chú nội bộ không lộ ra ngoài, in đơn, huỷ/hoàn theo quyền kèm hoàn kho đúng loại, đánh dấu hoàn tiền thủ công — không giả vờ tự động, lịch sử đổi trạng thái kèm tên người thực hiện)
-- [x] **Admin Dashboard — Đợt 3** (mục 11): quản lý sản phẩm (thêm/sửa/ẩn/lưu trữ, duyệt sản phẩm DRAFT, ẩn/lưu trữ có hiệu lực ngay trên trang bán) và tồn kho (nhập/xuất/điều chỉnh theo kiểm kê, cảnh báo sắp hết theo ngưỡng riêng từng sản phẩm, không cho tồn kho âm)
+- [x] **Admin Dashboard — Đợt 3** (mục 11): quản lý sản phẩm (thêm/sửa/ẩn/lưu trữ, duyệt sản phẩm DRAFT, ẩn/lưu trữ có hiệu lực ngay trên trang bán) và tồn kho (nhập/xuất/điều chỉnh theo kiểm kê, cảnh báo sắp hết theo ngưỡng riêng từng sản phẩm, không cho tồn kho âm), xuất báo cáo Excel theo đúng bộ lọc
 - [x] **Admin Dashboard — Đợt 4** (mục 11): trang tổng quan doanh thu (biểu đồ ngày/tuần/tháng/năm + lọc khoảng thời gian, phân biệt tổng đơn/đã thu/hoàn/doanh thu thuần, sản phẩm bán chạy/sắp hết hàng/đơn gần đây), xuất báo cáo Excel (`.xlsx`, 5 sheet, đúng số liệu đang xem)
-- [x] **Admin Dashboard — Đợt 5** (mục 11): quản lý khách hàng (danh sách có tìm kiếm/lọc theo trạng thái khoá, lịch sử mua hàng, tổng chi tiêu tính đúng theo đơn đã thanh toán, khoá/mở khoá tài khoản, không hiển thị mật khẩu)
+- [x] **Admin Dashboard — Đợt 5** (mục 11): quản lý khách hàng (danh sách có tìm kiếm/lọc theo trạng thái khoá, lịch sử mua hàng, tổng chi tiêu tính đúng theo đơn đã thanh toán, khoá/mở khoá tài khoản, không hiển thị mật khẩu), xuất báo cáo Excel theo đúng bộ lọc
 - [x] **Admin Dashboard — Đợt 6, phần 1/2** (mục 11): giao diện quản trị mã giảm giá (tạo/sửa/tắt/xoá — xoá bị chặn nếu mã đã được dùng, chỉ tắt được)
 - [x] **Admin Dashboard — Đợt 6, phần 2/2** (mục 11): banner trang chủ (tải ảnh thật lên, lên lịch hiển thị, nháp/đã đăng) — menu/bài viết/trang tĩnh xác nhận không làm ở đợt này
 - [x] **Quản lý tài khoản quản trị khác** (mục 1): tạo/sửa/khoá/mở khoá, đặt lại mật khẩu hộ, tắt 2FA hộ — chặn tự đổi vai trò/tự khoá chính mình

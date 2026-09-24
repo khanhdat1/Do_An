@@ -9,11 +9,13 @@ import {
   createProduct,
   getProductForAdmin,
   getProductFormOptions,
+  listAllProductsForAdmin,
   listInventoryTransactions,
   listProductsForAdmin,
   updateProduct,
   updateProductStatus,
 } from "../services/admin-product.service.js";
+import { buildProductsReportWorkbook } from "../services/admin-product-export.service.js";
 
 /** Quản lý sản phẩm và kho hàng. Phiên đăng nhập admin riêng + quyền `products:*` cho từng route ghi dữ liệu. */
 export const adminProductsRouter = Router();
@@ -73,6 +75,22 @@ adminProductsRouter.get("/", requirePermission("products:read"), async (req, res
 adminProductsRouter.get("/meta/options", requirePermission("products:read"), async (_req, res, next) => {
   try {
     res.json(await getProductFormOptions());
+  } catch (error) {
+    next(error);
+  }
+});
+
+/** GET /api/admin/products/export?status=&category=&brand=&search=&lowStockOnly= — TẤT CẢ sản phẩm khớp bộ lọc (không phân trang). Đặt TRƯỚC /:id để "export" không bị khớp nhầm thành id. */
+adminProductsRouter.get("/export", requirePermission("products:read"), async (req, res, next) => {
+  try {
+    const { status, category, brand, search, lowStockOnly } = listQuery.omit({ page: true, pageSize: true }).parse(req.query);
+    const products = await listAllProductsForAdmin({ status, category, brand, search, lowStockOnly });
+    const buffer = await buildProductsReportWorkbook(products, { status, category, brand, search, lowStockOnly });
+
+    const today = new Date().toISOString().slice(0, 10);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="san-pham_${today}.xlsx"`);
+    res.send(Buffer.from(buffer));
   } catch (error) {
     next(error);
   }
