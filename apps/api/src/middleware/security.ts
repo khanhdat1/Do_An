@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { rateLimit, type ValueDeterminingMiddleware } from "express-rate-limit";
+import { ipKeyGenerator, rateLimit, type ValueDeterminingMiddleware } from "express-rate-limit";
 import { env } from "../env.js";
 import { webUrl } from "../utils/redirect.js";
 import { ForbiddenError } from "./errors.js";
@@ -141,6 +141,21 @@ export const aiSearchLimiter = limiter({
   limit: 30,
   message: "Hệ thống tìm kiếm AI đang bận. Vui lòng thử lại sau ít giây.",
   keyGenerator: () => "global",
+});
+
+/**
+ * Trợ lý AI Chat — khác `aiSearchLimiter`: route này trình duyệt gọi TRỰC TIẾP (fetch từ
+ * `/tro-ly-ai`), không qua server Next.js hộ, nên IP nhìn thấy đúng là IP của từng khách thật —
+ * giới hạn theo IP (mặc định của `limiter()`) mới có tác dụng, không dùng khoá "global". Ưu tiên
+ * `userId` khi đã đăng nhập (ổn định hơn IP, vd nhiều khách sau cùng NAT/mạng công ty).
+ */
+export const aiChatLimiter = limiter({
+  windowMs: 60 * 1000,
+  limit: 15,
+  message: "Bạn nhắn tin cho trợ lý AI quá nhanh. Vui lòng thử lại sau ít giây.",
+  // req.ip thô có thể là IPv6 — express-rate-limit tự chặn (ERR_ERL_KEY_GEN_IPV6) vì một khách có thể
+  // đổi địa chỉ IPv6 gần như vô hạn trong cùng dải /64 để lách trần; ipKeyGenerator() gộp theo subnet cho đúng.
+  keyGenerator: (req) => req.auth?.userId ?? ipKeyGenerator(req.ip ?? "unknown"),
 });
 
 /** Thêm / xoá sản phẩm yêu thích */

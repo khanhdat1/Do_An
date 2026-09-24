@@ -68,7 +68,7 @@ async function send(path: string, request: ApiRequest): Promise<Response> {
   }
 }
 
-async function toApiError(response: Response): Promise<ApiError> {
+export async function toApiError(response: Response): Promise<ApiError> {
   let payload: {
     message?: unknown;
     details?: { field?: unknown; message?: unknown }[];

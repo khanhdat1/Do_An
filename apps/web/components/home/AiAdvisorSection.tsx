@@ -1,34 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Flame,
-  GraduationCap,
-  Laptop,
-  Send,
-  Sparkles,
-  Wallet,
-} from "lucide-react";
-
-/** Các câu hỏi gợi ý bấm vào là điền sẵn vào ô nhập */
-const suggestions = [
-  { icon: Flame, label: "Laptop gaming dưới 20 triệu" },
-  { icon: GraduationCap, label: "Laptop cho sinh viên IT & Data Science" },
-  { icon: Laptop, label: "PC 30tr chơi mượt Black Myth: Wukong" },
-  { icon: Wallet, label: "Build PC theo ngân sách linh hoạt" },
-];
+import { useRef, useState } from "react";
+import { Send, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { aiAdvisorSuggestions } from "@/lib/data/ai-advisor";
 
 /**
- * Khối tối giới thiệu trợ lý AI tư vấn cấu hình.
- * Ô nhập hiện chỉ lưu state; sau này nối với service AI (FastAPI).
+ * Khối tối giới thiệu trợ lý AI tư vấn cấu hình — chỉ là điểm vào: gửi câu hỏi sẽ điều hướng sang
+ * trang chat riêng (`/tro-ly-ai`), câu hỏi tự gửi luôn ở đó, giống hệt cách nút "AI Search" ở header
+ * điều hướng sang `/tim-kiem?mode=ai` thay vì hiển thị kết quả ngay tại chỗ.
  */
 export default function AiAdvisorSection() {
   const [question, setQuestion] = useState("");
+  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // TODO: gọi API /api/ai/advisor rồi điều hướng sang trang chat
-    console.log("Câu hỏi gửi cho AI:", question);
+    const trimmed = question.trim();
+    if (!trimmed) {
+      inputRef.current?.focus();
+      return;
+    }
+    router.push(`/tro-ly-ai?${new URLSearchParams({ q: trimmed }).toString()}`);
   }
 
   return (
@@ -59,7 +53,7 @@ export default function AiAdvisorSection() {
 
           {/* Gợi ý câu hỏi */}
           <div className="mt-5 flex flex-wrap gap-2">
-            {suggestions.map((item) => (
+            {aiAdvisorSuggestions.map((item) => (
               <button
                 key={item.label}
                 type="button"
@@ -81,6 +75,7 @@ export default function AiAdvisorSection() {
               <Sparkles className="size-4 text-brand-500" />
             </span>
             <input
+              ref={inputRef}
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
               placeholder='Ví dụ: "Tôi có 30 triệu cần case PC làm đồ họa Render 4K và chơi game..."'
