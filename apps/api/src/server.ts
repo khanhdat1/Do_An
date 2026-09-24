@@ -1,4 +1,6 @@
 import { prisma } from "@pczone/db";
+import { isConfigured as isAiConfigured } from "./ai/openai-client.js";
+import { warmEmbeddingIndex } from "./ai/embedding-store.js";
 import { createApp } from "./app.js";
 import { env } from "./env.js";
 import { warmSearchIndex } from "./search/index-store.js";
@@ -29,6 +31,11 @@ const server = app.listen(env.port, () => {
       ? `  Thanh toán VNPay:     đã bật — return URL cần khai: ${env.vnpay.returnUrl}`
       : `  Thanh toán VNPay:     chưa cấu hình (xem README mục 9) — COD vẫn hoạt động bình thường`,
   );
+  console.log(
+    isAiConfigured()
+      ? `  AI Search:            đã bật (model: ${env.ai.embeddingModel})`
+      : `  AI Search:            chưa cấu hình (xem README mục 8) — tìm kiếm từ khoá vẫn hoạt động bình thường`,
+  );
   console.log("");
 
   // Dựng sẵn chỉ mục tìm kiếm để lượt tìm đầu tiên không phải chờ; DB chưa lên thì lượt tìm đầu sẽ tự dựng
@@ -38,6 +45,17 @@ const server = app.listen(env.port, () => {
       const reason = error instanceof Error ? error.message : String(error);
       console.warn(`  Chỉ mục tìm kiếm:     chưa dựng được (${reason})\n`);
     });
+
+  // Chỉ dựng khi đã cấu hình OpenAI — warmEmbeddingIndex() tự trả 0 nếu chưa, nhưng chặn sớm ở đây
+  // để khỏi in một dòng log trống vô nghĩa lúc chưa có khoá
+  if (isAiConfigured()) {
+    warmEmbeddingIndex()
+      .then((count) => console.log(`  Chỉ mục AI (embedding): ${count} sản phẩm\n`))
+      .catch((error) => {
+        const reason = error instanceof Error ? error.message : String(error);
+        console.warn(`  Chỉ mục AI (embedding): chưa dựng được (${reason})\n`);
+      });
+  }
 });
 
 /** Đóng kết nối gọn gàng khi dừng bằng Ctrl+C hoặc khi container bị kill */

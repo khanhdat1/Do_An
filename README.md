@@ -266,6 +266,7 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | GET | `/api/categories/:slug` | Một danh mục cho trang danh mục: breadcrumb, danh mục con (kèm số sản phẩm cả nhánh), các hãng và khoảng giá để dựng bộ lọc. 404 nếu không có |
 | GET | `/api/search` | Tìm kiếm sản phẩm: hiểu không dấu, từ đồng nghĩa, lỗi gõ và mức giá viết trong câu; trả kết quả đã xếp hạng, cách API hiểu câu tìm và các thành phần bộ lọc (danh mục, hãng, khoảng giá) |
 | GET | `/api/search/suggest?q=&limit=5` | Gợi ý khi gõ: vài sản phẩm khớp nhất, danh mục và hãng có tên khớp câu đang gõ |
+| GET | `/api/ai/search?q=` | Tìm kiếm ngữ nghĩa bằng embedding thật (OpenAI) — hiểu câu hỏi tự nhiên không trùng từ khoá chính xác. `usedAi: false` (không phải lỗi) khi chưa cấu hình `OPENAI_API_KEY` hoặc không có kết quả đủ liên quan; trang tự lùi về `/api/search` (mục "Tìm kiếm bằng AI") |
 | POST | `/api/auth/register` | Đăng ký, đăng nhập luôn, gộp giỏ hàng khách |
 | POST | `/api/auth/login` | `{ email, password, remember? }` — đăng nhập, gộp giỏ hàng khách vào tài khoản |
 | POST | `/api/auth/refresh` | Đổi refresh token (cookie) lấy cặp token mới |
@@ -417,9 +418,37 @@ Bộ máy nằm ở `apps/api/src/search/`, chạy ngay trong tiến trình API,
   danh mục chứ không tính khi chỉ nằm trong thông số, nên "loa" không ra các sản phẩm ghi "loại...".
 - **Giao diện**: ô tìm ở header có hộp gợi ý (sản phẩm, danh mục, hãng; điều khiển bằng mũi tên / Enter / Esc, tương
   thích bộ gõ tiếng Việt; câu đã tìm gần đây lưu ở trình duyệt). Trang kết quả lọc thêm theo danh mục, tô sáng từ khoá
-  trong tên sản phẩm. Nút "AI Search" hiện chạy đúng tìm kiếm từ khoá này, chưa gọi AI.
+  trong tên sản phẩm. Nút "AI Search" giờ gọi tìm kiếm ngữ nghĩa thật (mục dưới), Enter vẫn dùng đúng bộ máy từ khoá này.
 - **Giới hạn**: chỉ mục nằm trong bộ nhớ của **một** tiến trình API, hợp cho vài nghìn sản phẩm. Nhiều máy chủ hoặc hàng
   chục nghìn sản phẩm thì chuyển sang Meilisearch / Elasticsearch, giữ nguyên hợp đồng của `/api/search`.
+
+### Tìm kiếm bằng AI (nút "AI Search")
+
+`GET /api/ai/search?q=...` — tìm bằng **embedding thật** (OpenAI), hiểu câu hỏi tự nhiên không trùng từ khoá chính xác:
+"laptop mỏng nhẹ cho sinh viên IT khoảng 20 triệu" ra kết quả hợp lý dù không sản phẩm nào ghi đúng các từ đó — khác
+bộ máy từ khoá ở trên, vốn chỉ khớp được đúng chữ (có sửa lỗi gõ/đồng nghĩa, nhưng không "hiểu" câu).
+
+- **Thiếu `OPENAI_API_KEY` thì nút "AI Search" tự lùi về đúng tìm kiếm từ khoá**, không báo lỗi — cùng nguyên tắc
+  "thiếu cấu hình không hỏng phần còn lại" như VNPay/Google/Facebook/Resend. `usedAi: false` trong response là tín hiệu
+  bình thường (chưa cấu hình HOẶC không có kết quả đủ liên quan), không phải lỗi.
+- **Không dùng Qdrant** dù tài liệu thiết kế gốc (`apps/crawler/csdl.md`) định hướng vậy — catalog chỉ ~436 sản phẩm,
+  so cosine similarity brute-force ngay trong bộ nhớ Node là đủ, đúng lý lẽ bộ tìm kiếm từ khoá ở trên đã áp dụng.
+  Vector lưu thẳng vào cột `ProductEmbedding.vector` (MySQL, kiểu JSON) thay vì một dịch vụ vector riêng.
+- **Có lưu lại embedding** (không chỉ giữ trong RAM): API chạy `tsx watch`, khởi động lại mỗi lần lưu file lúc code —
+  không lưu thì mỗi lần khởi động lại tốn hàng chục-hàng trăm lượt gọi OpenAI vô ích. Chỉ tính lại embedding cho sản
+  phẩm thật sự mới/đổi nội dung (so sánh `contentHash`, cột có sẵn từ đầu trong schema).
+- **Grounding**: AI Search/Chat/Build PC không bao giờ để AI tự bịa tên/giá sản phẩm — chỉ truy hồi id thật từ DB rồi
+  đọc lại dữ liệu thật (giá/ảnh/tồn kho luôn mới, không lấy từ chỉ mục có thể cũ tới 15 phút) trước khi trả về.
+- Ghi lại mỗi lượt tìm vào `AiSearchLog` (bảng có sẵn từ đầu schema, trước đây chưa ai ghi) để sau này biết AI đang
+  được dùng thế nào.
+- Trang kết quả AI (`/tim-kiem?q=...&mode=ai`) đơn giản hơn hẳn trang tìm từ khoá: chỉ một lưới sản phẩm kèm dấu hiệu
+  "gợi ý bởi AI", không facets/phân trang (không hợp với một danh sách top-20 theo độ liên quan ngữ nghĩa).
+- Lấy khoá tại [platform.openai.com](https://platform.openai.com) (cần thẻ/nạp tiền, khác Resend không cần thẻ) rồi
+  điền `OPENAI_API_KEY` vào `.env`. Tên model (`OPENAI_CHAT_MODEL`/`OPENAI_EMBEDDING_MODEL`) để biến môi trường, có
+  mặc định sẵn nhưng nên xác nhận lại tên model hiện có trên tài khoản trước khi dùng thật — OpenAI đổi tên model khá
+  nhanh.
+- **Đây là nền tảng dùng chung cho cả AI Chat và AI Build PC** (`apps/api/src/ai/retrieval.ts`) — hai tính năng đó
+  chưa làm, xem mục 13.
 
 `npm test -w @pczone/api` chạy bộ kiểm tra của bộ máy tìm kiếm (chuẩn hoá chữ, mức giá, đồng nghĩa, lỗi gõ, xếp hạng, bộ lọc).
 
@@ -995,7 +1024,9 @@ không cần ở đợt này), điểm thưởng PCPoints/hạng thành viên (k
 - [ ] Làm lại giao diện Tổng quan tài khoản / danh sách đơn hàng theo phong cách bảng điều khiển (thẻ số liệu, dòng thời gian ngang) — đã bàn hướng làm, chưa triển khai
 - [x] Chuyển khoản ngân hàng (QR VietQR tự điền số tiền/nội dung) và ví MoMo (số điện thoại) làm thủ công, không qua cổng — xác nhận tay ở `/admin/orders` (mục 9, 11)
 - [ ] Cổng thanh toán thật cho thẻ quốc tế / trả góp (MoMo Business API, OnePay...) — mỗi cổng cần tự đăng ký tài khoản sandbox riêng như VNPay; thẻ ATM/Visa/Master nội địa đã dùng được ngay qua VNPay (mục 9)
-- [ ] Service AI (Python/FastAPI): AI Search, AI Chat, AI Build PC
+- [x] **AI Search** (mục "Tìm kiếm bằng AI" ở mục 5): tìm kiếm ngữ nghĩa thật bằng embedding OpenAI, không cần dịch vụ Python/FastAPI riêng — gọi thẳng từ Express API hiện có (`apps/api/src/ai/`); tự lùi về tìm kiếm từ khoá khi chưa cấu hình
+- [ ] AI Chat (trợ lý tư vấn, thay `AiAdvisorSection.tsx` hiện chỉ `console.log`) — dùng lại đúng hạ tầng embedding/retrieval của AI Search, chưa làm
+- [ ] AI Build PC (chuẩn hoá `ProductSpec` + thuật toán kiểm tra tương thích + đề xuất cấu hình bằng AI, thay `AiBuildSection.tsx` hiện là dữ liệu giả, link `/ai-build-pc` chưa tồn tại) — chưa làm
 - [x] **Admin Dashboard — Đợt 1/6** (mục 11): đăng nhập/phân quyền tách biệt hoàn toàn khỏi khách hàng (`/admin/login`, cookie/JWT riêng), 4 vai trò quản trị + kiểm tra quyền theo từng route ở server, 2FA (TOTP) tự nguyện, giới hạn đăng nhập sai, nhật ký thao tác (`AdminAuditLog`), khung giao diện `/admin` (sidebar theo quyền, tương thích di động), script tạo tài khoản quản trị an toàn (`create-admin.mts`); 2 trang quản trị cũ (xem đơn hàng, duyệt đánh giá) đã chuyển sang hệ thống mới
 - [x] **Admin Dashboard — Đợt 2** (mục 11): quản lý đơn hàng đầy đủ vòng đời (7 trạng thái tiến tuần tự, mã vận đơn, ghi chú nội bộ không lộ ra ngoài, in đơn, huỷ/hoàn theo quyền kèm hoàn kho đúng loại, đánh dấu hoàn tiền thủ công — không giả vờ tự động, lịch sử đổi trạng thái kèm tên người thực hiện)
 - [x] **Admin Dashboard — Đợt 3** (mục 11): quản lý sản phẩm (thêm/sửa/ẩn/lưu trữ, duyệt sản phẩm DRAFT, ẩn/lưu trữ có hiệu lực ngay trên trang bán) và tồn kho (nhập/xuất/điều chỉnh theo kiểm kê, cảnh báo sắp hết theo ngưỡng riêng từng sản phẩm, không cho tồn kho âm), xuất báo cáo Excel theo đúng bộ lọc

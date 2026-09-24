@@ -846,12 +846,17 @@ model ProductEmbedding {
   productId String  @unique
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  vectorId    String  @unique @db.VarChar(100) // point id bên Qdrant
+  vectorId    String  @unique @db.VarChar(100) // point id bên Qdrant — dự án này đặt bằng chính productId
   collection  String  @default("pczone_products") @db.VarChar(100)
   model       String  @db.VarChar(100) // tên model sinh embedding
   dimensions  Int
   contentHash String  @db.VarChar(64) // SHA-256 của aiSearchText
   chunkText   String? @db.LongText // văn bản đã đưa vào embedding
+  /// Bản thân vector embedding (mảng số). Thiết kế gốc định lưu ở Qdrant vì MySQL không có kiểu
+  /// vector — nhưng catalog chỉ ~436 sản phẩm, brute-force cosine-similarity trong bộ nhớ Node là đủ
+  /// (cùng lý lẽ bộ tìm kiếm từ khoá `search/index-store.ts` đã dùng), nên lưu thẳng ở đây thay vì
+  /// dựng thêm một dịch vụ Qdrant chỉ để chạy đồ án.
+  vector      Json?
 
   status       EmbeddingStatus @default(PENDING)
   errorMessage String?         @db.VarChar(500)

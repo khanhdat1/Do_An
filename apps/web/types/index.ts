@@ -192,6 +192,19 @@ export interface SearchResult extends Paginated<Product> {
   };
 }
 
+/**
+ * `GET /api/ai/search` — tìm kiếm ngữ nghĩa bằng embedding. Đơn giản hơn `SearchResult`: không phân
+ * trang, không facets/corrections/relaxed (thuộc bộ máy từ khoá, không áp dụng cho danh sách top-K
+ * theo độ liên quan ngữ nghĩa).
+ */
+export interface AiSearchResult {
+  items: Product[];
+  query: string;
+  priceIntent?: { label: string; minPrice?: number; maxPrice?: number };
+  /** false = chưa cấu hình AI hoặc không có kết quả đủ liên quan — trang tự lùi về tìm kiếm từ khoá */
+  usedAi: boolean;
+}
+
 /** Một sản phẩm trong hộp gợi ý khi gõ ở ô tìm kiếm */
 export interface SuggestProduct {
   slug: string;

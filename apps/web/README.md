@@ -137,8 +137,7 @@ Trạng thái đăng nhập và giỏ hàng nằm ở `AuthProvider` / `CartProv
 
 Các chỗ đã đánh dấu `// TODO` cần nối API:
 
-- `components/layout/SearchBar.tsx` – tìm kiếm / AI search
-- `components/home/AiAdvisorSection.tsx` – gửi câu hỏi cho AI
+- `components/home/AiAdvisorSection.tsx` – gửi câu hỏi cho AI (AI Chat, chưa làm — xem README gốc mục 13)
 
 ## 6. Ảnh sản phẩm
 
