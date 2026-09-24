@@ -1,4 +1,4 @@
-import type { Banner, Category, CategoryDetail, Paginated, Product, ProductDetail, SearchResult, Voucher } from "@/types";
+import type { AiSearchResult, Banner, Category, CategoryDetail, Paginated, Product, ProductDetail, SearchResult, Voucher } from "@/types";
 import type { SearchQuery } from "@/lib/search-query";
 import {
   bestSellerProducts,
@@ -141,6 +141,23 @@ export async function searchProducts(query: SearchQuery, pageSize: number): Prom
     const response = await fetch(`${API_BASE}${path}`, { cache: "no-store", headers: { Accept: "application/json" } });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return (await response.json()) as SearchResult;
+  } catch (error) {
+    warnOffline(path, error);
+    return null;
+  }
+}
+
+/**
+ * Tìm kiếm ngữ nghĩa bằng AI. Trả `null` khi API không gọi được (mất mạng...) — KHÁC `usedAi: false`
+ * (nghĩa hợp lệ: chưa cấu hình OpenAI hoặc không có kết quả đủ liên quan). Trang gọi hàm này coi cả
+ * hai trường hợp là "không dùng được AI" và tự lùi về `searchProducts()` — không hiện lỗi cho khách.
+ */
+export async function aiSearchProducts(query: string): Promise<AiSearchResult | null> {
+  const path = `/api/ai/search?${new URLSearchParams({ q: query }).toString()}`;
+  try {
+    const response = await fetch(`${API_BASE}${path}`, { cache: "no-store", headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return (await response.json()) as AiSearchResult;
   } catch (error) {
     warnOffline(path, error);
     return null;

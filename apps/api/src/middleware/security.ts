@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { rateLimit } from "express-rate-limit";
+import { rateLimit, type ValueDeterminingMiddleware } from "express-rate-limit";
 import { env } from "../env.js";
 import { webUrl } from "../utils/redirect.js";
 import { ForbiddenError } from "./errors.js";
@@ -37,6 +37,10 @@ function limiter(options: {
   limit: number;
   message: string;
   skipSuccessfulRequests?: boolean;
+  /** Mặc định giới hạn theo IP khách. Đặt hàm này để giới hạn theo một khoá khác — vd một khoá cố
+   * định để giới hạn CHUNG toàn site, dùng cho endpoint do server của WEB gọi hộ (IP luôn là IP của
+   * web server chứ không phải khách thật, giới hạn theo IP lúc đó vô nghĩa — xem aiSearchLimiter). */
+  keyGenerator?: ValueDeterminingMiddleware<string>;
 }) {
   return rateLimit({
     windowMs: options.windowMs,
@@ -44,6 +48,7 @@ function limiter(options: {
     skipSuccessfulRequests: options.skipSuccessfulRequests,
     standardHeaders: "draft-8",
     legacyHeaders: false,
+    ...(options.keyGenerator ? { keyGenerator: options.keyGenerator } : {}),
     handler: (_req, res) => {
       res.status(429).json({ error: "TOO_MANY_REQUESTS", message: options.message });
     },
@@ -123,6 +128,19 @@ export const searchLimiter = limiter({
   windowMs: 60 * 1000,
   limit: 120,
   message: "Bạn tìm kiếm quá nhanh. Vui lòng thử lại sau ít giây.",
+});
+
+/**
+ * Tìm kiếm ngữ nghĩa bằng AI — mỗi lượt tốn tiền thật gọi OpenAI. Trang `/tim-kiem` (server của web)
+ * gọi hộ, giống hệt `GET /api/search` chính (xem lý do ở search.routes.ts): IP luôn là IP của web
+ * server, không phải khách thật, nên giới hạn theo IP sẽ chặn nhầm cả site chứ không có tác dụng
+ * chống lạm dụng thật sự. Giới hạn CHUNG cho toàn site thay vì theo IP.
+ */
+export const aiSearchLimiter = limiter({
+  windowMs: 60 * 1000,
+  limit: 30,
+  message: "Hệ thống tìm kiếm AI đang bận. Vui lòng thử lại sau ít giây.",
+  keyGenerator: () => "global",
 });
 
 /** Thêm / xoá sản phẩm yêu thích */

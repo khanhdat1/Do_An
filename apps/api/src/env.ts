@@ -141,4 +141,18 @@ export const env = {
     resendApiKey: optional("RESEND_API_KEY"),
     from: optional("EMAIL_FROM") ?? "PCZone <onboarding@resend.dev>",
   },
+
+  /**
+   * AI Search / AI Chat / AI Build PC — gọi OpenAI thật. Thiếu khoá thì AI Search tự lùi về đúng bộ
+   * tìm kiếm từ khoá đã có (không hỏng gì); AI Chat/Build PC báo rõ "chưa cấu hình" thay vì giả vờ
+   * chạy được — khác VNPay/email, đây CHÍNH LÀ tính năng chứ không phải tác dụng phụ. Tên model để
+   * biến môi trường (không hardcode phiên bản cụ thể — OpenAI đổi tên model khá nhanh); mặc định bên
+   * dưới đã xác nhận là chuỗi thật qua chính kiểu dữ liệu của gói `openai` cài trong dự án
+   * (`ChatModel`/`EmbeddingModel` trong node_modules/openai), không phải đoán.
+   */
+  ai: {
+    openaiApiKey: optional("OPENAI_API_KEY"),
+    chatModel: optional("OPENAI_CHAT_MODEL") ?? "gpt-5.6-luna",
+    embeddingModel: optional("OPENAI_EMBEDDING_MODEL") ?? "text-embedding-3-small",
+  },
 };

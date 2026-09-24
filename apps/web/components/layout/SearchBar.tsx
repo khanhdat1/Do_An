@@ -45,9 +45,12 @@ function UrlQuery({ onChange }: { onChange: (query: string) => void }) {
 /**
  * Ô tìm kiếm lớn ở giữa header, kèm nút "AI SEARCH".
  *
- * Gõ từ 2 ký tự thì hiện hộp gợi ý (sản phẩm, danh mục, hãng); bấm Enter hoặc nút tìm thì chuyển tới trang kết quả
- * `/tim-kiem?q=...`. Ô nhập là một combobox: tiêu điểm nằm ở ô nhập suốt, mũi tên lên/xuống chọn dòng trong hộp.
- * Nút "AI Search" hiện chạy tìm kiếm từ khoá thông minh (hiểu giá, không dấu, từ đồng nghĩa), chưa phải AI.
+ * Gõ từ 2 ký tự thì hiện hộp gợi ý (sản phẩm, danh mục, hãng); bấm Enter thì chuyển tới trang kết quả
+ * `/tim-kiem?q=...` (tìm kiếm từ khoá như trước). Ô nhập là một combobox: tiêu điểm nằm ở ô nhập
+ * suốt, mũi tên lên/xuống chọn dòng trong hộp.
+ * Nút "AI Search" (nút riêng, không phải nút submit của form) đi thẳng `/tim-kiem?q=...&mode=ai` —
+ * tìm kiếm ngữ nghĩa thật bằng embedding, trang tự lùi về tìm kiếm từ khoá nếu chưa cấu hình AI hoặc
+ * không có kết quả đủ liên quan.
  */
 export default function SearchBar({ className }: SearchBarProps) {
   const router = useRouter();
@@ -137,6 +140,19 @@ export default function SearchBar({ className }: SearchBarProps) {
 
     settle(search);
     router.push(searchHref(search));
+  }
+
+  /** Nút "AI Search" — không phải submit của form, để Enter vẫn tìm bằng từ khoá như trước */
+  function handleAiSearch() {
+    const search = cleanQuery(keyword);
+    if (!search) {
+      inputRef.current?.focus();
+      setOpen(true);
+      return;
+    }
+
+    settle(search);
+    router.push(`/tim-kiem?${new URLSearchParams({ q: search, mode: "ai" }).toString()}`);
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -249,8 +265,9 @@ export default function SearchBar({ className }: SearchBarProps) {
           </button>
         ) : null}
         <button
-          type="submit"
-          aria-label="Tìm kiếm"
+          type="button"
+          onClick={handleAiSearch}
+          aria-label="Tìm kiếm bằng AI"
           className="flex h-full shrink-0 items-center gap-1.5 rounded-lg bg-gold-400 px-3 text-xs font-bold uppercase tracking-wide text-ink-950 transition hover:bg-gold-300 sm:px-4"
         >
           <Sparkles className="size-4" />

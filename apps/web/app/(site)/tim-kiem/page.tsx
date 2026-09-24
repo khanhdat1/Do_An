@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Coins, Info, Lightbulb, Search, SearchX, SpellCheck, TrendingUp, WifiOff, X } from "lucide-react";
+import { Coins, Info, Lightbulb, Search, SearchX, Sparkles, SpellCheck, TrendingUp, WifiOff, X } from "lucide-react";
 import CategoryShell from "@/components/category/CategoryShell";
 import Pagination from "@/components/category/Pagination";
 import Breadcrumb from "@/components/product/Breadcrumb";
 import ProductCard from "@/components/product/ProductCard";
 import CategoryIcon from "@/components/ui/CategoryIcon";
-import { getFeaturedCategories, searchProducts } from "@/lib/api";
+import { aiSearchProducts, getFeaturedCategories, searchProducts } from "@/lib/api";
 import { countActiveFilters } from "@/lib/category-query";
 import { popularSearches, searchTips } from "@/lib/data/search";
 import {
@@ -19,7 +19,7 @@ import {
   toSearchPageParams,
   type SearchQuery,
 } from "@/lib/search-query";
-import type { SearchResult } from "@/types";
+import type { AiSearchResult, SearchResult } from "@/types";
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -218,10 +218,67 @@ function SearchUnavailable({ query }: { query: SearchQuery }) {
   );
 }
 
+/**
+ * Kết quả tìm kiếm ngữ nghĩa bằng AI — đơn giản hơn hẳn kết quả tìm từ khoá: không facets/phân trang
+ * (CategoryShell không hợp với một danh sách top-K theo độ liên quan ngữ nghĩa, khác việc duyệt toàn
+ * bộ danh mục), chỉ một lưới sản phẩm kèm dấu hiệu "gợi ý bởi AI".
+ */
+function AiSearchResults({ result, query }: { result: AiSearchResult; query: SearchQuery }) {
+  return (
+    <div className="container-page py-4">
+      <Breadcrumb categories={[]} current="Tìm kiếm" />
+
+      <header className="surface-card overflow-hidden">
+        <div className="flex items-center gap-4 p-4 sm:p-6">
+          <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-brand-50">
+            <Sparkles className="size-7 text-brand-500" strokeWidth={1.8} />
+          </span>
+          <div className="min-w-0">
+            <h1 className="section-title wrap-break-word text-2xl sm:text-3xl">Kết quả AI cho “{result.query}”</h1>
+            <p className="mt-1 text-sm text-slate-500">{result.items.length} sản phẩm gợi ý bởi AI</p>
+          </div>
+        </div>
+
+        {result.priceIntent ? (
+          <ul className="space-y-2 border-t border-slate-100 bg-slate-50/70 px-4 py-3 sm:px-6">
+            <li className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+              <Coins className="size-4 shrink-0 text-brand-500" />
+              <span>Lọc theo giá từ câu hỏi: {result.priceIntent.label}</span>
+            </li>
+          </ul>
+        ) : null}
+      </header>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+        {result.items.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+
+      <p className="mt-6 text-center text-sm text-slate-500">
+        Muốn tìm theo cách thường?{" "}
+        <Link href={searchHref(query.q)} className="font-bold text-brand-600 hover:underline">
+          Xem kết quả tìm theo từ khoá
+        </Link>
+      </p>
+    </div>
+  );
+}
+
 export default async function SearchPage({ searchParams }: PageProps) {
-  const query = parseSearchQuery(await searchParams);
+  const rawParams = await searchParams;
+  const query = parseSearchQuery(rawParams);
 
   if (!query.q) return <SearchLanding />;
+
+  // Bấm nút "AI Search" ở header đi qua đây — thử tìm ngữ nghĩa trước, không được (chưa cấu hình AI
+  // hoặc không có kết quả đủ liên quan) thì lặng lẽ rơi xuống tìm kiếm từ khoá bên dưới, không báo lỗi
+  if (rawParams.mode === "ai") {
+    const aiResult = await aiSearchProducts(query.q);
+    if (aiResult?.usedAi && aiResult.items.length > 0) {
+      return <AiSearchResults result={aiResult} query={query} />;
+    }
+  }
 
   const result = await searchProducts(query, SEARCH_PAGE_SIZE);
   if (!result) return <SearchUnavailable query={query} />;

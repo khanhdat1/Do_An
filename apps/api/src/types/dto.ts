@@ -319,6 +319,20 @@ export interface SearchSuggestDto {
   brands: { slug: string; name: string; count: number }[];
 }
 
+/**
+ * `GET /api/ai/search` — tìm kiếm ngữ nghĩa bằng embedding. Đơn giản hơn hẳn `SearchResultDto`: không
+ * phân trang, không facets/corrections/relaxed (những khái niệm đó thuộc bộ máy từ khoá, không áp
+ * dụng cho một danh sách top-K theo độ liên quan ngữ nghĩa).
+ */
+export interface AiSearchResultDto {
+  items: ProductDto[];
+  query: string;
+  /** Bộ lọc giá suy ra từ câu hỏi ("dưới 30 triệu"), nếu có */
+  priceIntent?: { label: string; minPrice?: number; maxPrice?: number };
+  /** false = chưa cấu hình AI hoặc không có kết quả đủ liên quan — trang gọi tự lùi về /api/search */
+  usedAi: boolean;
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Sổ địa chỉ                                                                */
 /* -------------------------------------------------------------------------- */
