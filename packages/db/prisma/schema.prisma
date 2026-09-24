@@ -405,21 +405,22 @@ model User {
   totpSecret    String?   @db.VarChar(100) // base32, sinh lúc /2fa/setup — CHƯA bật cho tới khi confirm
   totpEnabledAt DateTime?
 
-  addresses           Address[]
-  refreshTokens       RefreshToken[]
-  oauthAccounts       OAuthAccount[]
-  passwordResetTokens PasswordResetToken[]
-  cart                Cart?
-  orders              Order[]
-  reviews             Review[]
-  wishlist            WishlistItem[]
-  conversations       AiConversation[]
-  builds              PcBuild[]
-  searchLogs          AiSearchLog[]
-  voucherUses         VoucherRedemption[]
-  inventoryTxs        InventoryTransaction[]
-  adminAuditLogs      AdminAuditLog[]
-  orderStatusChanges  OrderStatusHistory[]   @relation("OrderStatusChangedBy")
+  addresses               Address[]
+  refreshTokens           RefreshToken[]
+  oauthAccounts           OAuthAccount[]
+  passwordResetTokens     PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  cart                    Cart?
+  orders                  Order[]
+  reviews                 Review[]
+  wishlist                WishlistItem[]
+  conversations           AiConversation[]
+  builds                  PcBuild[]
+  searchLogs              AiSearchLog[]
+  voucherUses             VoucherRedemption[]
+  inventoryTxs            InventoryTransaction[]
+  adminAuditLogs          AdminAuditLog[]
+  orderStatusChanges      OrderStatusHistory[]     @relation("OrderStatusChangedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -491,6 +492,23 @@ model RefreshToken {
 /// dùng được đúng một lần (usedAt); yêu cầu mới tự xoá các dòng còn hiệu lực trước đó của cùng người
 /// dùng, nên chỉ link được gửi gần nhất mới còn dùng được.
 model PasswordResetToken {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Link xác minh email — cùng khuôn PasswordResetToken (chỉ lưu hash, dùng một lần). Hạn dài hơn
+/// (24h so với 30 phút của reset mật khẩu) vì không cấp bách bằng: chưa xác minh vẫn dùng được
+/// tài khoản bình thường, chỉ ảnh hưởng nhánh xử lý khi sau này đăng nhập Google trùng email.
+model EmailVerificationToken {
   id     String @id @default(cuid())
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)

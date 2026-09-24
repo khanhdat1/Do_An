@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { Prisma, prisma, type User } from "@pczone/db";
 import { ConflictError, ForbiddenError, UnauthorizedError } from "../middleware/errors.js";
+import { sendEmailVerification } from "./email-verification.service.js";
 import {
   generateRefreshToken,
   hashToken,
@@ -135,6 +136,14 @@ export async function registerUser(
     // Hai request đăng ký cùng email chạy song song: người thua bị unique index chặn
     if (isUniqueViolation(error)) throw new ConflictError("Email này đã được đăng ký");
     throw error;
+  }
+
+  try {
+    await sendEmailVerification(user);
+  } catch (error) {
+    // Gửi email xác minh thất bại không được làm hỏng việc đăng ký — tài khoản vẫn tạo/đăng nhập
+    // bình thường, người dùng luôn gửi lại được sau từ trang Tài khoản.
+    console.error(`Gửi email xác minh thất bại (${user.email}):`, error instanceof Error ? error.message : error);
   }
 
   return issueSession(user, context);

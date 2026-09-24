@@ -274,6 +274,8 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | PATCH | `/api/auth/me` | `{ fullName, phone? }` — sửa hồ sơ. Không đổi được email ở đây (mục 8) |
 | POST | `/api/auth/forgot-password` | `{ email }` — LUÔN trả cùng thông điệp bất kể email có tồn tại hay không, chống dò tài khoản đã đăng ký (mục 8) |
 | POST | `/api/auth/reset-password` | `{ token, password }` — đặt mật khẩu mới, đăng xuất khỏi MỌI thiết bị (mục 8) |
+| POST | `/api/auth/verify-email` | `{ token }` — xác nhận link trong email xác minh, đánh dấu `emailVerifiedAt` (mục 8) |
+| POST | `/api/auth/resend-verification` | Gửi lại email xác minh cho tài khoản đang đăng nhập; đã xác minh rồi thì báo vậy chứ không gửi lại (mục 8) |
 | GET | `/api/auth/google`, `/api/auth/facebook` | Bắt đầu đăng nhập mạng xã hội (`?next=/gio-hang`), chuyển sang trang đồng ý. Thêm `?link=1` để người **đã đăng nhập** liên kết thêm tài khoản (mục 8) |
 | GET | `/api/auth/google/callback`, `/api/auth/facebook/callback` | Google / Facebook gọi về; đăng nhập (hoặc liên kết) xong chuyển về web |
 | GET | `/api/auth/providers` | Các tài khoản Google / Facebook đã liên kết với người dùng hiện tại (cần đăng nhập) |
@@ -598,6 +600,29 @@ chỉ ghi vào log server, response trả về cho trình duyệt vẫn y hệt 
 `POST /api/auth/reset-password` kiểm token còn hạn + chưa dùng, đặt mật khẩu mới, đánh dấu
 `hasPassword=true`, và **đăng xuất khỏi mọi thiết bị** (xoá hết `RefreshToken` của tài khoản đó) —
 phòng trường hợp mật khẩu cũ đã bị lộ.
+
+### Xác minh email lúc đăng ký
+
+Đăng ký bằng mật khẩu tự động gửi một email xác minh (cùng hạ tầng Resend ở trên, cùng khuôn token
+một-lần-dùng — bảng riêng `EmailVerificationToken`, hạn 24 giờ thay vì 30 phút vì không cấp bách
+bằng đặt lại mật khẩu). Bấm link `/xac-minh-email?token=...` trong email là xong ngay, không cần
+thêm thao tác nào — khác trang đặt lại mật khẩu (cần nhập mật khẩu mới nên phải có form), trang này
+tự gọi API ngay khi mở. Trang **Tài khoản** hiện banner "Email chưa xác minh" kèm nút **Gửi lại**
+cho tới khi xác minh xong (dùng chung nút này cho cả tài khoản đăng ký bằng mật khẩu lẫn tài khoản
+tạo qua đăng nhập Facebook — Facebook không đảm bảo email đã xác minh nên không tự đặt
+`emailVerifiedAt` như Google).
+
+**Vì sao email xác minh xử lý lỗi gửi KHÁC "quên mật khẩu"**: lúc đăng ký, gửi thất bại chỉ ghi log
+và KHÔNG chặn tạo tài khoản (giống nguyên tắc "quên mật khẩu" ở trên) — tài khoản vẫn dùng bình
+thường, chỉ chưa xác minh. Nhưng khi người dùng đã đăng nhập chủ động bấm **Gửi lại**, gửi thất bại
+trả lỗi rõ ràng (503 "Không gửi được email xác minh lúc này") thay vì âm thầm báo thành công — khác
+`forgot-password` (phải luôn trả lời giống nhau để không lộ email nào đã đăng ký), ở đây không có lý
+do gì giấu diếm vì người dùng đã biết chắc tài khoản của chính mình tồn tại.
+
+Xác minh xong ảnh hưởng tới nhánh xử lý sẵn có khi sau này đăng nhập Google trùng email: tài khoản
+đã xác minh chỉ được **liên kết thêm** (`linkToVerifiedUser`), tài khoản chưa xác minh sẽ bị
+**"nhận lại"** cho đúng chủ email thật (`claimUnverifiedUser`, xoá mật khẩu/liên kết cũ — xem mục
+"Liên kết tài khoản" ở trên) — xác minh sớm giúp tránh rơi vào nhánh nhận-lại này.
 
 ## 9. Đặt hàng và thanh toán — cách hoạt động
 
@@ -959,7 +984,7 @@ không cần ở đợt này), điểm thưởng PCPoints/hạng thành viên (k
 - [x] Đăng ký / đăng nhập (JWT + bcrypt), ghi nhớ đăng nhập, đăng nhập Google / Facebook, liên kết tài khoản mạng xã hội, trang tài khoản
 - [x] Hủy liên kết tài khoản mạng xã hội (chặn hủy liên kết cuối cùng của tài khoản chưa có mật khẩu thật, kẻo mất đường đăng nhập — mục 8)
 - [x] Quên mật khẩu (gửi email thật qua Resend, hoặc in link ra console nếu chưa cấu hình — mục 8) và sửa hồ sơ (họ tên/SĐT — mục 8)
-- [ ] Xác minh email lúc đăng ký (chưa gửi email xác minh; ảnh hưởng tới nhánh "nhận lại tài khoản chưa xác minh" ở mục 8, không ảnh hưởng đăng nhập/đặt hàng bình thường)
+- [x] Xác minh email lúc đăng ký (gửi qua Resend, trang tự xác nhận khi bấm link, banner + nút gửi lại ở trang Tài khoản — mục 8)
 - [x] Giỏ hàng (khách vãng lai + tài khoản, gộp giỏ khi đăng nhập)
 - [x] Đặt hàng (`/thanh-toan`): sổ địa chỉ, tạo đơn có trừ kho trong transaction, huỷ đơn tự hoàn kho, lịch sử đơn (`/tai-khoan/don-hang`, `/don-hang/[code]`), tra cứu công khai (`/tra-cuu-don-hang`)
 - [x] Thanh toán VNPay Sandbox (mã ký/xác minh đầy đủ, có test; cần tự đăng ký tài khoản sandbox để bật — mục 9)

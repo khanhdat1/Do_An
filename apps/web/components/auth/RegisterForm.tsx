@@ -111,7 +111,7 @@ export default function RegisterForm({ next, oauthError = null }: RegisterFormPr
         password: values.password,
         ...(phone ? { phone } : {}),
       });
-      toast.success(`Tạo tài khoản thành công. Chào mừng ${getGivenName(user.fullName)}!`);
+      toast.success(`Tạo tài khoản thành công. Chào mừng ${getGivenName(user.fullName)}! Kiểm tra email để xác minh tài khoản.`);
     } catch (error) {
       if (error instanceof ApiError && Object.keys(error.fieldErrors).length > 0) {
         // API kiểm tra lại dữ liệu: lỗi nào thuộc ô nào thì hiện ngay dưới ô đó
