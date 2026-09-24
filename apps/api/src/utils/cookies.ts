@@ -5,6 +5,7 @@ import { REFRESH_TOKEN_TTL_MS } from "../services/token.service.js";
 export const ACCESS_COOKIE = "pcz_access";
 export const REFRESH_COOKIE = "pcz_refresh";
 export const GUEST_CART_COOKIE = "pcz_cart";
+export const GUEST_CHAT_COOKIE = "pcz_chat";
 
 /** `req.cookies` do cookie-parser điền, kiểu `any` — ép về chuỗi có kiểm tra */
 export function readCookie(req: Request, name: string): string | undefined {
@@ -90,6 +91,23 @@ export function setGuestCartCookie(res: Response, sessionId: string) {
 
 export function clearGuestCartCookie(res: Response) {
   res.clearCookie(GUEST_CART_COOKIE, { ...baseOptions, path: "/" });
+}
+
+/**
+ * Cookie định danh HỘI THOẠI AI của khách chưa đăng nhập (giá trị = AiConversation.sessionId) —
+ * cố ý TÁCH RIÊNG khỏi GUEST_CART_COOKIE dù cùng khuôn: giá trị cookie giỏ hàng gắn chặt với
+ * Cart.sessionId, dùng chung sẽ lẫn lộn hai định danh không liên quan tới nhau.
+ */
+export function setGuestChatCookie(res: Response, sessionId: string) {
+  res.cookie(GUEST_CHAT_COOKIE, sessionId, {
+    ...baseOptions,
+    path: "/",
+    maxAge: REFRESH_TOKEN_TTL_MS,
+  });
+}
+
+export function clearGuestChatCookie(res: Response) {
+  res.clearCookie(GUEST_CHAT_COOKIE, { ...baseOptions, path: "/" });
 }
 
 /* -------------------------------------------------------------------------- */

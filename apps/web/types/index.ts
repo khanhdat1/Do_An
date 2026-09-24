@@ -205,6 +205,21 @@ export interface AiSearchResult {
   usedAi: boolean;
 }
 
+/**
+ * Một tin nhắn hiển thị ở trang Trợ lý AI (`/tro-ly-ai`). Đặt tên khác `ChatMessage` bên API (cặp
+ * role/content gửi thẳng cho model) — đây là dạng để HIỂN THỊ, có thêm sản phẩm trích dẫn/trạng thái.
+ */
+export interface AiChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  citedProducts?: Product[];
+  /** Đang stream, chưa xong */
+  pending?: boolean;
+  /** Lỗi giữa chừng — content là phần trả lời dở dang (có thể rỗng) */
+  failed?: boolean;
+}
+
 /** Một sản phẩm trong hộp gợi ý khi gõ ở ô tìm kiếm */
 export interface SuggestProduct {
   slug: string;

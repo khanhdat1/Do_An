@@ -2,10 +2,21 @@ import OpenAI, { APIError } from "openai";
 import { env } from "../env.js";
 import { ServiceUnavailableError } from "../middleware/errors.js";
 
+// SDK mặc định timeout 10 PHÚT (OpenAI.DEFAULT_TIMEOUT = 600000ms) — hợp lý cho việc chạy nền, nhưng
+// với AI Chat có người dùng đang chờ trực tiếp, một lượt Gemini bị quá tải "treo" (không trả 503 nhanh
+// mà im lặng không phản hồi) sẽ bắt người dùng đợi tới 10 phút mới thấy lỗi. Rút ngắn để lỗi/timeout
+// hiện ra trong thời gian một người thật còn kiên nhẫn chờ.
+const REQUEST_TIMEOUT_MS = 30_000;
+
 let client: OpenAI | null = null;
 function openaiClient(): OpenAI {
+  // maxRetries: 0 — SDK mặc định TỰ retry 2 lần (worst-case 3 lượt gọi thật cho một lần request logic,
+  // đã thực tế gặp: một câu hỏi chat "treo" gần trọn timeout × nhiều lần trước khi lỗi thật sự lộ ra).
+  // callWithRetry() bên dưới đã tự quyết định retry khi nào/bao nhiêu lần theo TỪNG loại lỗi (429 với
+  // embed()/chatComplete() thì thử lại 1 lần; embedBatch() cố ý KHÔNG thử lại — xem ghi chú ở đó) —
+  // để SDK retry ngầm thêm một lớp nữa phá vỡ đúng những quyết định đó mà không hề biết.
   // baseURL undefined -> gói `openai` tự dùng địa chỉ thật của OpenAI (xem ghi chú ở env.ts)
-  client ??= new OpenAI({ apiKey: env.ai.openaiApiKey, baseURL: env.ai.baseUrl });
+  client ??= new OpenAI({ apiKey: env.ai.openaiApiKey, baseURL: env.ai.baseUrl, timeout: REQUEST_TIMEOUT_MS, maxRetries: 0 });
   return client;
 }
 
