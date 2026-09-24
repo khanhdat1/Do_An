@@ -230,6 +230,8 @@ export interface AuthUser {
   phone?: string;
   avatarUrl?: string;
   role: UserRole;
+  /** false = chỉ đăng nhập được bằng mạng xã hội — dùng để chặn huỷ liên kết cuối cùng */
+  hasPassword: boolean;
   createdAt: string;
 }
 

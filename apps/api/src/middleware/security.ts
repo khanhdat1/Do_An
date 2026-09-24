@@ -73,6 +73,23 @@ export const registerLimiter = limiter({
 });
 
 /**
+ * Yêu cầu link đặt lại mật khẩu / dùng link để đặt mật khẩu mới — trần chặt vì đây là công cụ có
+ * thể bị lợi dụng dò email đã đăng ký (dù response luôn giống nhau) hoặc dò thử token.
+ */
+export const passwordResetLimiter = limiter({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  message: "Bạn thao tác quá nhiều lần. Vui lòng thử lại sau 15 phút.",
+});
+
+/** Sửa hồ sơ (tên/SĐT) hoặc huỷ liên kết mạng xã hội — đã đăng nhập, trần chỉ để phòng thao tác nhầm hàng loạt */
+export const accountWriteLimiter = limiter({
+  windowMs: 10 * 60 * 1000,
+  limit: 30,
+  message: "Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.",
+});
+
+/**
  * Bắt đầu / hoàn tất đăng nhập Google, Facebook. Mỗi lượt gọi về (callback) kéo
  * theo request ra ngoài và ghi DB nên cần trần. Đây là điều hướng của trình duyệt,
  * bị chặn thì đưa về trang đăng nhập chứ không hiện JSON thô.

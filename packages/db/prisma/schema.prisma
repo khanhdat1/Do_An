@@ -202,9 +202,9 @@ model Product {
   warrantyMonths   Int?
 
   // --- Trạng thái & marketing ---------------------------------------------
-  status     ProductStatus @default(DRAFT)
-  isFeatured Boolean       @default(false)
-  isFlashSale Boolean      @default(false)
+  status          ProductStatus @default(DRAFT)
+  isFeatured      Boolean       @default(false)
+  isFlashSale     Boolean       @default(false)
   flashSaleEndsAt DateTime?
 
   // Nhãn nhỏ hiển thị đè lên ảnh ở thẻ sản phẩm: "Trả góp 0%", "Giá sốc"
@@ -321,8 +321,8 @@ model ProductSpec {
   componentType ComponentType
 
   // --- CPU & Mainboard ----------------------------------------------------
-  socket     String? @db.VarChar(50) // LGA1700, AM5...
-  chipset    String? @db.VarChar(50) // B760, X670E...
+  socket     String?  @db.VarChar(50) // LGA1700, AM5...
+  chipset    String?  @db.VarChar(50) // B760, X670E...
   cpuCores   Int?
   cpuThreads Int?
   baseClock  Decimal? @db.Decimal(5, 2) // GHz
@@ -349,16 +349,16 @@ model ProductSpec {
   storageFormFactor String? @db.VarChar(30) // M.2 2280, 2.5"
 
   // --- PSU ----------------------------------------------------------------
-  psuWattage     Int?
-  psuEfficiency  String? @db.VarChar(30) // 80 Plus Gold
-  psuModular     String? @db.VarChar(20) // Full, Semi, Non
-  psuFormFactor  String? @db.VarChar(20) // ATX, SFX
+  psuWattage    Int?
+  psuEfficiency String? @db.VarChar(30) // 80 Plus Gold
+  psuModular    String? @db.VarChar(20) // Full, Semi, Non
+  psuFormFactor String? @db.VarChar(20) // ATX, SFX
 
   // --- Case ---------------------------------------------------------------
-  caseFormFactors  Json? // ["ATX","mATX","ITX"] — mainboard case này nhận
-  caseMaxGpuMm     Int?
-  caseMaxCoolerMm  Int?
-  caseMaxPsuMm     Int?
+  caseFormFactors Json? // ["ATX","mATX","ITX"] — mainboard case này nhận
+  caseMaxGpuMm    Int?
+  caseMaxCoolerMm Int?
+  caseMaxPsuMm    Int?
 
   // --- Tản nhiệt & điện năng ----------------------------------------------
   coolerHeightMm Int?
@@ -385,7 +385,12 @@ model ProductSpec {
 model User {
   id           String  @id @default(cuid())
   email        String  @unique
-  passwordHash String // bcrypt
+  passwordHash String // bcrypt — với tài khoản chỉ đăng nhập mạng xã hội thì đây là hash của một
+  // chuỗi ngẫu nhiên không ai biết (createUnusablePasswordHash), không có nghĩa "có mật khẩu thật"
+  /// true = passwordHash là mật khẩu người dùng tự đặt (đăng ký thường, hoặc đã đặt/đổi qua "quên mật
+  /// khẩu"); false = passwordHash là chuỗi không dùng được (tài khoản chỉ vào bằng mạng xã hội). Dùng
+  /// để chặn huỷ liên kết mạng xã hội CUỐI CÙNG khi không có cách nào khác để đăng nhập.
+  hasPassword  Boolean @default(true)
   fullName     String  @db.VarChar(150)
   phone        String? @db.VarChar(20)
   avatarUrl    String? @db.VarChar(500)
@@ -397,23 +402,24 @@ model User {
   lastLoginAt     DateTime?
 
   // --- 2FA (chỉ tài khoản quản trị dùng, tự nguyện bật) --------------------
-  totpSecret    String? @db.VarChar(100) // base32, sinh lúc /2fa/setup — CHƯA bật cho tới khi confirm
+  totpSecret    String?   @db.VarChar(100) // base32, sinh lúc /2fa/setup — CHƯA bật cho tới khi confirm
   totpEnabledAt DateTime?
 
-  addresses     Address[]
-  refreshTokens RefreshToken[]
-  oauthAccounts OAuthAccount[]
-  cart          Cart?
-  orders        Order[]
-  reviews       Review[]
-  wishlist      WishlistItem[]
-  conversations AiConversation[]
-  builds        PcBuild[]
-  searchLogs    AiSearchLog[]
-  voucherUses   VoucherRedemption[]
-  inventoryTxs  InventoryTransaction[]
-  adminAuditLogs AdminAuditLog[]
-  orderStatusChanges OrderStatusHistory[] @relation("OrderStatusChangedBy")
+  addresses           Address[]
+  refreshTokens       RefreshToken[]
+  oauthAccounts       OAuthAccount[]
+  passwordResetTokens PasswordResetToken[]
+  cart                Cart?
+  orders              Order[]
+  reviews             Review[]
+  wishlist            WishlistItem[]
+  conversations       AiConversation[]
+  builds              PcBuild[]
+  searchLogs          AiSearchLog[]
+  voucherUses         VoucherRedemption[]
+  inventoryTxs        InventoryTransaction[]
+  adminAuditLogs      AdminAuditLog[]
+  orderStatusChanges  OrderStatusHistory[]   @relation("OrderStatusChangedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -428,7 +434,7 @@ model AdminAuditLog {
   id String @id @default(cuid())
 
   actorId   String
-  actor     User   @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  actor     User     @relation(fields: [actorId], references: [id], onDelete: Cascade)
   actorRole UserRole // chụp lại lúc thao tác — vai trò của actor có thể đổi sau đó
 
   action     String  @db.VarChar(100) // vd "order.status_changed", "product.updated"
@@ -479,6 +485,23 @@ model RefreshToken {
   createdAt DateTime @default(now())
 
   @@index([userId, expiresAt])
+}
+
+/// Link "quên mật khẩu" — cùng khuôn với RefreshToken (chỉ lưu hash, không lưu token gốc). Một dòng
+/// dùng được đúng một lần (usedAt); yêu cầu mới tự xoá các dòng còn hiệu lực trước đó của cùng người
+/// dùng, nên chỉ link được gửi gần nhất mới còn dùng được.
+model PasswordResetToken {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 /// Tài khoản mạng xã hội (Google, Facebook) đã liên kết với một User.
@@ -615,8 +638,8 @@ model OrderItem {
   product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
   // SNAPSHOT tại thời điểm đặt — sản phẩm có thể đổi tên, đổi giá, bị xoá
-  productName String  @db.VarChar(300)
-  productSku  String  @db.VarChar(100)
+  productName  String  @db.VarChar(300)
+  productSku   String  @db.VarChar(100)
   productImage String? @db.VarChar(500)
 
   unitPrice Decimal @db.Decimal(14, 0)
@@ -634,11 +657,11 @@ model OrderStatusHistory {
   orderId String
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  fromStatus OrderStatus?
-  toStatus   OrderStatus
-  note       String?      @db.VarChar(300)
-  changedBy  String? // userId của nhân viên, hoặc null nếu hệ thống tự đổi / khách tự huỷ
-  changedByUser User? @relation("OrderStatusChangedBy", fields: [changedBy], references: [id], onDelete: SetNull)
+  fromStatus    OrderStatus?
+  toStatus      OrderStatus
+  note          String?      @db.VarChar(300)
+  changedBy     String? // userId của nhân viên, hoặc null nếu hệ thống tự đổi / khách tự huỷ
+  changedByUser User?        @relation("OrderStatusChangedBy", fields: [changedBy], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
@@ -703,9 +726,9 @@ model InventoryTransaction {
 // =============================================================================
 
 model Voucher {
-  id   String @id @default(cuid())
-  code String @unique @db.VarChar(50)
-  name String @db.VarChar(200)
+  id          String  @id @default(cuid())
+  code        String  @unique @db.VarChar(50)
+  name        String  @db.VarChar(200)
   description String? @db.VarChar(500)
 
   discountType  DiscountType
@@ -714,9 +737,9 @@ model Voucher {
   minOrderAmount Decimal? @db.Decimal(14, 0) // đơn tối thiểu để áp dụng
   maxDiscount    Decimal? @db.Decimal(14, 0) // trần giảm khi dùng PERCENT
 
-  usageLimit     Int? // tổng lượt dùng, null = không giới hạn
-  usageCount     Int  @default(0)
-  perUserLimit   Int  @default(1)
+  usageLimit   Int? // tổng lượt dùng, null = không giới hạn
+  usageCount   Int  @default(0)
+  perUserLimit Int  @default(1)
 
   startsAt DateTime
   endsAt   DateTime
@@ -739,7 +762,7 @@ model VoucherRedemption {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  orderId        String  @db.VarChar(30)
+  orderId         String  @db.VarChar(30)
   discountApplied Decimal @db.Decimal(14, 0)
 
   createdAt DateTime @default(now())
@@ -767,7 +790,7 @@ model Review {
   isApproved Boolean @default(false) // admin duyệt trước khi hiển thị
   isVerified Boolean @default(false) // đã xác minh là khách mua hàng
 
-  adminReply   String?   @db.Text
+  adminReply     String?   @db.Text
   adminRepliedAt DateTime?
 
   createdAt DateTime @default(now())
@@ -812,9 +835,9 @@ model ProductEmbedding {
   contentHash String  @db.VarChar(64) // SHA-256 của aiSearchText
   chunkText   String? @db.LongText // văn bản đã đưa vào embedding
 
-  status      EmbeddingStatus @default(PENDING)
-  errorMessage String?        @db.VarChar(500)
-  indexedAt   DateTime?
+  status       EmbeddingStatus @default(PENDING)
+  errorMessage String?         @db.VarChar(500)
+  indexedAt    DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -871,14 +894,14 @@ model PcBuild {
   userId String?
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  sessionId String? @db.VarChar(100)
-  name      String  @db.VarChar(200)
-  purpose   String? @db.VarChar(100) // gaming, đồ hoạ, văn phòng
+  sessionId String?  @db.VarChar(100)
+  name      String   @db.VarChar(200)
+  purpose   String?  @db.VarChar(100) // gaming, đồ hoạ, văn phòng
   budget    Decimal? @db.Decimal(14, 0) // ngân sách khách đưa ra
 
-  totalPrice        Decimal @default(0) @db.Decimal(14, 0)
-  estimatedWattage  Int     @default(0) // tổng TDP ước tính
-  recommendedPsuW   Int? // = estimatedWattage * 1.3, làm tròn lên
+  totalPrice       Decimal @default(0) @db.Decimal(14, 0)
+  estimatedWattage Int     @default(0) // tổng TDP ước tính
+  recommendedPsuW  Int? // = estimatedWattage * 1.3, làm tròn lên
 
   // Kết quả kiểm tra tương thích: [{rule, severity, message, productIds}]
   validationResult Json?
@@ -936,9 +959,9 @@ model AiSearchLog {
   // VD: { "category":"VGA", "maxPrice":15000000, "brand":"ASUS" }
   parsedFilters Json?
 
-  resultCount   Int  @default(0)
+  resultCount      Int     @default(0)
   clickedProductId String? @db.VarChar(50) // sản phẩm khách bấm vào
-  tookMs        Int?
+  tookMs           Int?
 
   createdAt DateTime @default(now())
 

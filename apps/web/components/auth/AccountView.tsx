@@ -7,25 +7,33 @@ import {
   CircleCheck,
   Heart,
   LoaderCircle,
+  Lock,
   LogOut,
   Mail,
   Package,
+  Pencil,
   Phone,
   Shield,
   ShoppingCart,
+  Unlink,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useCart } from "@/components/providers/CartProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useWishlist } from "@/components/providers/WishlistProvider";
 import Avatar from "@/components/ui/Avatar";
+import TextField from "@/components/ui/TextField";
 import { apiFetch, errorMessage, renewSession } from "@/lib/api-client";
 import type { LinkNotice } from "@/lib/auth-errors";
+import { focusField } from "@/lib/forms";
 import { PUBLIC_API_URL } from "@/lib/config";
 import type { LinkedProvider, SocialProvider } from "@/types";
 import FormError from "./FormError";
 import { FacebookIcon, GoogleIcon } from "./SocialIcons";
 import { useRequireAuth } from "./useRequireAuth";
+
+const PHONE_PATTERN = /^(0|\+84)\d{9,10}$/;
 
 const ROLE_LABEL = {
   CUSTOMER: "Khách hàng",
@@ -50,17 +58,23 @@ interface AccountViewProps {
   notice?: LinkNotice | null;
 }
 
-/** Trang "Tài khoản của tôi": hồ sơ, tài khoản liên kết, đăng xuất. Chưa có API sửa hồ sơ. */
+/** Trang "Tài khoản của tôi": hồ sơ (xem/sửa), tài khoản liên kết (liên kết/huỷ liên kết), đăng xuất. */
 export default function AccountView({ notice: initialNotice = null }: AccountViewProps) {
   const router = useRouter();
   const user = useRequireAuth("/tai-khoan");
-  const { logout } = useAuth();
+  const { logout, updateProfile } = useAuth();
   const { cart } = useCart();
   const wishlist = useWishlist();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [linked, setLinked] = useState<LinkedState>(null);
   const [linkingProvider, setLinkingProvider] = useState<SocialProvider | null>(null);
+  const [unlinkPending, setUnlinkPending] = useState<SocialProvider | null>(null);
+  const [unlinking, setUnlinking] = useState<SocialProvider | null>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileValues, setProfileValues] = useState({ fullName: "", phone: "" });
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [savingProfile, setSavingProfile] = useState(false);
   // Chụp lại lúc mở trang: bên dưới ta xoá `?linked=` khỏi URL, khi đó prop trở về null
   // nhưng thông báo vẫn phải nằm đó cho người dùng đọc
   const [notice] = useState(initialNotice);
@@ -126,6 +140,58 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
     window.location.assign(url);
   }
 
+  async function confirmUnlink(provider: SocialProvider) {
+    setUnlinking(provider);
+    try {
+      await apiFetch(`/api/auth/providers/${provider}`, { method: "DELETE" });
+      setLinked((current) => (Array.isArray(current) ? current.filter((item) => item.provider !== provider) : current));
+      setUnlinkPending(null);
+      toast.success("Đã huỷ liên kết");
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setUnlinking(null);
+    }
+  }
+
+  function startEditProfile() {
+    setProfileValues({ fullName: user!.fullName, phone: user!.phone ?? "" });
+    setProfileError(null);
+    setEditingProfile(true);
+  }
+
+  async function submitProfile(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (savingProfile) return;
+
+    const form = event.currentTarget;
+    const fullName = profileValues.fullName.trim();
+    const phone = profileValues.phone.replace(/[\s.-]/g, "");
+
+    if (fullName.length < 2) {
+      setProfileError("Họ tên tối thiểu 2 ký tự");
+      focusField(form, "fullName");
+      return;
+    }
+    if (phone && !PHONE_PATTERN.test(phone)) {
+      setProfileError("Số điện thoại không hợp lệ");
+      focusField(form, "phone");
+      return;
+    }
+
+    setProfileError(null);
+    setSavingProfile(true);
+    try {
+      await updateProfile({ fullName, phone: phone || undefined });
+      toast.success("Đã lưu thông tin hồ sơ");
+      setEditingProfile(false);
+    } catch (error) {
+      setProfileError(errorMessage(error));
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
   if (!user) {
     return (
       <div className="surface-card mx-auto flex max-w-2xl items-center justify-center gap-2 p-10 text-sm text-slate-500">
@@ -138,37 +204,96 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <section className="surface-card p-5 sm:p-6">
-        <div className="flex items-center gap-4">
-          <Avatar
-            name={user.fullName}
-            src={user.avatarUrl}
-            className="size-16 rounded-2xl text-xl"
-          />
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-bold text-slate-900">{user.fullName}</h1>
-            <p className="mt-0.5 text-xs text-slate-500">
-              Thành viên từ {new Date(user.createdAt).toLocaleDateString("vi-VN")}
-            </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-4">
+            <Avatar
+              name={user.fullName}
+              src={user.avatarUrl}
+              className="size-16 rounded-2xl text-xl"
+            />
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-bold text-slate-900">{user.fullName}</h1>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Thành viên từ {new Date(user.createdAt).toLocaleDateString("vi-VN")}
+              </p>
+            </div>
           </div>
+
+          {!editingProfile ? (
+            <button
+              type="button"
+              onClick={startEditProfile}
+              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:border-brand-300 hover:bg-brand-500/5 hover:text-brand-600"
+            >
+              <Pencil className="size-3.5" />
+              Sửa
+            </button>
+          ) : null}
         </div>
 
-        <dl className="mt-6 divide-y divide-slate-100 text-sm">
-          <div className="flex items-center gap-3 py-3">
-            <Mail className="size-4.5 shrink-0 text-slate-400" />
-            <dt className="w-28 shrink-0 text-slate-500">Email</dt>
-            <dd className="min-w-0 truncate font-medium text-slate-800">{user.email}</dd>
-          </div>
-          <div className="flex items-center gap-3 py-3">
-            <Phone className="size-4.5 shrink-0 text-slate-400" />
-            <dt className="w-28 shrink-0 text-slate-500">Số điện thoại</dt>
-            <dd className="font-medium text-slate-800">{user.phone ?? "Chưa cập nhật"}</dd>
-          </div>
-          <div className="flex items-center gap-3 py-3">
-            <Shield className="size-4.5 shrink-0 text-slate-400" />
-            <dt className="w-28 shrink-0 text-slate-500">Loại tài khoản</dt>
-            <dd className="font-medium text-slate-800">{ROLE_LABEL[user.role]}</dd>
-          </div>
-        </dl>
+        {editingProfile ? (
+          <form onSubmit={submitProfile} noValidate className="mt-6 space-y-4">
+            <TextField
+              label="Họ và tên"
+              required
+              name="fullName"
+              autoComplete="name"
+              value={profileValues.fullName}
+              onChange={(event) => setProfileValues((current) => ({ ...current, fullName: event.target.value }))}
+            />
+            <TextField
+              label="Số điện thoại"
+              type="tel"
+              name="phone"
+              autoComplete="tel"
+              inputMode="tel"
+              placeholder="0912 345 678"
+              optional
+              value={profileValues.phone}
+              onChange={(event) => setProfileValues((current) => ({ ...current, phone: event.target.value }))}
+            />
+
+            {profileError ? <FormError message={profileError} /> : null}
+
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={savingProfile}
+                className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-brand-500 text-sm font-bold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {savingProfile ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                {savingProfile ? "Đang lưu..." : "Lưu thay đổi"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingProfile(false)}
+                disabled={savingProfile}
+                className="flex h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-4 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <X className="size-4" />
+                Huỷ
+              </button>
+            </div>
+          </form>
+        ) : (
+          <dl className="mt-6 divide-y divide-slate-100 text-sm">
+            <div className="flex items-center gap-3 py-3">
+              <Mail className="size-4.5 shrink-0 text-slate-400" />
+              <dt className="w-28 shrink-0 text-slate-500">Email</dt>
+              <dd className="min-w-0 truncate font-medium text-slate-800">{user.email}</dd>
+            </div>
+            <div className="flex items-center gap-3 py-3">
+              <Phone className="size-4.5 shrink-0 text-slate-400" />
+              <dt className="w-28 shrink-0 text-slate-500">Số điện thoại</dt>
+              <dd className="font-medium text-slate-800">{user.phone ?? "Chưa cập nhật"}</dd>
+            </div>
+            <div className="flex items-center gap-3 py-3">
+              <Shield className="size-4.5 shrink-0 text-slate-400" />
+              <dt className="w-28 shrink-0 text-slate-500">Loại tài khoản</dt>
+              <dd className="font-medium text-slate-800">{ROLE_LABEL[user.role]}</dd>
+            </div>
+          </dl>
+        )}
       </section>
 
       <section className="surface-card p-5 sm:p-6" aria-labelledby="linked-accounts-title">
@@ -201,6 +326,9 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
             const account = Array.isArray(linked)
               ? linked.find((item) => item.provider === key)
               : undefined;
+            // Đây là liên kết CUỐI CÙNG và chưa có mật khẩu thật: huỷ sẽ mất hẳn đường vào tài
+            // khoản — chặn ngay ở giao diện, khớp với guard phía server (unlinkProvider)
+            const isLastLoginMethod = Array.isArray(linked) && linked.length === 1 && !user.hasPassword;
 
             return (
               <li key={key} className="flex items-center gap-3 py-3.5">
@@ -219,11 +347,50 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
                   </p>
                 </div>
 
-                {account ? (
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-600/20">
-                    <CircleCheck className="size-3.5" />
-                    Đã liên kết
-                  </span>
+                {account && unlinkPending === key ? (
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => confirmUnlink(key)}
+                      disabled={unlinking === key}
+                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-sale-500 px-3 text-xs font-bold text-white transition hover:bg-sale-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {unlinking === key ? <LoaderCircle className="size-3.5 animate-spin" /> : null}
+                      {unlinking === key ? "Đang huỷ..." : "Chắc chắn huỷ?"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUnlinkPending(null)}
+                      disabled={unlinking === key}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+                    >
+                      Thôi
+                    </button>
+                  </div>
+                ) : account ? (
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-600/20">
+                      <CircleCheck className="size-3.5" />
+                      Đã liên kết
+                    </span>
+                    {isLastLoginMethod ? (
+                      <span
+                        title="Đây là cách duy nhất bạn đăng nhập được. Hãy đặt mật khẩu (quên mật khẩu) hoặc liên kết thêm một tài khoản khác trước."
+                        className="inline-flex size-7 items-center justify-center text-slate-300"
+                      >
+                        <Lock className="size-3.5" />
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setUnlinkPending(key)}
+                        className="inline-flex size-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-sale-500/10 hover:text-sale-600"
+                        aria-label={`Huỷ liên kết ${label}`}
+                      >
+                        <Unlink className="size-3.5" />
+                      </button>
+                    )}
+                  </div>
                 ) : Array.isArray(linked) ? (
                   <button
                     type="button"
@@ -241,6 +408,17 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
             );
           })}
         </ul>
+
+        {Array.isArray(linked) && linked.length === 1 && !user.hasPassword ? (
+          <p className="mt-3 text-xs text-slate-500">
+            Bạn đang chỉ đăng nhập bằng {PROVIDERS.find((p) => p.key === linked[0].provider)?.label} —
+            hãy{" "}
+            <Link href="/quen-mat-khau" className="font-bold text-brand-600 hover:underline">
+              đặt mật khẩu
+            </Link>{" "}
+            hoặc liên kết thêm một tài khoản khác nếu muốn huỷ liên kết này sau.
+          </p>
+        ) : null}
 
         {linked === "error" ? (
           <p className="mt-2 text-xs text-sale-600">

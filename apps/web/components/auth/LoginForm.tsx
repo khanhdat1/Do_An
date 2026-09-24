@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, LoaderCircle, Lock, Mail } from "lucide-react";
 import TextField from "@/components/ui/TextField";
@@ -112,17 +113,12 @@ export default function LoginForm({ next, oauthError = null }: LoginFormProps) {
         placeholder="••••••••"
         icon={<Lock className="size-4.5" />}
         labelAside={
-          <button
-            type="button"
-            onClick={() =>
-              toast.info(
-                "Tính năng đặt lại mật khẩu đang được phát triển. Vui lòng liên hệ support@pczone.vn để được hỗ trợ.",
-              )
-            }
+          <Link
+            href="/quen-mat-khau"
             className="text-xs font-bold text-brand-600 transition hover:text-brand-700 hover:underline"
           >
             Quên mật khẩu?
-          </button>
+          </Link>
         }
         value={password}
         onChange={(event) => setPassword(event.target.value)}

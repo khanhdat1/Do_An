@@ -2,16 +2,19 @@ import { Router } from "express";
 import { z } from "zod";
 import { toAuthUserDto, toLinkedProviderDto } from "../mappers/user.mapper.js";
 import { authenticate } from "../middleware/auth.js";
-import { UnauthorizedError } from "../middleware/errors.js";
-import { loginLimiter, noStore, registerLimiter } from "../middleware/security.js";
+import { BadRequestError, UnauthorizedError } from "../middleware/errors.js";
+import { accountWriteLimiter, loginLimiter, noStore, passwordResetLimiter, registerLimiter } from "../middleware/security.js";
 import {
   findActiveUser,
   loginUser,
   logoutSession,
   refreshSession,
   registerUser,
+  updateProfile,
 } from "../services/auth.service.js";
-import { listLinkedAccounts } from "../services/oauth.service.js";
+import { getProvider } from "../services/oauth.providers.js";
+import { listLinkedAccounts, unlinkProvider } from "../services/oauth.service.js";
+import { requestPasswordReset, resetPassword } from "../services/password-reset.service.js";
 import { clearAuthCookies, readCookie, REFRESH_COOKIE, setAuthCookies } from "../utils/cookies.js";
 import { finishLogin, sessionContext } from "../utils/session.js";
 
@@ -51,6 +54,24 @@ const phoneSchema = z
   .pipe(z.union([z.literal(""), z.string().regex(/^(0|\+84)\d{9,10}$/, "Số điện thoại không hợp lệ")]))
   .transform((value) => value || undefined)
   .optional();
+
+const forgotPasswordSchema = z.object({ email: emailSchema });
+
+const resetPasswordSchema = z.object({
+  token: z.string({ error: "Thiếu mã đặt lại mật khẩu" }).trim().min(1).max(200),
+  password: newPasswordSchema,
+});
+
+const updateProfileSchema = z.object({
+  fullName: z
+    .string({ error: "Vui lòng nhập họ tên" })
+    .trim()
+    .min(2, "Họ tên tối thiểu 2 ký tự")
+    .max(150, "Họ tên quá dài"),
+  phone: phoneSchema,
+});
+
+const providerParam = z.object({ provider: z.enum(["google", "facebook"], { error: "Nhà cung cấp không hợp lệ" }) });
 
 const registerSchema = z.object({
   fullName: z
@@ -102,6 +123,32 @@ authRouter.post("/login", loginLimiter, async (req, res, next) => {
 
     await finishLogin(req, res, session);
     res.json({ user: toAuthUserDto(session.user) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/auth/forgot-password  { email }
+ * LUÔN trả cùng một thông điệp bất kể email có tồn tại hay không — không để lộ tài khoản nào
+ * đã đăng ký. Có gửi email thật hay chỉ in link ra console tuỳ `RESEND_API_KEY` đã cấu hình chưa.
+ */
+authRouter.post("/forgot-password", passwordResetLimiter, async (req, res, next) => {
+  try {
+    const { email } = forgotPasswordSchema.parse(req.body);
+    await requestPasswordReset(email);
+    res.json({ status: "ok", message: "Nếu email này đã đăng ký, chúng tôi đã gửi link đặt lại mật khẩu." });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/** POST /api/auth/reset-password  { token, password } — đặt mật khẩu mới, đăng xuất khỏi mọi thiết bị */
+authRouter.post("/reset-password", passwordResetLimiter, async (req, res, next) => {
+  try {
+    const { token, password } = resetPasswordSchema.parse(req.body);
+    await resetPassword(token, password);
+    res.json({ status: "ok" });
   } catch (error) {
     next(error);
   }
@@ -161,6 +208,19 @@ authRouter.get("/me", authenticate, async (req, res, next) => {
   }
 });
 
+/** PATCH /api/auth/me  { fullName, phone? } — sửa hồ sơ. Không đổi được email ở đây (mục 1). */
+authRouter.patch("/me", authenticate, accountWriteLimiter, async (req, res, next) => {
+  try {
+    if (!req.auth) throw new UnauthorizedError("Bạn chưa đăng nhập");
+
+    const input = updateProfileSchema.parse(req.body);
+    const user = await updateProfile(req.auth.userId, input);
+    res.json({ user: toAuthUserDto(user) });
+  } catch (error) {
+    next(error);
+  }
+});
+
 /**
  * GET /api/auth/providers — các tài khoản Google / Facebook đã liên kết với người
  * dùng hiện tại (trang Tài khoản dùng để hiện "Đã liên kết" hay nút "Liên kết").
@@ -171,6 +231,26 @@ authRouter.get("/providers", authenticate, async (req, res, next) => {
 
     const accounts = await listLinkedAccounts(req.auth.userId);
     res.json({ providers: accounts.map(toLinkedProviderDto) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/auth/providers/:provider — huỷ liên kết. Chặn (409) nếu đây là liên kết cuối cùng
+ * và tài khoản chưa có mật khẩu thật (`unlinkProvider` ở oauth.service.ts giải thích đầy đủ).
+ */
+authRouter.delete("/providers/:provider", authenticate, accountWriteLimiter, async (req, res, next) => {
+  try {
+    if (!req.auth) throw new UnauthorizedError("Bạn chưa đăng nhập");
+
+    const { provider } = providerParam.parse(req.params);
+    // providerParam đã giới hạn còn đúng "google"/"facebook" nên luôn khớp được definition
+    const definition = getProvider(provider);
+    if (!definition) throw new BadRequestError("Nhà cung cấp không hợp lệ");
+
+    await unlinkProvider(req.auth.userId, definition.provider);
+    res.status(204).end();
   } catch (error) {
     next(error);
   }

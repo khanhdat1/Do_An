@@ -127,3 +127,9 @@ export function generateRefreshToken(): { token: string; tokenHash: string } {
 export function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
+
+/** Token trong link "quên mật khẩu" — cùng khuôn với refresh token (chuỗi ngẫu nhiên, chỉ lưu hash) */
+export function generatePasswordResetToken(): { token: string; tokenHash: string } {
+  const token = randomBytes(32).toString("base64url");
+  return { token, tokenHash: hashToken(token) };
+}

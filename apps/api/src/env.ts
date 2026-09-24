@@ -131,4 +131,14 @@ export const env = {
     phone: optional("MOMO_PHONE"),
     displayName: optional("MOMO_DISPLAY_NAME"),
   },
+
+  /**
+   * Gửi email "quên mật khẩu" qua Resend (resend.com — miễn phí 100 email/ngày, không cần thẻ).
+   * Thiếu khoá thì KHÔNG chặn tính năng — link đặt lại mật khẩu được in ra console server thay vì
+   * gửi email thật, để luồng vẫn kiểm thử được khi chưa cấu hình (README mục 8).
+   */
+  email: {
+    resendApiKey: optional("RESEND_API_KEY"),
+    from: optional("EMAIL_FROM") ?? "PCZone <onboarding@resend.dev>",
+  },
 };
