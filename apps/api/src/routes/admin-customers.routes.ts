@@ -4,7 +4,8 @@ import { authenticateAdmin, requireAuth } from "../middleware/auth.js";
 import { adminWriteLimiter, noStore } from "../middleware/security.js";
 import { requirePermission } from "../middleware/permissions.js";
 import { boolQuery } from "../utils/query.js";
-import { getCustomerForAdmin, listCustomersForAdmin, listOrdersForCustomer, setCustomerLock } from "../services/admin-customer.service.js";
+import { getCustomerForAdmin, listAllCustomersForAdmin, listCustomersForAdmin, listOrdersForCustomer, setCustomerLock } from "../services/admin-customer.service.js";
+import { buildCustomersReportWorkbook } from "../services/admin-customer-export.service.js";
 
 /** Quản lý khách hàng — chỉ đọc/ghi tài khoản role CUSTOMER, không đụng tới tài khoản quản trị khác. */
 export const adminCustomersRouter = Router();
@@ -32,6 +33,22 @@ adminCustomersRouter.get("/", requirePermission("customers:read"), async (req, r
   try {
     const { search, locked, page, pageSize } = listQuery.parse(req.query);
     res.json(await listCustomersForAdmin({ search, locked }, page, pageSize));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/** GET /api/admin/customers/export?search=&locked= — TẤT CẢ khách hàng khớp bộ lọc (không phân trang). Đặt TRƯỚC /:id để "export" không bị khớp nhầm thành id. */
+adminCustomersRouter.get("/export", requirePermission("customers:read"), async (req, res, next) => {
+  try {
+    const { search, locked } = listQuery.omit({ page: true, pageSize: true }).parse(req.query);
+    const customers = await listAllCustomersForAdmin({ search, locked });
+    const buffer = await buildCustomersReportWorkbook(customers, { search, locked });
+
+    const today = new Date().toISOString().slice(0, 10);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="khach-hang_${today}.xlsx"`);
+    res.send(Buffer.from(buffer));
   } catch (error) {
     next(error);
   }

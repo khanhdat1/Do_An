@@ -49,12 +49,7 @@ async function uniqueSlug(base: string, excludeId?: string): Promise<string> {
   }
 }
 
-/** `GET /api/admin/products` — mặc định mọi trạng thái (DRAFT/ACTIVE/HIDDEN/DISCONTINUED), mới sửa trước */
-export async function listProductsForAdmin(
-  filters: AdminProductFilters,
-  page: number,
-  pageSize: number,
-): Promise<Paginated<AdminProductSummaryDto>> {
+function buildProductWhere(filters: AdminProductFilters): Prisma.ProductWhereInput {
   const where: Prisma.ProductWhereInput = {};
   if (filters.status) where.status = filters.status;
   if (filters.category) where.category = { slug: filters.category };
@@ -67,6 +62,16 @@ export async function listProductsForAdmin(
     // So sánh CỘT với CỘT (tồn kho vật lý so với ngưỡng của chính sản phẩm đó) — xem ghi chú ở mapper
     where.inventoryQuantity = { lte: prisma.product.fields.lowStockThreshold };
   }
+  return where;
+}
+
+/** `GET /api/admin/products` — mặc định mọi trạng thái (DRAFT/ACTIVE/HIDDEN/DISCONTINUED), mới sửa trước */
+export async function listProductsForAdmin(
+  filters: AdminProductFilters,
+  page: number,
+  pageSize: number,
+): Promise<Paginated<AdminProductSummaryDto>> {
+  const where = buildProductWhere(filters);
 
   const [total, rows] = await Promise.all([
     prisma.product.count({ where }),
@@ -86,6 +91,19 @@ export async function listProductsForAdmin(
     total,
     totalPages: Math.max(1, Math.ceil(total / pageSize)),
   };
+}
+
+const EXPORT_ROW_LIMIT = 10_000;
+
+/** Dùng cho xuất báo cáo — TẤT CẢ sản phẩm khớp bộ lọc, không phân trang (khác `listProductsForAdmin`, luôn phân trang) */
+export async function listAllProductsForAdmin(filters: AdminProductFilters): Promise<AdminProductSummaryDto[]> {
+  const rows = await prisma.product.findMany({
+    where: buildProductWhere(filters),
+    include: adminProductSummaryInclude,
+    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+    take: EXPORT_ROW_LIMIT,
+  });
+  return rows.map(toAdminProductSummaryDto);
 }
 
 /** Danh mục/hãng dạng phẳng cho ô chọn của form thêm/sửa sản phẩm — 22 danh mục, 62 hãng, không cần phân trang */

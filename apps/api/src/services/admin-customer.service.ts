@@ -72,18 +72,23 @@ function toSummaryDto(row: CustomerRow & { orderCount: number; totalSpent: numbe
   };
 }
 
-/** `GET /api/admin/customers` — mặc định mọi khách hàng (đang hoạt động + đã khoá), mới đăng ký trước */
-export async function listCustomersForAdmin(
-  filters: AdminCustomerFilters,
-  page: number,
-  pageSize: number,
-): Promise<Paginated<AdminCustomerSummaryDto>> {
+function buildCustomerWhere(filters: AdminCustomerFilters): Prisma.UserWhereInput {
   const where: Prisma.UserWhereInput = { role: "CUSTOMER" };
   if (filters.locked !== undefined) where.isActive = !filters.locked;
   if (filters.search) {
     const term = filters.search.trim();
     where.OR = [{ fullName: { contains: term } }, { email: { contains: term } }, { phone: { contains: term } }];
   }
+  return where;
+}
+
+/** `GET /api/admin/customers` — mặc định mọi khách hàng (đang hoạt động + đã khoá), mới đăng ký trước */
+export async function listCustomersForAdmin(
+  filters: AdminCustomerFilters,
+  page: number,
+  pageSize: number,
+): Promise<Paginated<AdminCustomerSummaryDto>> {
+  const where = buildCustomerWhere(filters);
 
   const [total, rows] = await Promise.all([
     prisma.user.count({ where }),
@@ -104,6 +109,20 @@ export async function listCustomersForAdmin(
     total,
     totalPages: Math.max(1, Math.ceil(total / pageSize)),
   };
+}
+
+const EXPORT_ROW_LIMIT = 10_000;
+
+/** Dùng cho xuất báo cáo — TẤT CẢ khách hàng khớp bộ lọc, không phân trang (khác `listCustomersForAdmin`, luôn phân trang) */
+export async function listAllCustomersForAdmin(filters: AdminCustomerFilters): Promise<AdminCustomerSummaryDto[]> {
+  const rows = await prisma.user.findMany({
+    where: buildCustomerWhere(filters),
+    select: CUSTOMER_SELECT,
+    orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+    take: EXPORT_ROW_LIMIT,
+  });
+  const withStats = await attachOrderStats(rows);
+  return withStats.map(toSummaryDto);
 }
 
 /** Chỉ tìm trong role CUSTOMER — trang này không được phép đọc/sửa tài khoản quản trị khác (đó là `admins:manage`, chưa làm) */

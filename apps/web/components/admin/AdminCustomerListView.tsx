@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, CloudOff, LoaderCircle, Lock, ShieldAlert, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, CloudOff, Download, LoaderCircle, Lock, ShieldAlert, Users } from "lucide-react";
 import AdminBadge from "@/components/admin/AdminBadge";
 import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
-import { adminApiFetch } from "@/lib/admin-api-client";
+import { useToast } from "@/components/providers/ToastProvider";
+import { adminApiFetch, downloadAdminFile, errorMessage } from "@/lib/admin-api-client";
 import { formatPrice } from "@/lib/format";
 import type { AdminCustomerSummary, Paginated } from "@/types";
 
@@ -26,6 +27,8 @@ export default function AdminCustomerListView() {
   const [lockFilter, setLockFilter] = useState<LockFilter>("ALL");
   const [page, setPage] = useState(1);
   const [state, setState] = useState<State>({ status: "loading" });
+  const [exporting, setExporting] = useState(false);
+  const toast = useToast();
 
   const allowed = user ? user.permissions.includes("customers:read") : null;
 
@@ -45,6 +48,21 @@ export default function AdminCustomerListView() {
   function goToPage(next: number) {
     setPage(next);
     setState({ status: "loading" });
+  }
+
+  async function exportCustomers() {
+    const query = new URLSearchParams();
+    if (search) query.set("search", search);
+    if (lockFilter !== "ALL") query.set("locked", lockFilter === "LOCKED" ? "true" : "false");
+
+    setExporting(true);
+    try {
+      await downloadAdminFile(`/api/admin/customers/export?${query}`);
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setExporting(false);
+    }
   }
 
   useEffect(() => {
@@ -113,6 +131,16 @@ export default function AdminCustomerListView() {
           <option value="ACTIVE">Đang hoạt động</option>
           <option value="LOCKED">Đã khoá</option>
         </select>
+
+        <button
+          type="button"
+          onClick={exportCustomers}
+          disabled={exporting}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-bold text-slate-600 transition hover:border-brand-300 hover:bg-brand-500/5 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {exporting ? <LoaderCircle className="size-4 animate-spin" /> : <Download className="size-4" />}
+          {exporting ? "Đang xuất..." : "Xuất Excel"}
+        </button>
       </div>
 
       {state.status === "loading" ? (

@@ -26,6 +26,14 @@ export const PAYMENT_METHOD_LABEL: Record<string, string> = {
   MOMO: "MoMo",
 };
 
+/** Khớp đúng chữ với `apps/web/lib/data/product-status.ts` để báo cáo và giao diện quản trị nói cùng một từ */
+export const PRODUCT_STATUS_LABEL: Record<string, string> = {
+  DRAFT: "Nháp — chờ duyệt",
+  ACTIVE: "Đang bán",
+  HIDDEN: "Đã ẩn",
+  DISCONTINUED: "Ngừng kinh doanh",
+};
+
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
