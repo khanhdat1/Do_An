@@ -30,20 +30,23 @@ function requireConfigured(): void {
 }
 
 /**
- * 429 khá hay gặp thoáng qua. Mặc định thử lại đúng một lần (đủ cho các lời gọi người dùng đang chờ
- * — `embed()`/`chatComplete()` — không nên bắt họ đợi lâu, thà báo lỗi để rơi về tìm kiếm thường còn
- * hơn). `embedBatch()` dựng chỉ mục nền lúc khởi động thì không ai đang chờ trực tiếp, nên truyền
- * `maxAttempts`/`delayMs` lớn hơn hẳn — đủ kiên nhẫn để vượt qua giới hạn free-tier của Gemini
- * (xem `EMBED_BATCH_LIMIT`).
+ * 429 khá hay gặp thoáng qua. Mặc định thử lại 2 lần (đủ cho các lời gọi người dùng đang chờ —
+ * `embed()`/`chatComplete()`/`chatCompleteStream()` — không nên bắt họ đợi quá lâu, thà báo lỗi để
+ * rơi về tìm kiếm thường/hiện nút thử lại còn hơn). `embedBatch()` dựng chỉ mục nền lúc khởi động thì
+ * không ai đang chờ trực tiếp, nên truyền `maxAttempts`/`delayMs` khác hẳn (xem `EMBED_BATCH_LIMIT`).
+ *
+ * Cũng thử lại với MỌI lỗi 5xx, không chỉ 429: gặp thực tế nhiều lần model Gemini free-tier báo
+ * "currently experiencing high demand... temporary" (503) — đúng nghĩa HTTP chuẩn của 503 (tạm thời
+ * không phục vụ được, nên thử lại), không phải lỗi PCZone hay lỗi cấu hình.
  */
 async function callWithRetry<T>(action: () => Promise<T>, opts: { maxAttempts?: number; delayMs?: number } = {}): Promise<T> {
-  const { maxAttempts = 2, delayMs = 1000 } = opts;
+  const { maxAttempts = 3, delayMs = 1500 } = opts;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await action();
     } catch (error) {
-      const isRateLimited = error instanceof APIError && error.status === 429;
-      if (!isRateLimited || attempt === maxAttempts) throw mapError(error);
+      const isRetryable = error instanceof APIError && (error.status === 429 || (error.status !== undefined && error.status >= 500));
+      if (!isRetryable || attempt === maxAttempts) throw mapError(error);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
