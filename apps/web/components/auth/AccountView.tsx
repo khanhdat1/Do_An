@@ -10,6 +10,7 @@ import {
   Lock,
   LogOut,
   Mail,
+  MailWarning,
   Package,
   Pencil,
   Phone,
@@ -75,6 +76,7 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
   const [profileValues, setProfileValues] = useState({ fullName: "", phone: "" });
   const [profileError, setProfileError] = useState<string | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
   // Chụp lại lúc mở trang: bên dưới ta xoá `?linked=` khỏi URL, khi đó prop trở về null
   // nhưng thông báo vẫn phải nằm đó cho người dùng đọc
   const [notice] = useState(initialNotice);
@@ -192,6 +194,18 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
     }
   }
 
+  async function resendVerification() {
+    setResendingVerification(true);
+    try {
+      const { message } = await apiFetch<{ message: string }>("/api/auth/resend-verification", { method: "POST" });
+      toast.success(message);
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setResendingVerification(false);
+    }
+  }
+
   if (!user) {
     return (
       <div className="surface-card mx-auto flex max-w-2xl items-center justify-center gap-2 p-10 text-sm text-slate-500">
@@ -280,7 +294,15 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
             <div className="flex items-center gap-3 py-3">
               <Mail className="size-4.5 shrink-0 text-slate-400" />
               <dt className="w-28 shrink-0 text-slate-500">Email</dt>
-              <dd className="min-w-0 truncate font-medium text-slate-800">{user.email}</dd>
+              <dd className="flex min-w-0 items-center gap-2 font-medium text-slate-800">
+                <span className="truncate">{user.email}</span>
+                {user.emailVerified ? (
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-600/20">
+                    <CircleCheck className="size-3" />
+                    Đã xác minh
+                  </span>
+                ) : null}
+              </dd>
             </div>
             <div className="flex items-center gap-3 py-3">
               <Phone className="size-4.5 shrink-0 text-slate-400" />
@@ -294,6 +316,24 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
             </div>
           </dl>
         )}
+
+        {!editingProfile && !user.emailVerified ? (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-amber-50 px-3.5 py-3 text-sm text-amber-800 ring-1 ring-amber-600/20">
+            <span className="flex items-center gap-2">
+              <MailWarning className="size-4.5 shrink-0" />
+              Email chưa xác minh.
+            </span>
+            <button
+              type="button"
+              onClick={resendVerification}
+              disabled={resendingVerification}
+              className="flex items-center gap-1.5 rounded-lg border border-amber-600/30 bg-white px-3 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-600/10 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {resendingVerification ? <LoaderCircle className="size-3.5 animate-spin" /> : null}
+              {resendingVerification ? "Đang gửi..." : "Gửi lại email xác minh"}
+            </button>
+          </div>
+        ) : null}
       </section>
 
       <section className="surface-card p-5 sm:p-6" aria-labelledby="linked-accounts-title">

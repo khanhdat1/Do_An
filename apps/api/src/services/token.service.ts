@@ -133,3 +133,9 @@ export function generatePasswordResetToken(): { token: string; tokenHash: string
   const token = randomBytes(32).toString("base64url");
   return { token, tokenHash: hashToken(token) };
 }
+
+/** Token trong link xác minh email — cùng khuôn với generatePasswordResetToken */
+export function generateEmailVerificationToken(): { token: string; tokenHash: string } {
+  const token = randomBytes(32).toString("base64url");
+  return { token, tokenHash: hashToken(token) };
+}

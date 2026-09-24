@@ -2,8 +2,15 @@ import { Router } from "express";
 import { z } from "zod";
 import { toAuthUserDto, toLinkedProviderDto } from "../mappers/user.mapper.js";
 import { authenticate } from "../middleware/auth.js";
-import { BadRequestError, UnauthorizedError } from "../middleware/errors.js";
-import { accountWriteLimiter, loginLimiter, noStore, passwordResetLimiter, registerLimiter } from "../middleware/security.js";
+import { BadRequestError, ServiceUnavailableError, UnauthorizedError } from "../middleware/errors.js";
+import {
+  accountWriteLimiter,
+  emailVerificationLimiter,
+  loginLimiter,
+  noStore,
+  passwordResetLimiter,
+  registerLimiter,
+} from "../middleware/security.js";
 import {
   findActiveUser,
   loginUser,
@@ -12,6 +19,7 @@ import {
   registerUser,
   updateProfile,
 } from "../services/auth.service.js";
+import { confirmEmailVerification, sendEmailVerification } from "../services/email-verification.service.js";
 import { getProvider } from "../services/oauth.providers.js";
 import { listLinkedAccounts, unlinkProvider } from "../services/oauth.service.js";
 import { requestPasswordReset, resetPassword } from "../services/password-reset.service.js";
@@ -72,6 +80,10 @@ const updateProfileSchema = z.object({
 });
 
 const providerParam = z.object({ provider: z.enum(["google", "facebook"], { error: "Nhà cung cấp không hợp lệ" }) });
+
+const verifyEmailSchema = z.object({
+  token: z.string({ error: "Thiếu mã xác minh" }).trim().min(1).max(200),
+});
 
 const registerSchema = z.object({
   fullName: z
@@ -154,6 +166,17 @@ authRouter.post("/reset-password", passwordResetLimiter, async (req, res, next) 
   }
 });
 
+/** POST /api/auth/verify-email  { token } — bấm link trong email xác minh, đánh dấu emailVerifiedAt */
+authRouter.post("/verify-email", emailVerificationLimiter, async (req, res, next) => {
+  try {
+    const { token } = verifyEmailSchema.parse(req.body);
+    await confirmEmailVerification(token);
+    res.json({ status: "ok" });
+  } catch (error) {
+    next(error);
+  }
+});
+
 /**
  * POST /api/auth/refresh — đổi refresh token (cookie) lấy cặp token mới.
  * Frontend tự gọi khi một request bị 401 vì access token hết hạn.
@@ -216,6 +239,34 @@ authRouter.patch("/me", authenticate, accountWriteLimiter, async (req, res, next
     const input = updateProfileSchema.parse(req.body);
     const user = await updateProfile(req.auth.userId, input);
     res.json({ user: toAuthUserDto(user) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/** POST /api/auth/resend-verification — gửi lại email xác minh cho tài khoản đang đăng nhập */
+authRouter.post("/resend-verification", authenticate, accountWriteLimiter, async (req, res, next) => {
+  try {
+    if (!req.auth) throw new UnauthorizedError("Bạn chưa đăng nhập");
+
+    const user = await findActiveUser(req.auth.userId);
+    if (!user) throw new UnauthorizedError("Phiên đăng nhập không còn hiệu lực");
+
+    if (user.emailVerifiedAt) {
+      res.json({ status: "ok", message: "Email của bạn đã được xác minh rồi." });
+      return;
+    }
+
+    try {
+      await sendEmailVerification(user);
+    } catch (error) {
+      // Khác lúc đăng ký (thất bại thì âm thầm bỏ qua, không được chặn cả việc tạo tài khoản): ở
+      // đây người dùng chủ động bấm "gửi lại" nên xứng đáng biết thật nếu không gửi được, thay vì
+      // báo "đã gửi" trong khi email không bao giờ tới.
+      console.error(`Gửi lại email xác minh thất bại (${user.email}):`, error instanceof Error ? error.message : error);
+      throw new ServiceUnavailableError("Không gửi được email xác minh lúc này. Vui lòng thử lại sau.");
+    }
+    res.json({ status: "ok", message: "Đã gửi email xác minh. Kiểm tra hộp thư của bạn." });
   } catch (error) {
     next(error);
   }

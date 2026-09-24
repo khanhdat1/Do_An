@@ -46,6 +46,13 @@ export class ConflictError extends HttpError {
   }
 }
 
+/** Một dịch vụ ngoài (gửi email...) từ chối/không phản hồi — khác lỗi 500 chung chung, người dùng biết rõ nên làm gì tiếp (thử lại sau) */
+export class ServiceUnavailableError extends HttpError {
+  constructor(message = "Dịch vụ tạm thời không khả dụng, vui lòng thử lại sau") {
+    super(503, message);
+  }
+}
+
 function isClientError(error: unknown): error is { status: number } {
   return (
     typeof error === "object" &&

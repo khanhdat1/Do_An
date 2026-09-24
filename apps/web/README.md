@@ -43,6 +43,7 @@ app/                      # App Router
   dang-nhap/  dang-ky/    # đăng nhập / đăng ký (?next= để quay lại trang đang xem dở)
   quen-mat-khau/          # nhập email, gửi link đặt lại mật khẩu
   dat-lai-mat-khau/       # đặt mật khẩu mới (?token= từ email)
+  xac-minh-email/         # tự xác nhận khi mở (?token= từ email xác minh)
   tai-khoan/              # hồ sơ (xem/sửa), tài khoản liên kết (liên kết/huỷ liên kết), đăng xuất (yêu cầu đăng nhập)
   thanh-toan/             # trang giữ chỗ cho bước đặt hàng (yêu cầu đăng nhập)
 

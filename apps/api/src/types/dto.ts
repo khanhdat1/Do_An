@@ -145,6 +145,7 @@ export interface AuthUserDto {
   role: UserRoleDto;
   /** false = chỉ đăng nhập được bằng mạng xã hội — frontend dùng để chặn huỷ liên kết cuối cùng */
   hasPassword: boolean;
+  emailVerified: boolean;
   createdAt: string;
 }
 

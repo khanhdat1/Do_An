@@ -89,6 +89,13 @@ export const accountWriteLimiter = limiter({
   message: "Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.",
 });
 
+/** Dùng link xác minh email (công khai, không cần đăng nhập) — trần chặt để không bị dò token */
+export const emailVerificationLimiter = limiter({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  message: "Bạn thao tác quá nhiều lần. Vui lòng thử lại sau 15 phút.",
+});
+
 /**
  * Bắt đầu / hoàn tất đăng nhập Google, Facebook. Mỗi lượt gọi về (callback) kéo
  * theo request ra ngoài và ghi DB nên cần trần. Đây là điều hướng của trình duyệt,
