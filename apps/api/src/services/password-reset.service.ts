@@ -26,7 +26,14 @@ export async function requestPasswordReset(email: string): Promise<void> {
     }),
   ]);
 
-  await sendPasswordResetEmail(user.email, webUrl("/dat-lai-mat-khau", { token }));
+  try {
+    await sendPasswordResetEmail(user.email, webUrl("/dat-lai-mat-khau", { token }));
+  } catch (error) {
+    // Gửi thất bại (vd Resend chưa xác minh tên miền riêng nên chỉ gửi được tới đúng email chủ tài
+    // khoản Resend) KHÔNG được làm hỏng cả yêu cầu — response vẫn phải giống hệt trường hợp thành
+    // công, kẻo lộ email nào tồn tại qua sự khác biệt lỗi/thành công. Chỉ ghi log để tự kiểm tra.
+    console.error(`Gửi email đặt lại mật khẩu thất bại (${user.email}):`, error instanceof Error ? error.message : error);
+  }
 }
 
 export async function resetPassword(token: string, newPassword: string): Promise<void> {

@@ -592,6 +592,9 @@ hết hạn sau 30 phút, gửi email chứa link `/dat-lai-mat-khau?token=...` 
 [Resend](https://resend.com) (miễn phí 100 email/ngày). **Thiếu `RESEND_API_KEY` thì link chỉ in
 ra console của API thay vì gửi thật** — tính năng vẫn kiểm thử được ở máy chưa cấu hình, cùng
 nguyên tắc "thiếu khoá thì báo chưa cấu hình, không hỏng phần còn lại" như VNPay/Google/Facebook.
+Gửi thất bại (vd tài khoản Resend miễn phí chưa xác minh tên miền riêng nên chỉ gửi được tới đúng
+email chủ tài khoản Resend — xem hướng dẫn lấy khoá bên dưới) **cũng không làm hỏng request**: lỗi
+chỉ ghi vào log server, response trả về cho trình duyệt vẫn y hệt trường hợp gửi thành công.
 `POST /api/auth/reset-password` kiểm token còn hạn + chưa dùng, đặt mật khẩu mới, đánh dấu
 `hasPassword=true`, và **đăng xuất khỏi mọi thiết bị** (xoá hết `RefreshToken` của tài khoản đó) —
 phòng trường hợp mật khẩu cũ đã bị lộ.
