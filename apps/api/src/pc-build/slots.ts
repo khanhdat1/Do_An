@@ -12,17 +12,6 @@ export function isBuildSlot(value: string): value is BuildSlot {
   return (BUILD_SLOTS as readonly string[]).includes(value);
 }
 
-/** Khoá trên URL `/ai-build-pc?cpu=…&mainboard=…` và query của API danh sách linh kiện */
-export const SLOT_PARAM: Record<BuildSlot, string> = {
-  CPU: "cpu",
-  MAINBOARD: "mainboard",
-  RAM: "ram",
-  VGA: "vga",
-  SSD: "ssd",
-  PSU: "psu",
-  CASE: "case",
-};
-
 /** Tên hiển thị trong thông báo kiểm tra tương thích */
 export const SLOT_LABEL_VI: Record<BuildSlot, string> = {
   CPU: "CPU",

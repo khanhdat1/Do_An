@@ -334,6 +334,88 @@ export interface AiSearchResultDto {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Build PC                                                                  */
+/* -------------------------------------------------------------------------- */
+
+export type BuildSlotDto = "CPU" | "MAINBOARD" | "RAM" | "VGA" | "SSD" | "PSU" | "CASE";
+
+export interface BuildProductDto extends ProductDto {
+  slot: BuildSlotDto;
+  /** Thông số dùng để kiểm tra tương thích; thiếu thì ghi "Chưa có dữ liệu" */
+  keySpecs: SpecRowDto[];
+  /** Khi phải lấy số liệu từ tên sản phẩm hoặc dữ liệu tự mâu thuẫn */
+  specNotes: string[];
+}
+
+export type BuildRuleDto =
+  | "CPU_SOCKET"
+  | "RAM_TYPE"
+  | "VGA_LENGTH"
+  | "PSU_WATTAGE"
+  | "MAINBOARD_FORM_FACTOR"
+  | "RAM_SLOTS"
+  | "NO_DISPLAY_OUTPUT"
+  | "CPU_COOLER"
+  | "INCOMPLETE_BUILD";
+
+export interface BuildCheckDto {
+  rule: BuildRuleDto;
+  severity: "ERROR" | "WARNING" | "INFO" | "PASS";
+  message: string;
+  productIds: string[];
+  /** Thiếu thông số nên chưa kiểm tra được — không bao giờ là "đạt" */
+  insufficientData: boolean;
+}
+
+export interface BuildPowerDto {
+  /** null: chưa chọn CPU hoặc thiếu dữ liệu */
+  cpuW: number | null;
+  /** 0: không dùng card rời; null: card chưa có dữ liệu điện năng */
+  gpuW: number | null;
+  /** Ước tính chung cho mainboard, RAM, ổ cứng, quạt */
+  baseW: number;
+  estimatedW: number | null;
+  recommendedPsuW: number | null;
+}
+
+export type BuildStatusDto = "INCOMPATIBLE" | "INCOMPLETE" | "NEEDS_REVIEW" | "COMPATIBLE";
+
+export interface BuildItemDto {
+  slot: BuildSlotDto;
+  quantity: number;
+  product: BuildProductDto;
+}
+
+/** `POST /api/pc-build/validate` — giá/tồn kho đọc mới tại thời điểm gọi */
+export interface BuildCheckResultDto {
+  items: BuildItemDto[];
+  /** Id gửi lên nhưng không dùng được (không tồn tại, ngừng bán, không phải linh kiện) */
+  unavailableProductIds: string[];
+  checks: BuildCheckDto[];
+  power: BuildPowerDto;
+  totalPrice: number;
+  missingSlots: BuildSlotDto[];
+  isComplete: boolean;
+  isValid: boolean;
+  status: BuildStatusDto;
+}
+
+export type BuildFitDto = "COMPATIBLE" | "WARNING" | "INCOMPATIBLE" | "UNKNOWN";
+
+export interface BuildCandidateDto {
+  product: BuildProductDto;
+  /** null: chưa chọn linh kiện nào khác để so */
+  fit: BuildFitDto | null;
+  reasons: string[];
+}
+
+/** `GET /api/pc-build/components?type=cpu&mainboard=…` — còn hàng trước, rồi giá tăng dần */
+export interface BuildComponentListDto {
+  slot: BuildSlotDto;
+  items: BuildCandidateDto[];
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Sổ địa chỉ                                                                */
 /* -------------------------------------------------------------------------- */
 

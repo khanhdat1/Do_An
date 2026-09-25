@@ -7,6 +7,7 @@ import {
   toAdminProductSummaryDto,
 } from "../mappers/product.mapper.js";
 import { ConflictError, NotFoundError } from "../middleware/errors.js";
+import { syncProductSpec } from "../pc-build/spec-store.js";
 import type {
   AdminProductDetailDto,
   AdminProductInput,
@@ -129,6 +130,15 @@ export async function getProductForAdmin(id: string): Promise<AdminProductDetail
   return toAdminProductDetailDto(product);
 }
 
+/** Sản phẩm đã lưu xong — đồng bộ thông số Build PC lỗi thì chỉ ghi log, không báo lưu thất bại */
+async function syncSpecSafely(productId: string): Promise<void> {
+  try {
+    await syncProductSpec(productId);
+  } catch (error) {
+    console.error(`Không đồng bộ được thông số Build PC của sản phẩm ${productId}:`, error);
+  }
+}
+
 async function assertSkuAvailable(sku: string, excludeId?: string): Promise<void> {
   const existing = await prisma.product.findUnique({ where: { sku }, select: { id: true } });
   if (existing && existing.id !== excludeId) throw new ConflictError(`Mã SKU "${sku}" đã được dùng cho sản phẩm khác`);
@@ -170,6 +180,7 @@ export async function createProduct(input: AdminProductInput, admin: AdminActor)
     return created;
   });
 
+  await syncSpecSafely(product.id);
   return getProductForAdmin(product.id);
 }
 
@@ -209,6 +220,7 @@ export async function updateProduct(id: string, input: AdminProductInput, admin:
     });
   });
 
+  await syncSpecSafely(id);
   return getProductForAdmin(id);
 }
 
