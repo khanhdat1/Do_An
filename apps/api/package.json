@@ -10,7 +10,7 @@
     "start": "node dist/server.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "specs:backfill": "tsx src/scripts/backfill-product-specs.mts",
-    "test": "tsx src/search/search.test.ts && tsx src/services/vnpay.test.ts && tsx src/services/voucher.test.ts && tsx src/services/manual-payment.test.ts && tsx src/services/review.test.ts && tsx src/services/admin-dashboard.test.ts && tsx src/ai/embedding-engine.test.ts && tsx src/ai/citation.test.ts && tsx src/pc-build/spec-parser.test.ts"
+    "test": "tsx src/search/search.test.ts && tsx src/services/vnpay.test.ts && tsx src/services/voucher.test.ts && tsx src/services/manual-payment.test.ts && tsx src/services/review.test.ts && tsx src/services/admin-dashboard.test.ts && tsx src/ai/embedding-engine.test.ts && tsx src/ai/citation.test.ts && tsx src/pc-build/spec-parser.test.ts && tsx src/pc-build/compatibility.test.ts"
   },
   "dependencies": {
     "@pczone/db": "*",

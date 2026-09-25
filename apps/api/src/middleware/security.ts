@@ -158,6 +158,16 @@ export const aiChatLimiter = limiter({
   keyGenerator: (req) => req.auth?.userId ?? ipKeyGenerator(req.ip ?? "unknown"),
 });
 
+/**
+ * Build PC — trình duyệt gọi thẳng (không qua server Next.js) nên giới hạn theo IP là đúng. Mỗi lần đổi
+ * một linh kiện trang gọi kiểm tra lại + mở bảng chọn, nên trần rộng; chỉ đọc DB, không gọi dịch vụ ngoài.
+ */
+export const pcBuildLimiter = limiter({
+  windowMs: 60 * 1000,
+  limit: 120,
+  message: "Bạn thao tác với Build PC quá nhanh. Vui lòng thử lại sau ít giây.",
+});
+
 /** Thêm / xoá sản phẩm yêu thích */
 export const wishlistWriteLimiter = limiter({
   windowMs: 10 * 60 * 1000,

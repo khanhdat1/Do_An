@@ -26,6 +26,7 @@ import { oauthRouter } from "./routes/oauth.routes.js";
 import { orderLookupRouter } from "./routes/order-lookup.routes.js";
 import { ordersRouter } from "./routes/orders.routes.js";
 import { paymentsRouter } from "./routes/payments.routes.js";
+import { pcBuildRouter } from "./routes/pc-build.routes.js";
 import { productsRouter } from "./routes/products.routes.js";
 import { reviewsRouter } from "./routes/reviews.routes.js";
 import { searchRouter } from "./routes/search.routes.js";
@@ -60,6 +61,7 @@ export function createApp() {
   app.use("/api/search", searchRouter);
   app.use("/api/ai", aiSearchRouter);
   app.use("/api/ai", aiChatRouter);
+  app.use("/api/pc-build", pcBuildRouter);
   app.use("/api/vouchers", vouchersRouter);
   app.use("/api/banners", bannersRouter);
   app.use("/api/auth", authRouter);
