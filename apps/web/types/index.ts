@@ -220,6 +220,88 @@ export interface AiChatMessage {
   failed?: boolean;
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Build PC (`/api/pc-build`)                                                */
+/* -------------------------------------------------------------------------- */
+
+export type BuildSlot = "CPU" | "MAINBOARD" | "RAM" | "VGA" | "SSD" | "PSU" | "CASE";
+
+export interface BuildProduct extends Product {
+  slot: BuildSlot;
+  /** Thông số dùng để kiểm tra tương thích; thiếu thì ghi "Chưa có dữ liệu" */
+  keySpecs: SpecRow[];
+  /** Khi số liệu phải lấy từ tên sản phẩm hoặc dữ liệu tự mâu thuẫn */
+  specNotes: string[];
+}
+
+export type BuildRule =
+  | "CPU_SOCKET"
+  | "RAM_TYPE"
+  | "VGA_LENGTH"
+  | "PSU_WATTAGE"
+  | "MAINBOARD_FORM_FACTOR"
+  | "RAM_SLOTS"
+  | "NO_DISPLAY_OUTPUT"
+  | "CPU_COOLER"
+  | "INCOMPLETE_BUILD";
+
+export type BuildSeverity = "ERROR" | "WARNING" | "INFO" | "PASS";
+
+export interface BuildCheck {
+  rule: BuildRule;
+  severity: BuildSeverity;
+  message: string;
+  productIds: string[];
+  /** Thiếu thông số nên chưa kiểm tra được — không bao giờ là "đạt" */
+  insufficientData: boolean;
+}
+
+export interface BuildPower {
+  /** null: chưa chọn CPU hoặc thiếu dữ liệu */
+  cpuW: number | null;
+  /** 0: không dùng card rời; null: card chưa có dữ liệu điện năng */
+  gpuW: number | null;
+  /** Ước tính chung cho mainboard, RAM, ổ cứng, quạt */
+  baseW: number;
+  estimatedW: number | null;
+  recommendedPsuW: number | null;
+}
+
+export type BuildStatus = "INCOMPATIBLE" | "INCOMPLETE" | "NEEDS_REVIEW" | "COMPATIBLE";
+
+export interface BuildItem {
+  slot: BuildSlot;
+  quantity: number;
+  product: BuildProduct;
+}
+
+export interface BuildCheckResult {
+  items: BuildItem[];
+  /** Id không dùng được (không tồn tại, ngừng bán, không phải linh kiện) */
+  unavailableProductIds: string[];
+  checks: BuildCheck[];
+  power: BuildPower;
+  totalPrice: number;
+  missingSlots: BuildSlot[];
+  isComplete: boolean;
+  isValid: boolean;
+  status: BuildStatus;
+}
+
+export type BuildFit = "COMPATIBLE" | "WARNING" | "INCOMPATIBLE" | "UNKNOWN";
+
+export interface BuildCandidate {
+  product: BuildProduct;
+  /** null: chưa chọn linh kiện nào khác để so */
+  fit: BuildFit | null;
+  reasons: string[];
+}
+
+export interface BuildComponentList {
+  slot: BuildSlot;
+  items: BuildCandidate[];
+}
+
 /** Một sản phẩm trong hộp gợi ý khi gõ ở ô tìm kiếm */
 export interface SuggestProduct {
   slug: string;

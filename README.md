@@ -125,7 +125,8 @@ Kiểm tra API sống chưa: mở <http://localhost:4000/health>
 | ---- | -------- |
 | `npm run db:up` / `db:down` | Bật / tắt MySQL trong Docker |
 | `npm run db:migrate` | Tạo & áp dụng migration mới sau khi sửa schema |
-| `npm run db:seed` | Nạp **tất cả**: dữ liệu mẫu, ảnh của 14 sản phẩm mẫu, ~420 sản phẩm demo kèm ảnh (chạy nhiều lần vẫn an toàn) |
+| `npm run db:seed` | Nạp **tất cả**: dữ liệu mẫu, ảnh của 14 sản phẩm mẫu, ~420 sản phẩm demo kèm ảnh, rồi chuẩn hoá thông số linh kiện cho Build PC (chạy nhiều lần vẫn an toàn) |
+| `npm run db:specs` | Chỉ chuẩn hoá lại thông số ~95 linh kiện vào bảng `ProductSpec` cho Build PC, in báo cáo độ phủ từng trường; thêm `-- --dry-run` để chỉ xem báo cáo, không ghi DB (mục "Build PC") |
 | `npm run db:seed:data` | Chỉ nạp dữ liệu mẫu (danh mục, hãng, 14 sản phẩm), không tải ảnh, chạy được khi không có mạng |
 | `npm run db:seed:categories` | Chỉ cập nhật cây danh mục (thêm danh mục mới vào DB đang có dữ liệu, không đụng tới sản phẩm) |
 | `npm run seed-images` | Chỉ tải ảnh cho sản phẩm mẫu chưa có ảnh (thêm `-- --force` để tải lại) |
@@ -267,6 +268,9 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | GET | `/api/search` | Tìm kiếm sản phẩm: hiểu không dấu, từ đồng nghĩa, lỗi gõ và mức giá viết trong câu; trả kết quả đã xếp hạng, cách API hiểu câu tìm và các thành phần bộ lọc (danh mục, hãng, khoảng giá) |
 | GET | `/api/search/suggest?q=&limit=5` | Gợi ý khi gõ: vài sản phẩm khớp nhất, danh mục và hãng có tên khớp câu đang gõ |
 | GET | `/api/ai/search?q=` | Tìm kiếm ngữ nghĩa bằng embedding thật (OpenAI) — hiểu câu hỏi tự nhiên không trùng từ khoá chính xác. `usedAi: false` (không phải lỗi) khi chưa cấu hình `OPENAI_API_KEY` hoặc không có kết quả đủ liên quan; trang tự lùi về `/api/search` (mục "Tìm kiếm bằng AI") |
+| POST | `/api/ai/chat` | `{ message, conversationId? }` — trợ lý AI (trang `/tro-ly-ai`) trả lời dạng stream (SSE), chỉ nhắc sản phẩm có thật trong DB, kèm danh sách sản phẩm được trích dẫn; không cần đăng nhập |
+| GET | `/api/pc-build/components?type=cpu&mainboard=…` | Linh kiện đang bán của một ô (`cpu`, `mainboard`, `ram`, `vga`, `ssd`, `psu`, `case`), mỗi món kèm huy hiệu tương thích với các món đã chọn (mục "Build PC") |
+| POST | `/api/pc-build/validate` | `{ items: [{ productId, quantity? }] }` — kiểm tra tương thích, tổng tiền theo giá mới nhất, công suất ước tính (mục "Build PC") |
 | POST | `/api/auth/register` | Đăng ký, đăng nhập luôn, gộp giỏ hàng khách |
 | POST | `/api/auth/login` | `{ email, password, remember? }` — đăng nhập, gộp giỏ hàng khách vào tài khoản |
 | POST | `/api/auth/refresh` | Đổi refresh token (cookie) lấy cặp token mới |
@@ -451,10 +455,35 @@ bộ máy từ khoá ở trên, vốn chỉ khớp được đúng chữ (có s�
   Google có sẵn) rồi điền `OPENAI_API_KEY` vào `.env`. Tên model (`OPENAI_CHAT_MODEL`/`OPENAI_EMBEDDING_MODEL`) để
   biến môi trường, có mặc định sẵn nhưng nên xác nhận lại tên model hiện có trên tài khoản trước khi dùng thật — các
   hãng AI đổi tên model khá nhanh.
-- **Đây là nền tảng dùng chung cho cả AI Chat và AI Build PC** (`apps/api/src/ai/retrieval.ts`) — hai tính năng đó
-  chưa làm, xem mục 13.
+- **Đây là nền tảng dùng chung cho cả AI Chat và AI Build PC** (`apps/api/src/ai/retrieval.ts`) — AI Chat (trang
+  `/tro-ly-ai`) đã dùng; phần AI đề xuất cấu hình cho Build PC chưa làm, xem mục 13.
 
 `npm test -w @pczone/api` chạy bộ kiểm tra của bộ máy tìm kiếm (chuẩn hoá chữ, mức giá, đồng nghĩa, lỗi gõ, xếp hạng, bộ lọc).
+
+### Build PC (`/ai-build-pc`)
+
+Tự chọn từng linh kiện đang bán (CPU, mainboard, RAM, card đồ họa, SSD, nguồn, vỏ case): hệ thống kiểm tra tương thích
+ngay khi chọn, tính tổng tiền và công suất nguồn cần thiết, thêm cả bộ vào giỏ bằng một nút. **Không dùng AI ở bước
+này** — kiểm tra bằng luật cố định, nên luôn chạy được kể cả khi chưa cấu hình hoặc hết quota AI.
+
+- **Chuẩn hoá thông số** (`apps/api/src/pc-build/spec-parser.ts`): đọc bảng thông số thô của sản phẩm
+  (`Product.specifications`) thành các cột của `ProductSpec` bằng bộ đọc xác định, không dùng LLM — đảo ngược đúng
+  template nhãn mà crawler của dự án ghi ra. Không đọc được thì để trống, không đoán; chỉ lấy từ tên sản phẩm khi mẫu rõ
+  ràng ("(550W)") và có ghi chú; thông số tự mâu thuẫn thì lấy giá trị an toàn hơn. `npm run db:specs` chạy lại toàn bộ;
+  thêm/sửa sản phẩm ở trang quản trị tự đồng bộ lại. Bổ sung thông số còn thiếu bằng cách thêm dòng đúng nhãn vào thông
+  số sản phẩm ở trang quản trị, ví dụ vỏ case chưa ghi độ dài VGA tối đa: `Độ dài VGA tối đa: 360 mm`.
+- **9 luật** (`apps/api/src/pc-build/compatibility.ts`, hàm thuần): socket CPU–mainboard, chuẩn RAM, số khe RAM, cỡ
+  mainboard–vỏ case, chiều dài card–vỏ case, công suất nguồn, CPU không có đồ họa tích hợp mà chưa có card rời, CPU không
+  kèm tản nhiệt, còn thiếu linh kiện. Mức ERROR / WARNING / INFO / PASS. **Thiếu thông số thì báo "chưa đủ dữ liệu"
+  (WARNING), không bao giờ coi là tương thích.** Vỏ case nhận cỡ mainboard lớn nhất nó liệt kê và mọi cỡ nhỏ hơn.
+- **Công suất ước tính** = CPU (mức tối đa hãng công bố nếu có, không thì TDP) + card đồ họa (TDP) + 80 W ước tính chung
+  cho phần còn lại; nguồn nên từ ⌈ước tính × 1,3⌉ trở lên, đồng thời không dưới mức nguồn hãng card khuyến nghị.
+- **Chia sẻ qua đường dẫn** (`/ai-build-pc?cpu=…&mainboard=…&ram=…&ramQty=2`): mở lại là đọc giá/tồn kho mới và kiểm tra
+  lại; id không còn bán thì tự bỏ ra. Chưa lưu cấu hình vào DB (bảng `PcBuild`) ở bước này.
+- "Thêm cả bộ vào giỏ hàng" thêm **tuần tự từng món** — khách chưa có giỏ mà gọi song song thì mỗi request sẽ tự tạo
+  một giỏ riêng.
+
+`npm test -w @pczone/api` gồm cả test bộ đọc thông số (dùng đúng chuỗi thật trong DB) và bộ luật tương thích.
 
 ## 6. Quy ước dữ liệu
 
@@ -1029,8 +1058,9 @@ không cần ở đợt này), điểm thưởng PCPoints/hạng thành viên (k
 - [x] Chuyển khoản ngân hàng (QR VietQR tự điền số tiền/nội dung) và ví MoMo (số điện thoại) làm thủ công, không qua cổng — xác nhận tay ở `/admin/orders` (mục 9, 11)
 - [ ] Cổng thanh toán thật cho thẻ quốc tế / trả góp (MoMo Business API, OnePay...) — mỗi cổng cần tự đăng ký tài khoản sandbox riêng như VNPay; thẻ ATM/Visa/Master nội địa đã dùng được ngay qua VNPay (mục 9)
 - [x] **AI Search** (mục "Tìm kiếm bằng AI" ở mục 5): tìm kiếm ngữ nghĩa thật bằng embedding OpenAI, không cần dịch vụ Python/FastAPI riêng — gọi thẳng từ Express API hiện có (`apps/api/src/ai/`); tự lùi về tìm kiếm từ khoá khi chưa cấu hình
-- [ ] AI Chat (trợ lý tư vấn, thay `AiAdvisorSection.tsx` hiện chỉ `console.log`) — dùng lại đúng hạ tầng embedding/retrieval của AI Search, chưa làm
-- [ ] AI Build PC (chuẩn hoá `ProductSpec` + thuật toán kiểm tra tương thích + đề xuất cấu hình bằng AI, thay `AiBuildSection.tsx` hiện là dữ liệu giả, link `/ai-build-pc` chưa tồn tại) — chưa làm
+- [x] **AI Chat** (`/tro-ly-ai`, mở từ ô hỏi AI ở trang chủ): trả lời dạng stream, chỉ nhắc sản phẩm có thật trong DB, sản phẩm trích dẫn do server tự đối chiếu (không tin AI tự khai), lưu hội thoại vào `AiConversation`/`AiMessage`; dùng lại hạ tầng embedding/retrieval của AI Search
+- [x] **Build PC tự ráp** (`/ai-build-pc`, mục "Build PC" ở mục 5): chuẩn hoá `ProductSpec` bằng bộ đọc xác định, 9 luật kiểm tra tương thích (không dùng AI), tổng tiền + công suất nguồn, chia sẻ qua đường dẫn, thêm cả bộ vào giỏ
+- [ ] AI đề xuất cấu hình theo ngân sách/nhu cầu (chạy qua đúng bộ luật của Build PC) và lưu cấu hình vào `PcBuild` + link chia sẻ `shareCode` — chưa làm
 - [x] **Admin Dashboard — Đợt 1/6** (mục 11): đăng nhập/phân quyền tách biệt hoàn toàn khỏi khách hàng (`/admin/login`, cookie/JWT riêng), 4 vai trò quản trị + kiểm tra quyền theo từng route ở server, 2FA (TOTP) tự nguyện, giới hạn đăng nhập sai, nhật ký thao tác (`AdminAuditLog`), khung giao diện `/admin` (sidebar theo quyền, tương thích di động), script tạo tài khoản quản trị an toàn (`create-admin.mts`); 2 trang quản trị cũ (xem đơn hàng, duyệt đánh giá) đã chuyển sang hệ thống mới
 - [x] **Admin Dashboard — Đợt 2** (mục 11): quản lý đơn hàng đầy đủ vòng đời (7 trạng thái tiến tuần tự, mã vận đơn, ghi chú nội bộ không lộ ra ngoài, in đơn, huỷ/hoàn theo quyền kèm hoàn kho đúng loại, đánh dấu hoàn tiền thủ công — không giả vờ tự động, lịch sử đổi trạng thái kèm tên người thực hiện)
 - [x] **Admin Dashboard — Đợt 3** (mục 11): quản lý sản phẩm (thêm/sửa/ẩn/lưu trữ, duyệt sản phẩm DRAFT, ẩn/lưu trữ có hiệu lực ngay trên trang bán) và tồn kho (nhập/xuất/điều chỉnh theo kiểm kê, cảnh báo sắp hết theo ngưỡng riêng từng sản phẩm, không cho tồn kho âm), xuất báo cáo Excel theo đúng bộ lọc
