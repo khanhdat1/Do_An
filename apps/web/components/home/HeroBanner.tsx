@@ -44,7 +44,7 @@ export default function HeroBanner() {
             </h1>
 
             <p className="mt-4 max-w-lg text-sm leading-relaxed text-slate-300">
-              Hiệu năng đồ họa đỉnh cao – Kiểm tra tương thích 100% bằng AI – Cam
+              Hiệu năng đồ họa đỉnh cao – Kiểm tra tương thích linh kiện tự động – Cam
               kết linh kiện chính hãng kèm bảo hành On-site VIP tại nhà độc quyền
               từ PCZone.
             </p>
