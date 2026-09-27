@@ -119,6 +119,25 @@ Kiểm tra API sống chưa: mở <http://localhost:4000/health>
 > `apps/web/lib/data/` và in cảnh báo ở terminal. Đó là chủ ý, để làm giao diện
 > mà không phụ thuộc backend.
 
+### Chia sẻ link tạm cho người khác (Cloudflare Tunnel)
+
+`localhost` chỉ mở được trên máy mình. Muốn người ở xa xem thử (demo cho thầy cô, bạn bè) mà chưa đưa lên
+hosting, dùng **Cloudflare Tunnel** — miễn phí, không cần tài khoản:
+
+1. Tải `cloudflared-windows-amd64.exe` từ trang phát hành chính thức
+   [github.com/cloudflare/cloudflared/releases](https://github.com/cloudflare/cloudflared/releases), đổi tên
+   thành `cloudflared.exe`.
+2. Trong `apps/web/.env.local` đặt `NEXT_PUBLIC_API_URL=""` (giữ `API_URL="http://localhost:4000"`): trình duyệt gọi
+   `/api/*` ngay trên địa chỉ của web, Next chuyển tiếp sang API (`rewrites` trong `apps/web/next.config.ts`)
+   — nhờ vậy chỉ cần chia sẻ **một** địa chỉ, cookie đăng nhập/giỏ hàng vẫn đúng tên miền.
+3. Bật API + web như trên, rồi chạy `cloudflared.exe tunnel --url http://localhost:3000` và gửi cho người
+   khác địa chỉ `https://….trycloudflare.com` nó in ra.
+
+Giới hạn: link chỉ sống khi máy bạn đang bật cả API, web và cửa sổ `cloudflared`; mỗi lần chạy lại ra link
+khác; mọi người dùng chung dữ liệu thật trong DB của bạn. Đăng nhập Google/Facebook không dùng được qua link
+này (callback đã khai với Google/Facebook là `localhost`) — đăng ký/đăng nhập bằng email vẫn dùng bình thường.
+Muốn link cố định thì phải đưa lên hosting thật.
+
 ## 4. Các lệnh hay dùng
 
 | Lệnh | Tác dụng |

@@ -137,7 +137,8 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
       return;
     }
 
-    const url = new URL(`/api/auth/${provider}`, PUBLIC_API_URL);
+    // PUBLIC_API_URL rỗng (gọi qua proxy của web) thì new URL() cần một gốc tuyệt đối
+    const url = new URL(`/api/auth/${provider}`, PUBLIC_API_URL || window.location.origin);
     url.searchParams.set("link", "1");
     window.location.assign(url);
   }

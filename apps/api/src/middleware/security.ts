@@ -17,11 +17,25 @@ export const originGuard: RequestHandler = (req, _res, next) => {
   if (SAFE_METHODS.has(req.method)) return next();
 
   const origin = req.get("origin");
-  if (origin && !env.corsOrigins.includes(origin)) {
+  if (origin && !env.corsOrigins.includes(origin) && !isSameOriginViaWebProxy(origin, req.get("x-forwarded-host"))) {
     return next(new ForbiddenError("Nguồn gốc của yêu cầu không được phép"));
   }
   next();
 };
+
+/**
+ * Trình duyệt gọi `/api/*` ngay trên địa chỉ của web (vd link chia sẻ Cloudflare Tunnel), proxy của Next
+ * ghi `x-forwarded-host` = host của trang: Origin trùng host đó nghĩa là request cùng nguồn với chính trang.
+ * Trang lạ không giả được header này (header tự đặt thì trình duyệt phải hỏi preflight, CORS đã từ chối).
+ */
+function isSameOriginViaWebProxy(origin: string, forwardedHost: string | undefined): boolean {
+  if (!forwardedHost) return false;
+  try {
+    return new URL(origin).host === forwardedHost;
+  } catch {
+    return false;
+  }
+}
 
 /** Dữ liệu cá nhân (danh tính, giỏ hàng) không được lưu vào cache của trình duyệt / proxy */
 export const noStore: RequestHandler = (_req, res, next) => {
