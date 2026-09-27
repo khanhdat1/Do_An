@@ -16,6 +16,7 @@ import { adminOrdersRouter } from "./routes/admin-orders.routes.js";
 import { adminProductsRouter } from "./routes/admin-products.routes.js";
 import { adminReviewsRouter } from "./routes/admin-reviews.routes.js";
 import { adminVouchersRouter } from "./routes/admin-vouchers.routes.js";
+import { aiBuildRouter } from "./routes/ai-build.routes.js";
 import { aiChatRouter } from "./routes/ai-chat.routes.js";
 import { aiSearchRouter } from "./routes/ai-search.routes.js";
 import { authRouter } from "./routes/auth.routes.js";
@@ -61,6 +62,7 @@ export function createApp() {
   app.use("/api/search", searchRouter);
   app.use("/api/ai", aiSearchRouter);
   app.use("/api/ai", aiChatRouter);
+  app.use("/api/ai", aiBuildRouter);
   app.use("/api/pc-build", pcBuildRouter);
   app.use("/api/vouchers", vouchersRouter);
   app.use("/api/banners", bannersRouter);

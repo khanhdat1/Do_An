@@ -415,6 +415,48 @@ export interface BuildComponentListDto {
   items: BuildCandidateDto[];
 }
 
+/** Cấu hình đã lưu — bản chụp bất biến, mở bằng link `/ai-build-pc?build=<code>`; giá/kiểm tra luôn tính lại lúc mở */
+export interface SavedBuildDto {
+  code: string;
+  name: string;
+  purpose: string | null;
+  budget: number | null;
+  isAiGenerated: boolean;
+  aiPrompt: string | null;
+  createdAt: string;
+  totalAtSave: number;
+  isValidAtSave: boolean;
+  items: { productId: string; slot: BuildSlotDto; quantity: number }[];
+}
+
+/** `GET /api/pc-build/builds` — trang "Cấu hình của tôi" */
+export interface SavedBuildSummaryDto {
+  code: string;
+  name: string;
+  purpose: string | null;
+  isAiGenerated: boolean;
+  createdAt: string;
+  totalAtSave: number;
+  isValidAtSave: boolean;
+  itemCount: number;
+}
+
+/** `POST /api/ai/build` — gợi ý đã được kiểm tra bằng bộ luật và lưu lại (có link ngắn) */
+export interface AiBuildSuggestionDto {
+  build: SavedBuildDto;
+  /** Ngân sách/nhu cầu AI hiểu từ câu của khách — hiện ra để khách tự kiểm tra */
+  understood: { budget: number | null; purpose: string };
+  summary: string;
+  notes: { slot: BuildSlotDto; text: string }[];
+  /**
+   * NOT_NEEDED: lượt đầu đã đạt. REPAIRED: lượt đầu có vấn đề, đang hiện câu trả lời sau khi AI sửa 1 lần.
+   * FAILED: lượt đầu có vấn đề nhưng AI không sửa được (dịch vụ bận, hoặc lượt sửa còn tệ hơn) — đang hiện lượt đầu.
+   */
+  repair: "NOT_NEEDED" | "REPAIRED" | "FAILED";
+  /** Số mã AI đưa ra nhưng không có trong kho/sai loại nên bị bỏ */
+  droppedCount: number;
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Sổ địa chỉ                                                                */
 /* -------------------------------------------------------------------------- */

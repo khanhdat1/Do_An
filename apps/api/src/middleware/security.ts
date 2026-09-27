@@ -182,6 +182,24 @@ export const pcBuildLimiter = limiter({
   message: "Bạn thao tác với Build PC quá nhanh. Vui lòng thử lại sau ít giây.",
 });
 
+/**
+ * AI gợi ý cấu hình — mỗi lượt tốn 1–2 lượt gọi AI từ quota miễn phí có hạn, nên trần chặt hơn chat. Trình duyệt gọi
+ * thẳng (không qua server Next) nên tính theo từng người như `aiChatLimiter`.
+ */
+export const aiBuildLimiter = limiter({
+  windowMs: 60 * 1000,
+  limit: 5,
+  message: "Bạn nhờ AI gợi ý cấu hình quá nhanh. Vui lòng thử lại sau ít giây.",
+  keyGenerator: (req) => req.auth?.userId ?? ipKeyGenerator(req.ip ?? "unknown"),
+});
+
+/** Lưu cấu hình (mỗi lần lưu là một dòng mới trong DB) — khách chưa đăng nhập cũng lưu được nên phải có trần */
+export const buildSaveLimiter = limiter({
+  windowMs: 10 * 60 * 1000,
+  limit: 20,
+  message: "Bạn lưu cấu hình quá nhiều lần. Vui lòng thử lại sau ít phút.",
+});
+
 /** Thêm / xoá sản phẩm yêu thích */
 export const wishlistWriteLimiter = limiter({
   windowMs: 10 * 60 * 1000,

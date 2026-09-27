@@ -110,10 +110,16 @@ export interface ChatMessage {
   content: string;
 }
 
-/** Chưa dùng ở Đợt 1 (AI Search chỉ cần embed) — dựng sẵn cho AI Chat ở Đợt 2, cùng một client nên dựng luôn cho đỡ quay lại */
-export async function chatComplete(messages: ChatMessage[]): Promise<string> {
+/** `json: true` bật chế độ JSON (đã thử thật với endpoint OpenAI-compatible của Gemini) — prompt vẫn phải tự mô tả đúng dạng JSON cần */
+export async function chatComplete(messages: ChatMessage[], options: { json?: boolean } = {}): Promise<string> {
   requireConfigured();
-  const response = await callWithRetry(() => openaiClient().chat.completions.create({ model: env.ai.chatModel, messages }));
+  const response = await callWithRetry(() =>
+    openaiClient().chat.completions.create({
+      model: env.ai.chatModel,
+      messages,
+      ...(options.json ? { response_format: { type: "json_object" as const } } : {}),
+    }),
+  );
   return response.choices[0]?.message?.content ?? "";
 }
 
