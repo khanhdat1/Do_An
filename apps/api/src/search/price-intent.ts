@@ -41,7 +41,7 @@ function amount(numberText: string, unit: string | undefined): number | null {
 }
 
 /** 30_000_000 → "30 triệu", 2_500_000 → "2,5 triệu", 500_000 → "500 nghìn" */
-function money(value: number): string {
+export function formatMoneyLabel(value: number): string {
   if (value >= 1_000_000) {
     const millions = Math.round((value / 1_000_000) * 10) / 10;
     return `${String(millions).replace(".", ",")} triệu`;
@@ -66,7 +66,7 @@ function range(low: string, lowUnit: string | undefined, high: string, highUnit:
   const b = amount(high, highUnit ?? lowUnit);
   if (a === null || b === null) return null;
   const [min, max] = a <= b ? [a, b] : [b, a];
-  return { min, max, label: `Từ ${money(min)} đến ${money(max)}` };
+  return { min, max, label: `Từ ${formatMoneyLabel(min)} đến ${formatMoneyLabel(max)}` };
 }
 
 const RULES: Rule[] = [
@@ -85,7 +85,7 @@ const RULES: Rule[] = [
     pattern: new RegExp(`(?:${START}(?:duoi|nho hon|toi da|khong qua|it hon|under|below|max)|<=?)\\s*${NUMBER}\\s*${UNIT}?${END}`),
     build: (m) => {
       const max = amount(m[1], m[2]);
-      return max === null ? null : { max, label: `Dưới ${money(max)}` };
+      return max === null ? null : { max, label: `Dưới ${formatMoneyLabel(max)}` };
     },
   },
   // trên 20 triệu · tối thiểu 1tr · > 5 triệu
@@ -93,7 +93,7 @@ const RULES: Rule[] = [
     pattern: new RegExp(`(?:${START}(?:tren|lon hon|toi thieu|it nhat|over|above|min)|>=?)\\s*${NUMBER}\\s*${UNIT}?${END}`),
     build: (m) => {
       const min = amount(m[1], m[2]);
-      return min === null ? null : { min, label: `Trên ${money(min)}` };
+      return min === null ? null : { min, label: `Trên ${formatMoneyLabel(min)}` };
     },
   },
   // từ 10 triệu (không có "đến")
@@ -101,7 +101,7 @@ const RULES: Rule[] = [
     pattern: new RegExp(`${START}(?:tu|from)\\s+${NUMBER}\\s*${UNIT}?${END}`),
     build: (m) => {
       const min = amount(m[1], m[2]);
-      return min === null ? null : { min, label: `Từ ${money(min)}` };
+      return min === null ? null : { min, label: `Từ ${formatMoneyLabel(min)}` };
     },
   },
   // khoảng 15 triệu · tầm 15tr · ~15 triệu
@@ -110,7 +110,7 @@ const RULES: Rule[] = [
     build: (m) => {
       const centre = amount(m[1], m[2]);
       if (centre === null) return null;
-      return { min: roundThousand(centre * 0.8), max: roundThousand(centre * 1.2), label: `Khoảng ${money(centre)}` };
+      return { min: roundThousand(centre * 0.8), max: roundThousand(centre * 1.2), label: `Khoảng ${formatMoneyLabel(centre)}` };
     },
   },
   // "15 triệu", "15tr" đứng một mình: ngân sách quanh mức đó. Chỉ triệu/tr, không nhận "k" vì "4k" là độ phân giải
@@ -119,7 +119,7 @@ const RULES: Rule[] = [
     build: (m) => {
       const centre = amount(m[1], m[2]);
       if (centre === null) return null;
-      return { min: roundThousand(centre * 0.8), max: roundThousand(centre * 1.2), label: `Khoảng ${money(centre)}` };
+      return { min: roundThousand(centre * 0.8), max: roundThousand(centre * 1.2), label: `Khoảng ${formatMoneyLabel(centre)}` };
     },
   },
 ];

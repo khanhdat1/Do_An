@@ -1,8 +1,16 @@
 import type { Prisma } from "@pczone/db";
 import type { BuildCheckResult, CandidateEvaluation } from "../pc-build/compatibility.js";
-import type { BuildSlot } from "../pc-build/slots.js";
+import { BUILD_SLOTS, isBuildSlot, type BuildSlot } from "../pc-build/slots.js";
 import type { NormalizedSpec } from "../pc-build/spec-types.js";
-import type { BuildCandidateDto, BuildCheckResultDto, BuildItemDto, BuildProductDto, SpecRowDto } from "../types/dto.js";
+import type {
+  BuildCandidateDto,
+  BuildCheckResultDto,
+  BuildItemDto,
+  BuildProductDto,
+  SavedBuildDto,
+  SavedBuildSummaryDto,
+  SpecRowDto,
+} from "../types/dto.js";
 import { productInclude, toProductDto } from "./product.mapper.js";
 
 export const buildProductInclude = { ...productInclude, spec: true } satisfies Prisma.ProductInclude;
@@ -30,7 +38,7 @@ function storageCapacity(gb: number | null): string | null {
   return gb >= 1000 && gb % 1000 === 0 ? `${gb / 1000} TB` : `${gb} GB`;
 }
 
-function keySpecs(slot: BuildSlot, spec: NormalizedSpec): SpecRowDto[] {
+export function keySpecs(slot: BuildSlot, spec: NormalizedSpec): SpecRowDto[] {
   switch (slot) {
     case "CPU": {
       const power = spec.tdpWatts === null ? null : `${spec.tdpWatts} W${spec.extra.maxPowerW ? ` (tối đa ${spec.extra.maxPowerW} W)` : ""}`;
@@ -39,6 +47,7 @@ function keySpecs(slot: BuildSlot, spec: NormalizedSpec): SpecRowDto[] {
         ["Nhân / luồng", spec.cpuCores !== null && spec.cpuThreads !== null ? `${spec.cpuCores} nhân / ${spec.cpuThreads} luồng` : null, false],
         ["Điện năng", power, true],
         ["Đồ họa tích hợp", spec.hasIgpu === null ? null : spec.hasIgpu ? "Có" : "Không", true],
+        ["Tản nhiệt kèm theo", spec.extra.coolerIncluded === undefined ? null : spec.extra.coolerIncluded ? "Có" : "Không", false],
       ]);
     }
     case "MAINBOARD":
@@ -90,6 +99,53 @@ export function toBuildProductDto(row: BuildProductRow, slot: BuildSlot, spec: N
 
 export function toBuildCandidateDto(product: BuildProductDto, evaluation: CandidateEvaluation): BuildCandidateDto {
   return { product, fit: evaluation.fit, reasons: evaluation.reasons };
+}
+
+export const savedBuildInclude = {
+  items: { select: { productId: true, componentType: true, quantity: true } },
+} satisfies Prisma.PcBuildInclude;
+
+export type SavedBuildRow = Prisma.PcBuildGetPayload<{ include: typeof savedBuildInclude }>;
+
+export function toSavedBuildDto(row: SavedBuildRow): SavedBuildDto {
+  const items = row.items.flatMap((item) => (isBuildSlot(item.componentType) ? [{ productId: item.productId, slot: item.componentType, quantity: item.quantity }] : []));
+  items.sort((a, b) => BUILD_SLOTS.indexOf(a.slot) - BUILD_SLOTS.indexOf(b.slot));
+  return {
+    code: row.shareCode ?? "",
+    name: row.name,
+    purpose: row.purpose,
+    budget: row.budget === null ? null : Number(row.budget),
+    isAiGenerated: row.isAiGenerated,
+    aiPrompt: row.aiPrompt,
+    createdAt: row.createdAt.toISOString(),
+    totalAtSave: Number(row.totalPrice),
+    isValidAtSave: row.isValid,
+    items,
+  };
+}
+
+export const savedBuildSummarySelect = {
+  shareCode: true,
+  name: true,
+  purpose: true,
+  isAiGenerated: true,
+  createdAt: true,
+  totalPrice: true,
+  isValid: true,
+  _count: { select: { items: true } },
+} satisfies Prisma.PcBuildSelect;
+
+export function toSavedBuildSummaryDto(row: Prisma.PcBuildGetPayload<{ select: typeof savedBuildSummarySelect }>): SavedBuildSummaryDto {
+  return {
+    code: row.shareCode ?? "",
+    name: row.name,
+    purpose: row.purpose,
+    isAiGenerated: row.isAiGenerated,
+    createdAt: row.createdAt.toISOString(),
+    totalAtSave: Number(row.totalPrice),
+    isValidAtSave: row.isValid,
+    itemCount: row._count.items,
+  };
 }
 
 export function toBuildCheckResultDto(items: BuildItemDto[], unavailableProductIds: string[], result: BuildCheckResult): BuildCheckResultDto {
