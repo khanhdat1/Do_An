@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
+// `||` chứ không `??`: NEXT_PUBLIC_API_URL có thể cố ý để rỗng, không được để proxy trỏ về chính nó
+const apiUrl = process.env.API_URL || "http://localhost:4000";
+
 const nextConfig: NextConfig = {
+  // Cho phép mở bản dev qua link chia sẻ tạm của Cloudflare Tunnel (README mục 3)
+  allowedDevOrigins: ["*.trycloudflare.com"],
+  experimental: {
+    // Mặc định 30 s — AI gợi ý cấu hình (có thể gọi AI 2 lượt) đi qua proxy dưới đây có thể lâu hơn
+    proxyTimeout: 120_000,
+  },
+  async rewrites() {
+    // NEXT_PUBLIC_API_URL để rỗng thì trình duyệt gọi /api/* ngay trên địa chỉ của web, Next chuyển tiếp
+    // sang API — chỉ cần chia sẻ MỘT địa chỉ, cookie đăng nhập/giỏ hàng vẫn cùng tên miền
+    return [{ source: "/api/:path*", destination: `${apiUrl}/api/:path*` }];
+  },
   images: {
     /**
      * Ảnh sản phẩm theo kế hoạch là tự host: crawler tải về
