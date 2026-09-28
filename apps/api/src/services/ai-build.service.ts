@@ -2,6 +2,7 @@ import {
   buildCatalog,
   buildRepairMessage,
   buildSystemPrompt,
+  downgradeWeights,
   findRepairIssues,
   minimumBuildTotal,
   parseSuggestion,
@@ -14,33 +15,41 @@ import {
 import { chatComplete, type ChatMessage } from "../ai/openai-client.js";
 import { keySpecs } from "../mappers/pc-build.mapper.js";
 import { BadRequestError, ServiceUnavailableError } from "../middleware/errors.js";
-import { formatMoneyLabel } from "../search/price-intent.js";
+import { fitToBudget, type BuildCandidates } from "../pc-build/budget-fit.js";
 import { checkBuild, type BuildPart, type BuildParts } from "../pc-build/compatibility.js";
 import { BUILD_SLOTS } from "../pc-build/slots.js";
+import { formatMoneyLabel } from "../search/price-intent.js";
 import type { AiBuildSuggestionDto } from "../types/dto.js";
+import { formatPrice } from "../utils/format.js";
 import { loadSellableComponents, saveBuild } from "./pc-build.service.js";
 
 interface Attempt {
   suggestion: ParsedSuggestion | null;
+  parts: BuildParts;
   issues: string[];
 }
 
-function evaluate(reply: string, catalog: Catalog, partById: Map<string, BuildPart>): Attempt {
-  const suggestion = parseSuggestion(reply, catalog);
-  if (!suggestion) return { suggestion: null, issues: [UNREADABLE_REPLY_ISSUE] };
-
+function partsOf(suggestion: ParsedSuggestion, partById: Map<string, BuildPart>): BuildParts {
   const parts: BuildParts = {};
   for (const slot of BUILD_SLOTS) {
     const pick = suggestion.picks[slot];
     const part = pick ? partById.get(pick.productId) : undefined;
     if (pick && part) parts[slot] = { ...part, quantity: pick.quantity };
   }
-  return { suggestion, issues: findRepairIssues(suggestion, checkBuild(parts), catalog) };
+  return parts;
+}
+
+function evaluate(reply: string, catalog: Catalog, partById: Map<string, BuildPart>): Attempt {
+  const suggestion = parseSuggestion(reply, catalog);
+  if (!suggestion) return { suggestion: null, parts: {}, issues: [UNREADABLE_REPLY_ISSUE] };
+  const parts = partsOf(suggestion, partById);
+  return { suggestion, parts, issues: findRepairIssues(suggestion, checkBuild(parts), catalog) };
 }
 
 /**
  * Toàn bộ linh kiện còn hàng (~94 món) đưa hết vào prompt thay vì truy hồi bằng embedding: danh sách nhỏ, truy
- * hồi top-K có thể bỏ sót đúng món cần, và không tốn quota embedding. Lượt đầu có vấn đề thì cho AI sửa đúng 1 lần.
+ * hồi top-K có thể bỏ sót đúng món cần, và không tốn quota embedding. Lượt đầu có vấn đề thì cho AI sửa đúng 1 lần;
+ * vẫn vượt ngân sách thì hệ thống tự đổi vài món sang món rẻ hơn bằng luật cố định (không tốn thêm lượt gọi AI).
  */
 export async function suggestBuild(userId: string | null, prompt: string): Promise<AiBuildSuggestionDto> {
   const components = await loadSellableComponents();
@@ -90,10 +99,44 @@ export async function suggestBuild(userId: string | null, prompt: string): Promi
     throw new ServiceUnavailableError("AI chưa đưa ra được cấu hình hợp lệ. Vui lòng thử lại, hoặc tự chọn linh kiện bên dưới.");
   }
 
+  // Bước cuối, KHÔNG dùng AI: AI (kể cả sau lượt sửa) vẫn chọn vượt ngân sách thì đổi vài món sang món rẻ hơn cùng loại,
+  // giữ lâu nhất loại quan trọng với nhu cầu, chỉ nhận phương án không lỗi tương thích (pc-build/budget-fit.ts)
+  let picks = suggestion.picks;
+  let notes = suggestion.notes;
+  let budgetFit: AiBuildSuggestionDto["budgetFit"] = { status: "NOT_NEEDED", swaps: [] };
+  if (suggestion.budget !== null && checkBuild(attempt.parts).totalPrice > suggestion.budget) {
+    const candidates: BuildCandidates = {};
+    for (const { slot, part } of components) (candidates[slot] ??= []).push(part);
+    const fit = fitToBudget(attempt.parts, candidates, suggestion.budget, downgradeWeights(suggestion.purpose));
+
+    if (fit) {
+      const nameOf = new Map(entries.map((entry) => [entry.productId, entry.name]));
+      const product = (part: BuildPart) => ({ productId: part.productId, name: nameOf.get(part.productId) ?? "", price: part.price, quantity: part.quantity });
+      picks = { ...picks };
+      notes = { ...notes };
+      for (const { slot, to } of fit.swaps) {
+        picks[slot] = { productId: to.productId, quantity: to.quantity };
+        delete notes[slot]; // lý do AI viết cho món cũ, không còn đúng
+      }
+      budgetFit = {
+        status: "FITTED",
+        swaps: fit.swaps.map(({ slot, from, to }) => ({ slot, from: product(from), to: product(to) })),
+      };
+      console.info(
+        `[ai-build] Vẫn vượt ngân sách ${formatPrice(suggestion.budget)} — hệ thống đổi ${fit.swaps.length} món, tổng còn ${formatPrice(fit.result.totalPrice)}: ${budgetFit.swaps
+          .map((swap) => `${swap.slot} ${swap.from.name} -> ${swap.to.name}`)
+          .join("; ")}`,
+      );
+    } else {
+      budgetFit = { status: "NOT_POSSIBLE", swaps: [] };
+      console.info(`[ai-build] Vẫn vượt ngân sách ${formatPrice(suggestion.budget)} và không có cách đổi nào vừa ngân sách mà vẫn tương thích`);
+    }
+  }
+
   const build = await saveBuild(userId, {
     name: suggestionName(suggestion.purpose, suggestion.budget),
     items: BUILD_SLOTS.flatMap((slot) => {
-      const pick = suggestion.picks[slot];
+      const pick = picks[slot];
       return pick ? [{ productId: pick.productId, quantity: pick.quantity }] : [];
     }),
     ai: { prompt, purpose: suggestion.purpose, budget: suggestion.budget },
@@ -104,10 +147,11 @@ export async function suggestBuild(userId: string | null, prompt: string): Promi
     understood: { budget: suggestion.budget, purpose: suggestion.purpose },
     summary: suggestion.summary,
     notes: BUILD_SLOTS.flatMap((slot) => {
-      const text = suggestion.notes[slot];
+      const text = notes[slot];
       return text ? [{ slot, text }] : [];
     }),
     repair,
+    budgetFit,
     droppedCount: suggestion.rejectedCodes.length,
   };
 }

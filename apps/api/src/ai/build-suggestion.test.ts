@@ -1,8 +1,10 @@
 // Kiểm thử phần AI gợi ý cấu hình không cần gọi AI/DB. Chạy: npx tsx src/ai/build-suggestion.test.ts
 import type { BuildCheckResult } from "../pc-build/compatibility.js";
 import {
+  BUILD_PURPOSES,
   buildCatalog,
   buildRepairMessage,
+  downgradeWeights,
   findRepairIssues,
   formatCatalog,
   parseSuggestion,
@@ -170,6 +172,22 @@ console.log("\n[5] Tên cấu hình");
 {
   check("có ngân sách", suggestionName("Chơi game", 20_000_000), "Gợi ý AI · Chơi game · 20 triệu");
   check("không nêu ngân sách", suggestionName("Đa dụng", null), "Gợi ý AI · Đa dụng");
+}
+
+console.log("\n[6] Thứ tự giữ lại khi hệ thống tự hạ cấp cho vừa ngân sách");
+{
+  const mostKept = (purpose: (typeof BUILD_PURPOSES)[number]) =>
+    Object.entries(downgradeWeights(purpose)).sort(([, a], [, b]) => b - a)[0][0];
+  check("chơi game: card đồ họa được giữ lâu nhất", mostKept("Chơi game"), "VGA");
+  check("văn phòng: CPU được giữ lâu hơn card rời", downgradeWeights("Văn phòng - học tập").CPU > downgradeWeights("Văn phòng - học tập").VGA, true);
+  check(
+    "mọi nhu cầu đủ 7 loại, trọng số dương, vỏ case luôn cắt trước",
+    BUILD_PURPOSES.every((purpose) => {
+      const weights = Object.values(downgradeWeights(purpose));
+      return weights.length === 7 && weights.every((weight) => weight > 0) && Math.min(...weights) === downgradeWeights(purpose).CASE;
+    }),
+    true,
+  );
 }
 
 console.log(`\n===== ${passed} pass / ${failed} fail =====`);

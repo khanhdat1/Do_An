@@ -14,6 +14,22 @@ export type BuildPurpose = (typeof BUILD_PURPOSES)[number];
 /** Nhu cầu này thì bắt buộc có card đồ họa rời, kể cả khi CPU có đồ họa tích hợp */
 const NEEDS_DISCRETE_GPU: readonly BuildPurpose[] = ["Chơi game", "Đồ họa - dựng video", "Lập trình - AI"];
 
+/**
+ * Bước tự điều chỉnh cho vừa ngân sách (không dùng AI — pc-build/budget-fit.ts): mức "tiếc" khi phải hạ cấp từng loại, càng
+ * cao càng được giữ lâu. Chỉ để xếp thứ tự đánh đổi giữa các loại theo nhu cầu, không phải điểm hiệu năng.
+ */
+const DOWNGRADE_WEIGHTS: Record<BuildPurpose, Record<BuildSlot, number>> = {
+  "Chơi game": { VGA: 3, CPU: 1.5, RAM: 1, SSD: 0.8, MAINBOARD: 0.6, PSU: 0.6, CASE: 0.4 },
+  "Đồ họa - dựng video": { CPU: 2, VGA: 2, RAM: 1.5, SSD: 1, MAINBOARD: 0.6, PSU: 0.6, CASE: 0.4 },
+  "Lập trình - AI": { CPU: 2, VGA: 2, RAM: 1.5, SSD: 1, MAINBOARD: 0.6, PSU: 0.6, CASE: 0.4 },
+  "Văn phòng - học tập": { CPU: 1.5, RAM: 1.2, SSD: 1.2, VGA: 0.6, MAINBOARD: 0.6, PSU: 0.6, CASE: 0.4 },
+  "Đa dụng": { CPU: 1.5, VGA: 1.5, RAM: 1.2, SSD: 1, MAINBOARD: 0.6, PSU: 0.6, CASE: 0.4 },
+};
+
+export function downgradeWeights(purpose: BuildPurpose): Record<BuildSlot, number> {
+  return DOWNGRADE_WEIGHTS[purpose];
+}
+
 const MIN_BUDGET = 1_000_000;
 const MAX_BUDGET = 1_000_000_000;
 const SUMMARY_MAX_LENGTH = 1200;

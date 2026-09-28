@@ -329,12 +329,26 @@ export interface SavedBuildSummary {
   itemCount: number;
 }
 
+/** Một món hệ thống tự đổi sang món rẻ hơn cùng loại để vừa ngân sách (đơn giá lúc gợi ý; RAM có thể đổi cả số thanh) */
+export interface BudgetSwap {
+  slot: BuildSlot;
+  from: { productId: string; name: string; price: number; quantity: number };
+  to: { productId: string; name: string; price: number; quantity: number };
+}
+
 export interface AiBuildSuggestion {
   build: SavedBuild;
   /** Ngân sách/nhu cầu AI hiểu từ câu của khách */
   understood: { budget: number | null; purpose: string };
+  /** AI viết cho lựa chọn của nó — khi `budgetFit` là FITTED, vài món đã được hệ thống đổi sau đó */
   summary: string;
+  /** Đã bỏ lý do của những món hệ thống đổi */
   notes: { slot: BuildSlot; text: string }[];
+  /**
+   * Bước cuối, không dùng AI: vẫn vượt ngân sách thì hệ thống đổi vài món sang món rẻ hơn mà vẫn tương thích.
+   * NOT_NEEDED: không vượt / không nêu ngân sách; FITTED: đã đổi; NOT_POSSIBLE: không có cách đổi nào hợp lệ
+   */
+  budgetFit: { status: "NOT_NEEDED" | "FITTED" | "NOT_POSSIBLE"; swaps: BudgetSwap[] };
   /**
    * NOT_NEEDED: lượt đầu đạt; REPAIRED: đang hiện lượt sửa (không tệ hơn lượt đầu, nhưng vẫn có thể còn vấn đề);
    * FAILED: lượt sửa lỗi/không đọc được/tệ hơn, đang hiện lượt đầu
