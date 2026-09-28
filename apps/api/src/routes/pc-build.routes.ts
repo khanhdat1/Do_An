@@ -90,11 +90,14 @@ pcBuildRouter.get("/builds", noStore, authenticate, requireAuth, async (req, res
 
 const codeParam = z.object({ code: z.string().trim().min(1).max(20) });
 
-/** GET /api/pc-build/builds/:code — công khai: ai có link cũng mở được */
-pcBuildRouter.get("/builds/:code", async (req, res, next) => {
+/**
+ * GET /api/pc-build/builds/:code — công khai: ai có link cũng mở được. Đăng nhập thì thêm `isMine` đúng theo tài
+ * khoản (kết quả khác nhau theo người xem nên không cho cache).
+ */
+pcBuildRouter.get("/builds/:code", noStore, authenticate, async (req, res, next) => {
   try {
     const { code } = codeParam.parse(req.params);
-    res.json(await getSavedBuild(code));
+    res.json(await getSavedBuild(code, req.auth?.userId ?? null));
   } catch (error) {
     next(error);
   }

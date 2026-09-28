@@ -427,6 +427,8 @@ export interface SavedBuildDto {
   totalAtSave: number;
   isValidAtSave: boolean;
   items: { productId: string; slot: BuildSlotDto; quantity: number }[];
+  /** Thuộc tài khoản đang gọi API (nằm trong "Cấu hình của tôi"); khách hoặc cấu hình người khác chia sẻ → false */
+  isMine: boolean;
 }
 
 /** `GET /api/pc-build/builds` — trang "Cấu hình của tôi" */
@@ -449,7 +451,7 @@ export interface AiBuildSuggestionDto {
   summary: string;
   notes: { slot: BuildSlotDto; text: string }[];
   /**
-   * NOT_NEEDED: lượt đầu đã đạt. REPAIRED: lượt đầu có vấn đề, đang hiện câu trả lời sau khi AI sửa 1 lần.
+   * NOT_NEEDED: lượt đầu đã đạt. REPAIRED: lượt đầu có vấn đề, đang hiện câu trả lời sau khi AI sửa 1 lần (không tệ hơn lượt đầu, nhưng vẫn có thể còn vấn đề).
    * FAILED: lượt đầu có vấn đề nhưng AI không sửa được (dịch vụ bận, hoặc lượt sửa còn tệ hơn) — đang hiện lượt đầu.
    */
   repair: "NOT_NEEDED" | "REPAIRED" | "FAILED";

@@ -302,6 +302,48 @@ export interface BuildComponentList {
   items: BuildCandidate[];
 }
 
+/** Cấu hình đã lưu — bản chụp bất biến, mở bằng `/ai-build-pc?build=<code>`; giá/kiểm tra luôn tính lại lúc mở */
+export interface SavedBuild {
+  code: string;
+  name: string;
+  purpose: string | null;
+  budget: number | null;
+  isAiGenerated: boolean;
+  aiPrompt: string | null;
+  createdAt: string;
+  totalAtSave: number;
+  isValidAtSave: boolean;
+  items: { productId: string; slot: BuildSlot; quantity: number }[];
+  /** Thuộc tài khoản đang đăng nhập. Trang tải ở server không kèm cookie nên luôn là false — cần hỏi lại từ trình duyệt */
+  isMine: boolean;
+}
+
+export interface SavedBuildSummary {
+  code: string;
+  name: string;
+  purpose: string | null;
+  isAiGenerated: boolean;
+  createdAt: string;
+  totalAtSave: number;
+  isValidAtSave: boolean;
+  itemCount: number;
+}
+
+export interface AiBuildSuggestion {
+  build: SavedBuild;
+  /** Ngân sách/nhu cầu AI hiểu từ câu của khách */
+  understood: { budget: number | null; purpose: string };
+  summary: string;
+  notes: { slot: BuildSlot; text: string }[];
+  /**
+   * NOT_NEEDED: lượt đầu đạt; REPAIRED: đang hiện lượt sửa (không tệ hơn lượt đầu, nhưng vẫn có thể còn vấn đề);
+   * FAILED: lượt sửa lỗi/không đọc được/tệ hơn, đang hiện lượt đầu
+   */
+  repair: "NOT_NEEDED" | "REPAIRED" | "FAILED";
+  /** Số mã AI đưa ra nhưng không có trong kho nên bị bỏ */
+  droppedCount: number;
+}
+
 /** Một sản phẩm trong hộp gợi ý khi gõ ở ô tìm kiếm */
 export interface SuggestProduct {
   slug: string;

@@ -107,7 +107,8 @@ export const savedBuildInclude = {
 
 export type SavedBuildRow = Prisma.PcBuildGetPayload<{ include: typeof savedBuildInclude }>;
 
-export function toSavedBuildDto(row: SavedBuildRow): SavedBuildDto {
+/** `viewerId`: tài khoản đang xem (null = khách) — chỉ dùng để trả `isMine`, không lộ chủ cấu hình là ai */
+export function toSavedBuildDto(row: SavedBuildRow, viewerId: string | null): SavedBuildDto {
   const items = row.items.flatMap((item) => (isBuildSlot(item.componentType) ? [{ productId: item.productId, slot: item.componentType, quantity: item.quantity }] : []));
   items.sort((a, b) => BUILD_SLOTS.indexOf(a.slot) - BUILD_SLOTS.indexOf(b.slot));
   return {
@@ -121,6 +122,7 @@ export function toSavedBuildDto(row: SavedBuildRow): SavedBuildDto {
     totalAtSave: Number(row.totalPrice),
     isValidAtSave: row.isValid,
     items,
+    isMine: row.userId !== null && row.userId === viewerId,
   };
 }
 

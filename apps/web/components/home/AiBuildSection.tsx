@@ -1,23 +1,23 @@
 import Link from "next/link";
-import { ArrowRight, Check, Gauge, Link2, ListChecks, ShieldCheck, Wrench } from "lucide-react";
+import { ArrowRight, Check, Link2, ListChecks, ShieldCheck, Sparkles, Wrench } from "lucide-react";
 
 const features = [
   {
-    icon: ShieldCheck,
-    title: "Kiểm tra tức thì",
-    description: "Socket CPU – mainboard, chuẩn và số khe RAM, cỡ mainboard và chiều dài card so với vỏ case.",
+    icon: Sparkles,
+    title: "AI gợi ý cả bộ",
+    description: "Nêu ngân sách và nhu cầu, AI chọn đủ linh kiện đang bán; hệ thống kiểm tra lại, sai thì cho AI sửa.",
     tone: "bg-gold-400/15 text-gold-600",
   },
   {
-    icon: Gauge,
-    title: "Ước tính công suất",
-    description: "Cộng điện năng CPU và card đồ họa, gợi ý nguồn dư 30% và so với mức hãng card khuyến nghị.",
+    icon: ShieldCheck,
+    title: "Kiểm tra tức thì",
+    description: "Socket, chuẩn và số khe RAM, cỡ mainboard, chiều dài card so với vỏ case, công suất nguồn.",
     tone: "bg-blue-50 text-blue-600",
   },
   {
     icon: Link2,
-    title: "Chia sẻ & mua nhanh",
-    description: "Cấu hình nằm trên đường dẫn để gửi cho bạn bè; thêm cả bộ vào giỏ hàng bằng một nút.",
+    title: "Lưu & chia sẻ",
+    description: "Lưu cấu hình thành link ngắn để gửi bạn bè; thêm cả bộ vào giỏ hàng bằng một nút.",
     tone: "bg-emerald-50 text-emerald-600",
   },
 ];
@@ -44,15 +44,15 @@ export default function AiBuildSection() {
           Công cụ Build PC
         </span>
 
-        <h2 className="section-title mt-2 text-2xl sm:text-3xl">Tự build PC, kiểm tra tương thích tự động</h2>
+        <h2 className="section-title mt-2 text-2xl sm:text-3xl">Tự build PC hoặc nhờ AI gợi ý cả bộ</h2>
 
         {/* min-w-0 để cột phải co lại được, tránh tràn ngang trên mobile */}
         <div className="mt-5 grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
           {/* Cột trái: mô tả + 3 lợi ích + CTA */}
           <div>
             <p className="max-w-xl text-sm leading-relaxed text-slate-600">
-              Chọn từng linh kiện đang bán tại PCZone, hệ thống tự kiểm tra độ tương thích theo thông số sản phẩm, ước tính
-              công suất nguồn và tính tổng tiền. Thông số nào còn thiếu sẽ được báo rõ, không đoán.
+              Nêu ngân sách để AI gợi ý cả bộ từ linh kiện đang bán, hoặc tự chọn từng món. Hệ thống luôn kiểm tra tương thích
+              theo thông số sản phẩm, ước tính công suất nguồn và tính tổng tiền — thông số nào còn thiếu sẽ được báo rõ, không đoán.
             </p>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -67,14 +67,23 @@ export default function AiBuildSection() {
               ))}
             </div>
 
-            <Link
-              href="/ai-build-pc"
-              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-3 text-xs font-bold uppercase tracking-wide text-white transition hover:bg-brand-600"
-            >
-              <Wrench className="size-4" />
-              Bắt đầu Build PC
-              <ArrowRight className="size-4" />
-            </Link>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Link
+                href="/ai-build-pc#ai-goi-y"
+                className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-3 text-xs font-bold uppercase tracking-wide text-white transition hover:bg-brand-600"
+              >
+                <Sparkles className="size-4" />
+                Nhờ AI gợi ý
+                <ArrowRight className="size-4" />
+              </Link>
+              <Link
+                href="/ai-build-pc"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-xs font-bold uppercase tracking-wide text-slate-700 transition hover:border-brand-400 hover:text-brand-600"
+              >
+                <Wrench className="size-4" />
+                Tự chọn linh kiện
+              </Link>
+            </div>
           </div>
 
           {/* Cột phải: hệ thống kiểm tra những gì */}

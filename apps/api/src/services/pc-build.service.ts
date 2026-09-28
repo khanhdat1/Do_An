@@ -161,7 +161,7 @@ export async function saveBuild(userId: string | null, input: SaveBuildInput): P
         },
         include: savedBuildInclude,
       });
-      return toSavedBuildDto(row);
+      return toSavedBuildDto(row, userId);
     } catch (error) {
       // Trùng shareCode (rất hiếm) thì sinh mã khác
       if (!isUniqueViolation(error) || attempt >= SAVE_ATTEMPTS) throw error;
@@ -169,11 +169,11 @@ export async function saveBuild(userId: string | null, input: SaveBuildInput): P
   }
 }
 
-/** Ai có link cũng xem được — không cần đăng nhập */
-export async function getSavedBuild(code: string): Promise<SavedBuildDto> {
+/** Ai có link cũng xem được — không cần đăng nhập; `viewerId` chỉ để biết cấu hình có phải của người đang xem */
+export async function getSavedBuild(code: string, viewerId: string | null): Promise<SavedBuildDto> {
   const row = isShareCode(code) ? await prisma.pcBuild.findUnique({ where: { shareCode: code }, include: savedBuildInclude }) : null;
   if (!row) throw new NotFoundError("Không tìm thấy cấu hình đã lưu — link có thể sai hoặc cấu hình đã bị xoá");
-  return toSavedBuildDto(row);
+  return toSavedBuildDto(row, viewerId);
 }
 
 export async function listMyBuilds(userId: string): Promise<SavedBuildSummaryDto[]> {
