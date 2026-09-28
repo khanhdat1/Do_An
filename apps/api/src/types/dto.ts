@@ -443,13 +443,28 @@ export interface SavedBuildSummaryDto {
   itemCount: number;
 }
 
+/** Một món hệ thống tự đổi sang món rẻ hơn cùng loại để vừa ngân sách (đơn giá lúc gợi ý; RAM có thể đổi cả số thanh) */
+export interface BudgetSwapDto {
+  slot: BuildSlotDto;
+  from: { productId: string; name: string; price: number; quantity: number };
+  to: { productId: string; name: string; price: number; quantity: number };
+}
+
 /** `POST /api/ai/build` — gợi ý đã được kiểm tra bằng bộ luật và lưu lại (có link ngắn) */
 export interface AiBuildSuggestionDto {
   build: SavedBuildDto;
   /** Ngân sách/nhu cầu AI hiểu từ câu của khách — hiện ra để khách tự kiểm tra */
   understood: { budget: number | null; purpose: string };
+  /** AI viết cho lựa chọn CỦA NÓ — khi `budgetFit` là FITTED, vài món đã được hệ thống đổi sau đó */
   summary: string;
+  /** Lý do AI chọn từng món; bỏ những món hệ thống đã đổi (lý do cũ không còn đúng) */
   notes: { slot: BuildSlotDto; text: string }[];
+  /**
+   * Bước cuối, KHÔNG dùng AI: AI (kể cả sau lượt sửa) vẫn chọn vượt ngân sách thì hệ thống tự đổi vài món sang món rẻ hơn cùng
+   * loại, chỉ nhận phương án đủ linh kiện, không lỗi tương thích. NOT_NEEDED: không vượt hoặc không nêu ngân sách;
+   * FITTED: đã đổi (xem `swaps`); NOT_POSSIBLE: không có cách đổi nào vừa ngân sách mà vẫn tương thích.
+   */
+  budgetFit: { status: "NOT_NEEDED" | "FITTED" | "NOT_POSSIBLE"; swaps: BudgetSwapDto[] };
   /**
    * NOT_NEEDED: lượt đầu đã đạt. REPAIRED: lượt đầu có vấn đề, đang hiện câu trả lời sau khi AI sửa 1 lần (không tệ hơn lượt đầu, nhưng vẫn có thể còn vấn đề).
    * FAILED: lượt đầu có vấn đề nhưng AI không sửa được (dịch vụ bận, hoặc lượt sửa còn tệ hơn) — đang hiện lượt đầu.

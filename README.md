@@ -520,6 +520,16 @@ kiểm tra lại** → nạp vào màn hình Build PC để khách xem, sửa, t
   ERROR, thiếu linh kiện bắt buộc hoặc tổng tiền thật vượt ngân sách, server gửi đúng danh sách vấn đề cho AI sửa một
   lần; vẫn sai thì hiện thẳng kèm lỗi, không che. Cảnh báo "thiếu dữ liệu" không kích hoạt sửa (AI không tạo ra được dữ
   liệu còn thiếu).
+- **Vẫn vượt ngân sách sau lượt sửa → hệ thống tự điều chỉnh, không dùng AI** (`apps/api/src/pc-build/budget-fit.ts`, hàm
+  thuần có test; 3 lượt thử thật đều thấy model miễn phí vẫn vượt ngân sách 9–44% dù đã được nhắc). Chỉ đổi món đang có sang món **rẻ hơn
+  cùng loại**, không thêm/bớt loại; chỉ nhận phương án đủ linh kiện, **không có lỗi tương thích** (chạy lại đúng 9 luật ở
+  trên) và tổng không vượt ngân sách. Trong các phương án đó, chọn cái **ít thiệt nhất**: thiệt = số tiền bớt ở mỗi loại ×
+  trọng số theo nhu cầu (chơi game giữ card đồ họa lâu nhất; vỏ case, nguồn, mainboard bị cắt trước — bảng trọng số ở
+  `downgradeWeights()` trong `build-suggestion.ts`), cộng một khoản phạt nhỏ cho mỗi món phải đổi và khoản phạt lớn cho mỗi
+  cảnh báo mới phát sinh. RAM được đổi cả số thanh (1 thanh 16GB đắt → 2 thanh 8GB rẻ) nhưng tổng không xuống dưới 16GB
+  (trừ khi AI vốn chọn ít hơn). Duyệt nhánh-và-cận nên chạy dưới vài mili-giây với kho hiện tại. Thẻ gợi ý liệt kê từng món
+  đã đổi (cũ → mới, bớt bao nhiêu); lời giải thích AI viết cho những món bị đổi được bỏ đi, phần tóm tắt của AI ghi rõ là
+  viết cho lựa chọn ban đầu. Không tìm được cách đổi hợp lệ thì giữ nguyên và báo thẳng là vẫn vượt ngân sách.
 - **Tổng tiền và kết luận tương thích luôn do hệ thống tính**, không lấy lời AI. Phần giải thích từng món do AI viết và
   được ghi rõ như vậy; prompt cấm AI nêu số FPS/benchmark hay tự cộng tiền. Trang hiện "AI hiểu: ngân sách … · nhu cầu …"
   để khách tự kiểm tra AI có hiểu đúng không.

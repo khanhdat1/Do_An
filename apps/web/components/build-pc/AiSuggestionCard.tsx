@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Sparkles, TriangleAlert, X } from "lucide-react";
+import { Copy, Scale, Sparkles, TriangleAlert, X } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { formatPrice } from "@/lib/format";
 import { SLOT_LABEL, savedBuildUrl, type BuildSelection } from "@/lib/pc-build";
@@ -24,15 +24,20 @@ export default function AiSuggestionCard({ suggestion, selection, result, onDism
   const notes = suggestion.notes.filter((note) => selection[note.slot]?.productId === suggested.get(note.slot));
   const total = result?.totalPrice ?? null;
 
-  // "Đã sửa" chỉ nghĩa là lượt sửa không tệ hơn lượt đầu — vẫn có thể còn lỗi/vượt ngân sách, nên xét lại bản đã lưu
-  const { build } = suggestion;
+  // Xét trên bản đã lưu (sau lượt AI sửa và bước hệ thống tự điều chỉnh): "đã sửa" chỉ nghĩa là lượt sửa không tệ hơn lượt đầu
+  const { build, budgetFit } = suggestion;
   const stillHasIssues = !build.isValidAtSave || (budget !== null && build.totalAtSave > budget);
-  const repairNote =
-    suggestion.repair === "FAILED"
-      ? "Lựa chọn đầu tiên của AI còn vấn đề và lượt nhờ AI sửa không cải thiện được."
-      : suggestion.repair === "REPAIRED" && stillHasIssues
-        ? "AI đã sửa 1 lần nhưng cấu hình vẫn còn vấn đề."
-        : null;
+  const problemNote = !stillHasIssues
+    ? null
+    : budgetFit.status === "NOT_POSSIBLE"
+      ? "Cấu hình vẫn vượt ngân sách: AI chưa chọn được bộ vừa tiền và hệ thống cũng không tìm được cách đổi sang linh kiện rẻ hơn mà vẫn tương thích."
+      : suggestion.repair === "FAILED"
+        ? "Lựa chọn đầu tiên của AI còn vấn đề và lượt nhờ AI sửa không cải thiện được."
+        : suggestion.repair === "REPAIRED"
+          ? "AI đã sửa 1 lần nhưng cấu hình vẫn còn vấn đề."
+          : null;
+  const fittedSwaps = budgetFit.status === "FITTED" ? budgetFit.swaps : [];
+  const fittedSaving = fittedSwaps.reduce((sum, swap) => sum + swap.from.price * swap.from.quantity - swap.to.price * swap.to.quantity, 0);
 
   async function copyLink() {
     try {
@@ -83,14 +88,45 @@ export default function AiSuggestionCard({ suggestion, selection, result, onDism
         </p>
       ) : null}
 
-      {repairNote ? (
+      {problemNote ? (
         <p className="mt-3 flex gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs leading-relaxed text-red-700">
           <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
-          {repairNote} Xem tổng tiền và phần kiểm tra bên dưới, thử gợi ý lại hoặc tự đổi linh kiện.
+          {problemNote} Xem tổng tiền và phần kiểm tra bên dưới, thử gợi ý lại hoặc tự đổi linh kiện.
         </p>
       ) : null}
 
-      {suggestion.summary ? <p className="mt-3 text-sm leading-relaxed text-slate-700">{suggestion.summary}</p> : null}
+      {fittedSwaps.length > 0 ? (
+        <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 text-xs leading-relaxed text-slate-600 ring-1 ring-slate-200">
+          <p className="flex items-center gap-1.5 font-semibold text-slate-800">
+            <Scale className="size-4 shrink-0 text-brand-500" aria-hidden />
+            Hệ thống đã tự điều chỉnh cho vừa ngân sách
+          </p>
+          <p className="mt-1">
+            AI vẫn chọn vượt ngân sách, nên hệ thống (không dùng AI) đổi {fittedSwaps.length} món sang món rẻ hơn cùng loại — vẫn qua đủ
+            bộ kiểm tra tương thích, và giữ lâu nhất linh kiện quan trọng với nhu cầu &quot;{purpose}&quot;:
+          </p>
+          <ul className="mt-1.5 space-y-1">
+            {fittedSwaps.map((swap) => (
+              <li key={swap.slot}>
+                <span className="font-semibold text-slate-700">{SLOT_LABEL[swap.slot]}:</span> {swap.from.name} ({formatPrice(swap.from.price)}
+                {swap.from.quantity > 1 ? ` × ${swap.from.quantity}` : ""}) → <span className="font-semibold text-slate-800">{swap.to.name}</span> (
+                {formatPrice(swap.to.price)}
+                {swap.to.quantity > 1 ? ` × ${swap.to.quantity}` : ""})
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1.5 font-semibold text-emerald-700">Bớt được {formatPrice(fittedSaving)}</p>
+        </div>
+      ) : null}
+
+      {suggestion.summary ? (
+        <p className="mt-3 text-sm leading-relaxed text-slate-700">
+          {fittedSwaps.length > 0 ? (
+            <span className="block text-xs text-slate-500">Tóm tắt của AI (viết cho lựa chọn ban đầu, trước khi hệ thống đổi linh kiện):</span>
+          ) : null}
+          {suggestion.summary}
+        </p>
+      ) : null}
 
       {notes.length > 0 ? (
         <ul className="mt-3 space-y-1.5 text-sm leading-relaxed text-slate-600">
