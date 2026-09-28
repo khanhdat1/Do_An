@@ -112,7 +112,7 @@ export default function ReviewList({ productSlug }: { productSlug: string }) {
           <Link href={authHref("/dang-nhap", `/san-pham/${productSlug}`)} className="font-semibold text-brand-600 hover:underline">
             Đăng nhập
           </Link>{" "}
-          để viết đánh giá cho sản phẩm bạn đã mua.
+          để viết đánh giá cho sản phẩm bạn đã mua và nhận hàng.
         </p>
       ) : null}
 
@@ -128,7 +128,7 @@ export default function ReviewList({ productSlug }: { productSlug: string }) {
           <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
             {eligibility.hasReviewed
               ? "Bạn đã đánh giá sản phẩm này. Cảm ơn bạn!"
-              : "Bạn cần mua và hoàn tất thanh toán sản phẩm này trước khi đánh giá."}
+              : "Bạn đánh giá được sau khi đã nhận hàng — tức đơn có sản phẩm này đã được giao."}
           </p>
         )
       ) : null}

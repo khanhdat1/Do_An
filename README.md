@@ -321,8 +321,8 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | GET | `/api/vouchers/preview?code=&subtotal=` | Xem trước số tiền được giảm trước khi đặt hàng (cần đăng nhập, để kiểm tra lượt dùng của riêng người đó) |
 | GET | `/api/banners` | Dải banner khuyến mãi trang chủ đang hiện được (đã đăng + trong khoảng ngày hiệu lực), công khai |
 | GET | `/api/products/:slug/reviews?page=&pageSize=` | Đánh giá ĐÃ DUYỆT của một sản phẩm, công khai, mới nhất trước |
-| GET | `/api/products/:slug/reviews/eligibility` | Đã mua (đơn thanh toán xong) và còn đơn nào chưa dùng để đánh giá không (cần đăng nhập) |
-| POST | `/api/products/:slug/reviews` | Gửi đánh giá `{ rating, title?, content? }` — chỉ khách có đơn `paymentStatus=PAID` chứa sản phẩm này; vào hàng chờ duyệt, chưa hiện công khai ngay |
+| GET | `/api/products/:slug/reviews/eligibility` | Đã mua và nhận hàng (đơn đã giao) và còn đơn nào chưa dùng để đánh giá không (cần đăng nhập) |
+| POST | `/api/products/:slug/reviews` | Gửi đánh giá `{ rating, title?, content? }` — chỉ khách có đơn `status=DELIVERED` chứa sản phẩm này; vào hàng chờ duyệt, chưa hiện công khai ngay |
 | GET \| POST \| DELETE | `/api/admin/reviews`, `/:id/approve`, `/:id`, `/:id/reply` | Duyệt / xoá / trả lời đánh giá — cần quyền `products:read`/`products:write` (mục 11) |
 | GET | `/api/admin/products?status=&category=&brand=&search=&lowStockOnly=&page=` | Danh sách sản phẩm cho quản trị — thấy mọi trạng thái (kể cả DRAFT/HIDDEN/DISCONTINUED), giá vốn, tồn kho tuyệt đối — cần quyền `products:read` |
 | GET | `/api/admin/products/export?status=&category=&brand=&search=&lowStockOnly=` | File `.xlsx` TẤT CẢ sản phẩm khớp bộ lọc (không phân trang, đúng số liệu danh sách trên) — cần quyền `products:read` |
@@ -846,14 +846,14 @@ mọi lưới sản phẩm biết ngay trạng thái ban đầu mà không phả
 
 ## 10. Đánh giá sản phẩm — cách hoạt động
 
-Chỉ khách **đã mua và thanh toán xong** mới đánh giá được — cụ thể là có ít nhất một đơn
-`paymentStatus: PAID` chứa sản phẩm đó mà **chưa dùng để đánh giá lần nào** (`Review.orderId` +
+Chỉ khách **đã mua và nhận hàng** mới đánh giá được — cụ thể là có ít nhất một đơn **đã giao**
+(`status: DELIVERED`) chứa sản phẩm đó mà **chưa dùng để đánh giá lần nào** (`Review.orderId` +
 `@@unique([productId, userId, orderId])`: mua ở nhiều đơn khác nhau thì đánh giá được từng đó lần,
-mỗi đơn một lần). Dùng mốc "đã thanh toán" thay vì "đã giao hàng" — `paymentStatus` chuyển sang `PAID`
-khi VNPay báo về, hoặc nhân viên xác nhận tay ở `/admin/orders` (áp dụng cho cả COD, không chỉ chuyển
-khoản/MoMo). Hệ thống nay đã có đủ trạng thái giao hàng thật (mục 11, Đợt 2), nhưng tiêu chí đánh giá
-CHỦ Ý chưa đổi theo: bắt khách chờ tới khi nhân viên tự tay bấm đủ 4-5 bước mới cho đánh giá là một
-quyết định sản phẩm cần cân nhắc riêng, chưa nằm trong phạm vi Đợt 2 — đây là điểm có thể xem lại sau.
+mỗi đơn một lần). Trạng thái "đã giao" do nhân viên chuyển theo vòng đời đơn ở `/admin/orders` (mục 11,
+Đợt 2). Không xét `paymentStatus`: đơn COD có thể đã giao xong trước khi nhân viên ghi nhận tiền. Đơn đã
+hoàn hàng (`RETURNED`) không tính. Trước đây mốc là "đã thanh toán" vì lúc đó hệ thống chưa có trạng thái
+giao hàng thật; nay đã đổi theo đúng nghĩa "đã nhận hàng mới đánh giá". Đánh giá cũ gửi theo mốc cũ vẫn giữ
+nguyên.
 
 Đánh giá gửi lên luôn ở trạng thái **chờ duyệt** (`isApproved: false`), không hiện công khai ngay —
 nhân viên vào `/admin/reviews` (cần quyền `products:read`/`products:write` — mục 11) duyệt / xoá / trả
@@ -1093,7 +1093,8 @@ giá và banner trang chủ (Đợt 6) — toàn bộ lộ trình 6 đợt ban �
 khác ở trên (lấp khoảng trống còn lại của mục 1).
 
 **Chưa làm**: menu/bài viết/trang tĩnh (phần "quản trị nội dung" ngoài banner — người dùng xác nhận
-không cần ở đợt này), điểm thưởng PCPoints/hạng thành viên (kế hoạch riêng, chưa chốt ngưỡng cụ thể).
+không cần ở đợt này). Điểm thưởng/hạng thành viên đã **bỏ khỏi kế hoạch** (không cần thiết cho đồ án); chữ
+quảng cáo "PCPoints" ở trang đăng nhập cũng đã gỡ.
 
 ## 12. Tài khoản mẫu
 
@@ -1115,9 +1116,9 @@ không cần ở đợt này), điểm thưởng PCPoints/hạng thành viên (k
 - [x] Đặt hàng (`/thanh-toan`): sổ địa chỉ, tạo đơn có trừ kho trong transaction, huỷ đơn tự hoàn kho, lịch sử đơn (`/tai-khoan/don-hang`, `/don-hang/[code]`), tra cứu công khai (`/tra-cuu-don-hang`)
 - [x] Thanh toán VNPay Sandbox (mã ký/xác minh đầy đủ, có test; cần tự đăng ký tài khoản sandbox để bật — mục 9)
 - [x] Sản phẩm yêu thích (`/yeu-thich`) và mã giảm giá (`/khuyen-mai`, áp dụng được lúc đặt hàng)
-- [x] Đánh giá sản phẩm (`/san-pham/[slug]`, chỉ khách đã thanh toán mới gửi được, chờ duyệt ở `/admin/reviews` mới hiện công khai — mục 10)
+- [x] Đánh giá sản phẩm (`/san-pham/[slug]`, chỉ khách đã nhận hàng — đơn đã giao — mới gửi được, chờ duyệt ở `/admin/reviews` mới hiện công khai — mục 10)
 - [x] So sánh sản phẩm (`/so-sanh`, tối đa 4 sản phẩm, chỉ lưu ở trình duyệt qua localStorage — không cần đăng nhập, không gọi API mới; bảng gộp mọi nhãn thông số của các sản phẩm đã chọn)
-- [ ] Điểm thưởng (PCPoints) và hạng thành viên — cần thêm bảng mới, "PCPoints VIP hoàn tiền 5%" hiện mới là chữ quảng cáo ở trang đăng nhập
+- [x] Gỡ chữ quảng cáo không có thật (Bottleneck AI, Stress-test 24H, "tương thích 100%", 4.98/5, 150.000+ game thủ, PCPoints, AI PC Builder 3D, bảo hành On-site 2 giờ, nhãn cấu hình gắn lên ảnh minh hoạ) — trang chủ và trang đăng nhập chỉ nêu tính năng có thật. Điểm thưởng/hạng thành viên: đã bỏ khỏi kế hoạch
 - [ ] Làm lại giao diện Tổng quan tài khoản / danh sách đơn hàng theo phong cách bảng điều khiển (thẻ số liệu, dòng thời gian ngang) — đã bàn hướng làm, chưa triển khai
 - [x] Chuyển khoản ngân hàng (QR VietQR tự điền số tiền/nội dung) và ví MoMo (số điện thoại) làm thủ công, không qua cổng — xác nhận tay ở `/admin/orders` (mục 9, 11)
 - [ ] Cổng thanh toán thật cho thẻ quốc tế / trả góp (MoMo Business API, OnePay...) — mỗi cổng cần tự đăng ký tài khoản sandbox riêng như VNPay; thẻ ATM/Visa/Master nội địa đã dùng được ngay qua VNPay (mục 9)

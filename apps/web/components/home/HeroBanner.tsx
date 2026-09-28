@@ -9,17 +9,11 @@ import {
   Zap,
 } from "lucide-react";
 
+/** Chỉ nêu tính năng có thật trên site (Build PC kiểm tra tương thích, AI gợi ý cấu hình, lưu & chia sẻ cấu hình) */
 const highlights = [
-  "Tối ưu Bottleneck bằng AI",
-  "100% Linh kiện chính hãng",
-  "Lắp ráp & Stress-test 24H",
-];
-
-/** Các nhãn thông số nổi trên ảnh máy ở cột phải */
-const specPills = [
-  { label: "Intel Core i9-14900KS", position: "left-4 top-4" },
-  { label: "Custom Watercooling", position: "right-4 top-1/2 -translate-y-1/2" },
-  { label: "RTX 4090 OC 24GB", position: "bottom-4 left-4" },
+  "Kiểm tra tương thích linh kiện tự động",
+  "AI gợi ý cấu hình theo ngân sách",
+  "Lưu & chia sẻ cấu hình bằng link",
 ];
 
 /** Banner chính của trang chủ: thông điệp thương hiệu + CTA build PC. */
@@ -44,9 +38,9 @@ export default function HeroBanner() {
             </h1>
 
             <p className="mt-4 max-w-lg text-sm leading-relaxed text-slate-300">
-              Hiệu năng đồ họa đỉnh cao – Kiểm tra tương thích linh kiện tự động – Cam
-              kết linh kiện chính hãng kèm bảo hành On-site VIP tại nhà độc quyền
-              từ PCZone.
+              Tự chọn từng linh kiện hoặc nhờ AI gợi ý cả bộ theo ngân sách – hệ thống kiểm tra
+              tương thích, tính tổng tiền và công suất nguồn ngay khi chọn. Linh kiện chính hãng,
+              bảo hành theo chính sách của từng sản phẩm.
             </p>
 
             <ul className="mt-5 grid gap-2 text-xs text-slate-200 sm:grid-cols-2">
@@ -82,8 +76,7 @@ export default function HeroBanner() {
               <p className="flex min-w-0 flex-1 items-center gap-2 px-1.5 text-xs text-slate-300">
                 <MessageSquareText className="size-4 shrink-0 text-gold-400" />
                 <span className="line-clamp-1">
-                  Cần tìm PC đồ họa &amp; AI Render 25tr? Thử hỏi PCZone
-                  Copilot...
+                  Cần tìm PC đồ họa &amp; AI Render 25tr? Thử hỏi trợ lý AI của PCZone...
                 </span>
               </p>
               <Link
@@ -95,7 +88,7 @@ export default function HeroBanner() {
                 </span>
                 <span className="leading-tight">
                   <span className="flex items-center gap-1.5 text-[11px] font-bold text-white">
-                    AI Advisor
+                    Trợ lý AI
                     <span className="size-1.5 rounded-full bg-emerald-400" />
                   </span>
                   <span className="text-[10px] text-slate-400">
@@ -107,8 +100,9 @@ export default function HeroBanner() {
           </div>
 
           {/*
-            Cột ảnh + nhãn thông số. Ảnh chụp thật (không phải ảnh AI) từ Unsplash, dùng
-            theo giấy phép Unsplash: https://unsplash.com/photos/gaming-computer-setup-in-purple-light-2rQoMZLVXHc
+            Cột ảnh. Ảnh chụp thật (không phải ảnh AI) từ Unsplash, dùng theo giấy phép Unsplash:
+            https://unsplash.com/photos/gaming-computer-setup-in-purple-light-2rQoMZLVXHc — ảnh minh hoạ,
+            không gắn nhãn cấu hình vì không biết máy trong ảnh dùng linh kiện gì.
           */}
           <div className="relative aspect-4/3 w-full overflow-hidden rounded-xl bg-ink-950 ring-1 ring-white/10">
             <Image
@@ -119,18 +113,7 @@ export default function HeroBanner() {
               sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover"
             />
-            {/* Lớp tối nhẹ ở đáy để nhãn thông số luôn đọc được */}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-ink-950/60 to-transparent" />
-
-            {specPills.map((pill) => (
-              <span
-                key={pill.label}
-                className={`absolute ${pill.position} flex items-center gap-1.5 rounded-full bg-ink-950/85 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-white backdrop-blur-sm`}
-              >
-                <span className="size-1.5 rounded-full bg-gold-400" />
-                {pill.label}
-              </span>
-            ))}
           </div>
         </div>
       </div>

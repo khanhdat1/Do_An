@@ -13,31 +13,30 @@ export const mainNav: NavItem[] = [
   { label: "Gaming Gear", href: "/danh-muc/gaming-gear", icon: "Keyboard" },
 ];
 
-/** Các link nhỏ ở thanh trên cùng (top bar) */
+/** Các link nhỏ ở thanh trên cùng (top bar) — chỉ trỏ tới trang có thật; `icon` phải nằm trong bảng icon của TopBar.tsx */
 export const topBarLinks: NavItem[] = [
-  { label: "Hệ thống Showroom VIP", href: "/showroom", icon: "Store" },
-  { label: "Tra cứu bảo hành điện tử", href: "/bao-hanh", icon: "ShieldCheck" },
-  { label: "100% Chính hãng phân phối", href: "/chinh-hang", icon: "BadgeCheck" },
+  { label: "Tra cứu đơn hàng", href: "/tra-cuu-don-hang", icon: "ShieldCheck" },
+  { label: "Mã khuyến mãi", href: "/khuyen-mai", icon: "BadgeCheck" },
 ];
 
-/** Cột link trong footer */
+/** Cột link trong footer — chỉ trang có thật (chưa có trang giới thiệu/chính sách/tin tức nên không đặt link chết) */
 export const footerColumns = [
   {
-    title: "Về PCZone",
+    title: "Khám phá",
     links: [
-      { label: "Giới thiệu thương hiệu", href: "/gioi-thieu" },
-      { label: "Hệ thống 18 cửa hàng", href: "/showroom" },
-      { label: "Tuyển dụng kỹ sư", href: "/tuyen-dung" },
-      { label: "Tin tức công nghệ", href: "/tin-tuc" },
+      { label: "Danh mục sản phẩm", href: "/danh-muc" },
+      { label: "Build PC & AI gợi ý cấu hình", href: "/ai-build-pc" },
+      { label: "Trợ lý AI tư vấn", href: "/tro-ly-ai" },
+      { label: "So sánh sản phẩm", href: "/so-sanh" },
     ],
   },
   {
-    title: "Chính sách VIP",
+    title: "Mua sắm",
     links: [
-      { label: "Bảo hành On-site 24/7", href: "/chinh-sach/bao-hanh" },
-      { label: "Chính sách 1 đổi 1 trong 30 ngày", href: "/chinh-sach/doi-tra" },
-      { label: "Vận chuyển hỏa tốc 2 giờ", href: "/chinh-sach/van-chuyen" },
-      { label: "Chính sách bảo mật", href: "/chinh-sach/bao-mat" },
+      { label: "Tra cứu đơn hàng", href: "/tra-cuu-don-hang" },
+      { label: "Mã khuyến mãi", href: "/khuyen-mai" },
+      { label: "Sản phẩm yêu thích", href: "/yeu-thich" },
+      { label: "Giỏ hàng", href: "/gio-hang" },
     ],
   },
 ];
