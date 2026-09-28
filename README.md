@@ -290,6 +290,11 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | POST | `/api/ai/chat` | `{ message, conversationId? }` — trợ lý AI (trang `/tro-ly-ai`) trả lời dạng stream (SSE), chỉ nhắc sản phẩm có thật trong DB, kèm danh sách sản phẩm được trích dẫn; không cần đăng nhập |
 | GET | `/api/pc-build/components?type=cpu&mainboard=…` | Linh kiện đang bán của một ô (`cpu`, `mainboard`, `ram`, `vga`, `ssd`, `psu`, `case`), mỗi món kèm huy hiệu tương thích với các món đã chọn (mục "Build PC") |
 | POST | `/api/pc-build/validate` | `{ items: [{ productId, quantity? }] }` — kiểm tra tương thích, tổng tiền theo giá mới nhất, công suất ước tính (mục "Build PC") |
+| POST | `/api/ai/build` | `{ prompt }` (5–500 ký tự) — AI gợi ý cả bộ linh kiện theo ngân sách/nhu cầu, bộ luật Build PC soát lại, lưu kèm link ngắn. Không cần đăng nhập; 5 lượt/phút; 503 nếu AI chưa cấu hình/đang lỗi (mục "Build PC") |
+| POST | `/api/pc-build/builds` | `{ name, items }` — lưu bản chụp cấu hình, trả mã ngắn `code`. Không cần đăng nhập (đã đăng nhập thì gắn vào tài khoản); 20 lượt/10 phút |
+| GET | `/api/pc-build/builds/:code` | Mở cấu hình đã lưu bằng mã ngắn (công khai, ai có link đều mở được) |
+| GET | `/api/pc-build/builds` | Cấu hình đã lưu của tài khoản đang đăng nhập (trang `/tai-khoan/cau-hinh`), mới nhất trước |
+| DELETE | `/api/pc-build/builds/:code` | Xoá cấu hình của chính mình — cấu hình của người khác trả 404 |
 | POST | `/api/auth/register` | Đăng ký, đăng nhập luôn, gộp giỏ hàng khách |
 | POST | `/api/auth/login` | `{ email, password, remember? }` — đăng nhập, gộp giỏ hàng khách vào tài khoản |
 | POST | `/api/auth/refresh` | Đổi refresh token (cookie) lấy cặp token mới |
@@ -475,7 +480,7 @@ bộ máy từ khoá ở trên, vốn chỉ khớp được đúng chữ (có s�
   biến môi trường, có mặc định sẵn nhưng nên xác nhận lại tên model hiện có trên tài khoản trước khi dùng thật — các
   hãng AI đổi tên model khá nhanh.
 - **Đây là nền tảng dùng chung cho cả AI Chat và AI Build PC** (`apps/api/src/ai/retrieval.ts`) — AI Chat (trang
-  `/tro-ly-ai`) đã dùng; phần AI đề xuất cấu hình cho Build PC chưa làm, xem mục 13.
+  `/tro-ly-ai`) đã dùng. Riêng AI gợi ý cấu hình Build PC **không** dùng embedding — xem mục "Build PC".
 
 `npm test -w @pczone/api` chạy bộ kiểm tra của bộ máy tìm kiếm (chuẩn hoá chữ, mức giá, đồng nghĩa, lỗi gõ, xếp hạng, bộ lọc).
 
@@ -498,9 +503,39 @@ này** — kiểm tra bằng luật cố định, nên luôn chạy được k�
 - **Công suất ước tính** = CPU (mức tối đa hãng công bố nếu có, không thì TDP) + card đồ họa (TDP) + 80 W ước tính chung
   cho phần còn lại; nguồn nên từ ⌈ước tính × 1,3⌉ trở lên, đồng thời không dưới mức nguồn hãng card khuyến nghị.
 - **Chia sẻ qua đường dẫn** (`/ai-build-pc?cpu=…&mainboard=…&ram=…&ramQty=2`): mở lại là đọc giá/tồn kho mới và kiểm tra
-  lại; id không còn bán thì tự bỏ ra. Chưa lưu cấu hình vào DB (bảng `PcBuild`) ở bước này.
+  lại; id không còn bán thì tự bỏ ra.
 - "Thêm cả bộ vào giỏ hàng" thêm **tuần tự từng món** — khách chưa có giỏ mà gọi song song thì mỗi request sẽ tự tạo
   một giỏ riêng.
+
+#### AI gợi ý cả bộ (ô "Nhờ AI gợi ý" đầu trang)
+
+Khách gõ một câu tiếng Việt ("Tôi có 20 triệu, chơi game và edit video nhẹ") → AI chọn đủ bộ → **đúng bộ luật ở trên
+kiểm tra lại** → nạp vào màn hình Build PC để khách xem, sửa, thêm giỏ.
+
+- **AI chỉ chọn được hàng thật đang bán**: toàn bộ linh kiện ACTIVE còn hàng (~94 món) được đưa vào prompt dưới dạng mã
+  ngắn theo loại (`C1`, `M3`, `V2`…), kèm đúng bộ thông số đang hiện trên giao diện. AI chỉ trả mã; server tra mã → id
+  **đúng loại**, mã lạ/sai loại bị bỏ (thẻ gợi ý ghi rõ "hệ thống đã loại bỏ N mã"). Không dùng embedding — đưa hết kho
+  vào prompt thì không bỏ sót món cần và không tốn quota embedding.
+- **AI chọn sai → được tự sửa đúng 1 lần** (`apps/api/src/ai/build-suggestion.ts`, hàm thuần có test): nếu bộ luật báo
+  ERROR, thiếu linh kiện bắt buộc hoặc tổng tiền thật vượt ngân sách, server gửi đúng danh sách vấn đề cho AI sửa một
+  lần; vẫn sai thì hiện thẳng kèm lỗi, không che. Cảnh báo "thiếu dữ liệu" không kích hoạt sửa (AI không tạo ra được dữ
+  liệu còn thiếu).
+- **Tổng tiền và kết luận tương thích luôn do hệ thống tính**, không lấy lời AI. Phần giải thích từng món do AI viết và
+  được ghi rõ như vậy; prompt cấm AI nêu số FPS/benchmark hay tự cộng tiền. Trang hiện "AI hiểu: ngân sách … · nhu cầu …"
+  để khách tự kiểm tra AI có hiểu đúng không.
+- Mỗi lượt gợi ý tốn 1 lượt chat Gemini (+1 nếu phải sửa). AI chưa cấu hình hoặc hết quota → báo lỗi rõ, phần tự chọn
+  linh kiện bên dưới vẫn dùng bình thường.
+
+#### Lưu & chia sẻ cấu hình (bảng `PcBuild` / `PcBuildItem`)
+
+- Mọi gợi ý AI và mỗi lần bấm "Lưu cấu hình" tạo một bản ghi `PcBuild` có mã ngắn 8 ký tự (bỏ các ký tự dễ nhầm
+  0/O/1/l). Link ngắn: `/ai-build-pc?build=<mã>` — ai có link cũng mở được, không cần đăng nhập; mở ra thì giá, tồn kho
+  và kiểm tra tương thích được **tính lại theo hiện tại** (vẫn hiện tổng tiền lúc lưu để so).
+- Cấu hình đã lưu là **bản chụp bất biến**: sửa rồi lưu = tạo mã mới, link đã gửi đi không bị đổi dưới tay người nhận.
+- Đã đăng nhập thì cấu hình gắn vào tài khoản → xem lại/xoá ở **Tài khoản → Cấu hình của tôi** (`/tai-khoan/cau-hinh`).
+  Khách chưa đăng nhập chỉ giữ được cấu hình qua link.
+- Gợi ý AI được lưu kèm câu hỏi gốc, ngân sách/nhu cầu AI hiểu và kết quả kiểm tra (`isAiGenerated`, `aiPrompt`) — dùng
+  làm nhật ký đánh giá chất lượng AI. Phần giải thích của AI không lưu vào DB (chỉ hiện ngay lúc gợi ý).
 
 `npm test -w @pczone/api` gồm cả test bộ đọc thông số (dùng đúng chuỗi thật trong DB) và bộ luật tương thích.
 
@@ -1079,7 +1114,7 @@ không cần ở đợt này), điểm thưởng PCPoints/hạng thành viên (k
 - [x] **AI Search** (mục "Tìm kiếm bằng AI" ở mục 5): tìm kiếm ngữ nghĩa thật bằng embedding OpenAI, không cần dịch vụ Python/FastAPI riêng — gọi thẳng từ Express API hiện có (`apps/api/src/ai/`); tự lùi về tìm kiếm từ khoá khi chưa cấu hình
 - [x] **AI Chat** (`/tro-ly-ai`, mở từ ô hỏi AI ở trang chủ): trả lời dạng stream, chỉ nhắc sản phẩm có thật trong DB, sản phẩm trích dẫn do server tự đối chiếu (không tin AI tự khai), lưu hội thoại vào `AiConversation`/`AiMessage`; dùng lại hạ tầng embedding/retrieval của AI Search
 - [x] **Build PC tự ráp** (`/ai-build-pc`, mục "Build PC" ở mục 5): chuẩn hoá `ProductSpec` bằng bộ đọc xác định, 9 luật kiểm tra tương thích (không dùng AI), tổng tiền + công suất nguồn, chia sẻ qua đường dẫn, thêm cả bộ vào giỏ
-- [ ] AI đề xuất cấu hình theo ngân sách/nhu cầu (chạy qua đúng bộ luật của Build PC) và lưu cấu hình vào `PcBuild` + link chia sẻ `shareCode` — chưa làm
+- [x] **AI gợi ý cấu hình** theo ngân sách/nhu cầu (chạy qua đúng bộ luật của Build PC, tự sửa 1 lần) và **lưu cấu hình** vào `PcBuild` + link ngắn `shareCode`, trang "Cấu hình của tôi" (mục "Build PC")
 - [x] **Admin Dashboard — Đợt 1/6** (mục 11): đăng nhập/phân quyền tách biệt hoàn toàn khỏi khách hàng (`/admin/login`, cookie/JWT riêng), 4 vai trò quản trị + kiểm tra quyền theo từng route ở server, 2FA (TOTP) tự nguyện, giới hạn đăng nhập sai, nhật ký thao tác (`AdminAuditLog`), khung giao diện `/admin` (sidebar theo quyền, tương thích di động), script tạo tài khoản quản trị an toàn (`create-admin.mts`); 2 trang quản trị cũ (xem đơn hàng, duyệt đánh giá) đã chuyển sang hệ thống mới
 - [x] **Admin Dashboard — Đợt 2** (mục 11): quản lý đơn hàng đầy đủ vòng đời (7 trạng thái tiến tuần tự, mã vận đơn, ghi chú nội bộ không lộ ra ngoài, in đơn, huỷ/hoàn theo quyền kèm hoàn kho đúng loại, đánh dấu hoàn tiền thủ công — không giả vờ tự động, lịch sử đổi trạng thái kèm tên người thực hiện)
 - [x] **Admin Dashboard — Đợt 3** (mục 11): quản lý sản phẩm (thêm/sửa/ẩn/lưu trữ, duyệt sản phẩm DRAFT, ẩn/lưu trữ có hiệu lực ngay trên trang bán) và tồn kho (nhập/xuất/điều chỉnh theo kiểm kê, cảnh báo sắp hết theo ngưỡng riêng từng sản phẩm, không cho tồn kho âm), xuất báo cáo Excel theo đúng bộ lọc

@@ -1,12 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Wrench } from "lucide-react";
+import { Bookmark, Info, Wrench } from "lucide-react";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { errorMessage } from "@/lib/api-client";
-import { BUILD_SLOTS, selectionFromResult, selectionToSearch, type BuildSelection } from "@/lib/pc-build";
-import { validateBuild } from "@/lib/pc-build-client";
-import type { BuildCheckResult, BuildSlot } from "@/types";
+import { formatPrice } from "@/lib/format";
+import { BUILD_SLOTS, selectionFromResult, selectionFromSaved, selectionToSearch, type BuildSelection } from "@/lib/pc-build";
+import { fetchSavedBuild, validateBuild } from "@/lib/pc-build-client";
+import type { AiBuildSuggestion, BuildCheckResult, BuildSlot, SavedBuild } from "@/types";
+import AiBuildPanel from "./AiBuildPanel";
+import AiSuggestionCard from "./AiSuggestionCard";
 import BuildCheckList from "./BuildCheckList";
 import BuildSlotRow from "./BuildSlotRow";
 import BuildSummary, { BuildStatusBar } from "./BuildSummary";
@@ -27,17 +31,33 @@ function severityBySlot(result: BuildCheckResult | null): Map<BuildSlot, "ERROR"
   return bySlot;
 }
 
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("vi-VN", { day: "numeric", month: "numeric", year: "numeric" });
+}
+
+interface BuildPcViewProps {
+  initialSelection: BuildSelection;
+  /** Mở từ link ngắn `?build=` */
+  savedBuild: SavedBuild | null;
+  /** Có `?build=` nhưng không tìm thấy cấu hình */
+  missingBuildCode?: string;
+}
+
 /**
  * Lựa chọn nằm trong state và đồng bộ lên URL (chia sẻ bằng cách sao chép link). Mỗi lần đổi, trang gọi lại
  * API kiểm tra — mọi luật tương thích nằm ở server, phía này không tự kết luận gì.
  */
-export default function BuildPcView({ initialSelection }: { initialSelection: BuildSelection }) {
+export default function BuildPcView({ initialSelection, savedBuild, missingBuildCode }: BuildPcViewProps) {
   const [selection, setSelection] = useState(initialSelection);
   const [checked, setChecked] = useState<{ key: string; result: BuildCheckResult } | null>(null);
   const [failure, setFailure] = useState<{ key: string; message: string } | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [pickerSlot, setPickerSlot] = useState<BuildSlot | null>(null);
+  const [suggestion, setSuggestion] = useState<AiBuildSuggestion | null>(null);
+  const [ownership, setOwnership] = useState<{ code: string; userId: string; isMine: boolean } | null>(null);
   const pickerTrigger = useRef<HTMLElement | null>(null);
+  const suggestionRef = useRef<HTMLDivElement>(null);
+  const { status: authStatus, user } = useAuth();
   const toast = useToast();
 
   const key = selectionToSearch(selection);
@@ -45,9 +65,37 @@ export default function BuildPcView({ initialSelection }: { initialSelection: Bu
   const error = failure?.key === key ? failure.message : null;
   const pending = checked?.key !== key && !error;
 
-  useEffect(() => {
-    window.history.replaceState(null, "", key ? `?${key}` : window.location.pathname);
+  // Cấu hình đã lưu đang hiện (gợi ý AI mới nhất, hoặc mở từ link): còn y nguyên thì URL giữ link ngắn
+  const activeSaved = suggestion?.build ?? savedBuild;
+  const isUnchangedSaved = activeSaved !== null && selectionToSearch(selectionFromSaved(activeSaved)) === key;
+  const urlQuery = isUnchangedSaved ? `build=${encodeURIComponent(activeSaved.code)}` : key;
 
+  // Gợi ý AI vừa tạo đã biết chủ; cấu hình mở từ link thì trang tải ở server (không kèm cookie) nên phải hỏi lại.
+  // null = chưa biết → khung lưu không khẳng định "của tôi" hay "của người khác"
+  const userId = user?.id ?? null;
+  let savedIsMine: boolean | null = null;
+  if (activeSaved !== null) {
+    if (activeSaved === suggestion?.build) savedIsMine = activeSaved.isMine;
+    else if (authStatus === "anonymous") savedIsMine = false;
+    else if (ownership && ownership.code === activeSaved.code && ownership.userId === userId) savedIsMine = ownership.isMine;
+  }
+
+  useEffect(() => {
+    window.history.replaceState(null, "", urlQuery ? `?${urlQuery}` : window.location.pathname);
+  }, [urlQuery]);
+
+  useEffect(() => {
+    if (!userId || !savedBuild) return;
+    const controller = new AbortController();
+    fetchSavedBuild(savedBuild.code, controller.signal)
+      .then((build) => setOwnership({ code: build.code, userId, isMine: build.isMine }))
+      .catch(() => {
+        // Không hỏi được thì để "chưa biết" — chỉ ẩn dòng "của tôi"/"lưu vào tài khoản", phần còn lại vẫn dùng được
+      });
+    return () => controller.abort();
+  }, [userId, savedBuild]);
+
+  useEffect(() => {
     const controller = new AbortController();
     validateBuild(selection, controller.signal)
       .then((next) => {
@@ -67,6 +115,10 @@ export default function BuildPcView({ initialSelection }: { initialSelection: Bu
       });
     return () => controller.abort();
   }, [selection, key, attempt, toast]);
+
+  useEffect(() => {
+    if (suggestion) suggestionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [suggestion]);
 
   const closePicker = useCallback(() => {
     setPickerSlot(null);
@@ -101,6 +153,16 @@ export default function BuildPcView({ initialSelection }: { initialSelection: Bu
     setAttempt((value) => value + 1);
   }
 
+  function applySuggestion(next: AiBuildSuggestion) {
+    setSuggestion(next);
+    setSelection(selectionFromSaved(next.build));
+  }
+
+  function reset() {
+    setSuggestion(null);
+    setSelection({});
+  }
+
   const severities = severityBySlot(result);
   const vgaOptional =
     !selection.VGA && result !== null && result.items.some((item) => item.slot === "CPU") && !result.missingSlots.includes("VGA");
@@ -112,17 +174,50 @@ export default function BuildPcView({ initialSelection }: { initialSelection: Bu
           <Wrench className="size-3.5" aria-hidden />
           Build PC
         </p>
-        <h1 className="section-title mt-1.5 text-2xl sm:text-3xl">Tự chọn linh kiện, kiểm tra tương thích tự động</h1>
+        <h1 className="section-title mt-1.5 text-2xl sm:text-3xl">Tự chọn hoặc nhờ AI gợi ý cả bộ</h1>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
-          Chọn từng linh kiện đang bán tại PCZone — hệ thống kiểm tra socket CPU, chuẩn và số khe RAM, kích thước mainboard,
-          card đồ họa với vỏ case, công suất nguồn, rồi tính tổng tiền. Cấu hình nằm ngay trên đường dẫn để sao chép, chia sẻ.
+          Chọn từng linh kiện đang bán tại PCZone, hoặc nêu ngân sách để AI gợi ý cả bộ. Hệ thống luôn tự kiểm tra socket CPU,
+          chuẩn và số khe RAM, kích thước mainboard, card đồ họa với vỏ case, công suất nguồn, rồi tính tổng tiền.
         </p>
       </header>
+
+      {missingBuildCode ? (
+        <p className="mt-4 flex gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
+          <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+          Không tìm thấy cấu hình đã lưu có mã &quot;{missingBuildCode}&quot; — link có thể sai hoặc cấu hình đã bị xoá.
+        </p>
+      ) : null}
+
+      {savedBuild && !suggestion ? (
+        <div className="mt-4 rounded-xl bg-white px-4 py-3 text-sm ring-1 ring-slate-200">
+          <p className="flex flex-wrap items-center gap-2 font-semibold text-slate-800">
+            <Bookmark className="size-4 text-brand-500" aria-hidden />
+            Cấu hình đã lưu: {savedBuild.name}
+            <span className="text-xs font-normal text-slate-500">· {formatDate(savedBuild.createdAt)}</span>
+          </p>
+          {savedBuild.isAiGenerated && savedBuild.aiPrompt ? (
+            <p className="mt-1 text-xs text-slate-500">Gợi ý của AI cho yêu cầu: &quot;{savedBuild.aiPrompt}&quot;</p>
+          ) : null}
+          <p className="mt-1 text-xs text-slate-500">
+            {isUnchangedSaved
+              ? `Giá và kiểm tra tương thích được tính lại theo hiện tại (lúc lưu: ${formatPrice(savedBuild.totalAtSave)}).`
+              : "Bạn đã chỉnh sửa so với cấu hình đã lưu — bấm \"Lưu cấu hình\" để tạo link mới."}
+          </p>
+        </div>
+      ) : null}
 
       <BuildStatusBar result={result} className="mt-4 lg:hidden" />
 
       <div className="mt-4 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-4">
+          <AiBuildPanel onSuggested={applySuggestion} />
+
+          {suggestion ? (
+            <div ref={suggestionRef} className="scroll-mt-48">
+              <AiSuggestionCard suggestion={suggestion} selection={selection} result={result} onDismiss={() => setSuggestion(null)} />
+            </div>
+          ) : null}
+
           <section className="surface-card overflow-hidden" aria-label="Linh kiện trong cấu hình">
             <ul className="divide-y divide-slate-100">
               {BUILD_SLOTS.map((slot) => {
@@ -149,7 +244,14 @@ export default function BuildPcView({ initialSelection }: { initialSelection: Bu
         </div>
 
         <aside id="build-summary" className="lg:sticky lg:top-44">
-          <BuildSummary result={result} pending={pending} error={error} onRetry={retry} onReset={() => setSelection({})} />
+          <BuildSummary
+            result={result}
+            pending={pending}
+            error={error}
+            saved={isUnchangedSaved ? { code: activeSaved.code, isMine: savedIsMine } : null}
+            onRetry={retry}
+            onReset={reset}
+          />
         </aside>
       </div>
 

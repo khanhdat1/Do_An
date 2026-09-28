@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Heart, LogOut, Package, ShieldCheck, ShoppingCart, UserRound } from "lucide-react";
+import { Heart, LogOut, Package, ShieldCheck, ShoppingCart, UserRound, Wrench } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useCart } from "@/components/providers/CartProvider";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -111,6 +111,14 @@ export default function UserMenu() {
             >
               <Package className="size-4 text-slate-400" />
               Đơn hàng của tôi
+            </Link>
+            <Link
+              href="/tai-khoan/cau-hinh"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2 font-medium transition hover:bg-slate-100"
+            >
+              <Wrench className="size-4 text-slate-400" />
+              Cấu hình PC đã lưu
             </Link>
             <Link
               href="/yeu-thich"

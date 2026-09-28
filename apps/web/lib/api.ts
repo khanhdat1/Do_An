@@ -1,4 +1,15 @@
-import type { AiSearchResult, Banner, Category, CategoryDetail, Paginated, Product, ProductDetail, SearchResult, Voucher } from "@/types";
+import type {
+  AiSearchResult,
+  Banner,
+  Category,
+  CategoryDetail,
+  Paginated,
+  Product,
+  ProductDetail,
+  SavedBuild,
+  SearchResult,
+  Voucher,
+} from "@/types";
 import type { SearchQuery } from "@/lib/search-query";
 import {
   bestSellerProducts,
@@ -158,6 +169,20 @@ export async function aiSearchProducts(query: string): Promise<AiSearchResult | 
     const response = await fetch(`${API_BASE}${path}`, { cache: "no-store", headers: { Accept: "application/json" } });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return (await response.json()) as AiSearchResult;
+  } catch (error) {
+    warnOffline(path, error);
+    return null;
+  }
+}
+
+/** Cấu hình đã lưu theo link ngắn; `null` khi mã sai/đã xoá hoặc API không gọi được — trang mở Build PC trống kèm thông báo */
+export async function getSavedBuild(code: string): Promise<SavedBuild | null> {
+  const path = `/api/pc-build/builds/${encodeURIComponent(code)}`;
+  try {
+    const response = await fetch(`${API_BASE}${path}`, { cache: "no-store", headers: { Accept: "application/json" } });
+    if (response.status === 404) return null;
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return (await response.json()) as SavedBuild;
   } catch (error) {
     warnOffline(path, error);
     return null;

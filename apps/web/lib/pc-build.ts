@@ -1,4 +1,4 @@
-import type { BuildCheckResult, BuildSlot } from "@/types";
+import type { BuildCheckResult, BuildSlot, SavedBuild } from "@/types";
 
 export const BUILD_SLOTS: readonly BuildSlot[] = ["CPU", "MAINBOARD", "RAM", "VGA", "SSD", "PSU", "CASE"];
 
@@ -59,4 +59,13 @@ export function selectionToItems(selection: BuildSelection): { productId: string
 /** Server quyết định sản phẩm thuộc ô nào (theo danh mục) và còn dùng được không — lựa chọn đi theo kết quả đó */
 export function selectionFromResult(result: BuildCheckResult): BuildSelection {
   return Object.fromEntries(result.items.map((item) => [item.slot, { productId: item.product.id, quantity: item.quantity }]));
+}
+
+export function selectionFromSaved(build: SavedBuild): BuildSelection {
+  return Object.fromEntries(build.items.map((item) => [item.slot, { productId: item.productId, quantity: item.quantity }]));
+}
+
+/** Link ngắn của cấu hình đã lưu — chỉ gọi ở trình duyệt */
+export function savedBuildUrl(code: string): string {
+  return `${window.location.origin}/ai-build-pc?build=${encodeURIComponent(code)}`;
 }

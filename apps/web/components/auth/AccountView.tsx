@@ -17,6 +17,7 @@ import {
   Shield,
   ShoppingCart,
   Unlink,
+  Wrench,
   X,
 } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -483,6 +484,24 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
           className="rounded-lg bg-brand-500 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition hover:bg-brand-600"
         >
           Xem đơn hàng
+        </Link>
+      </section>
+
+      <section className="surface-card flex flex-wrap items-center justify-between gap-3 p-5 sm:p-6">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-xl bg-slate-100">
+            <Wrench className="size-5 text-slate-500" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-slate-800">Cấu hình PC đã lưu</p>
+            <p className="text-xs text-slate-500">Cấu hình tự ráp và gợi ý của AI, mở lại hoặc chia sẻ bằng link ngắn</p>
+          </div>
+        </div>
+        <Link
+          href="/tai-khoan/cau-hinh"
+          className="rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-slate-700 transition hover:border-brand-400 hover:text-brand-600"
+        >
+          Xem cấu hình
         </Link>
       </section>
 
