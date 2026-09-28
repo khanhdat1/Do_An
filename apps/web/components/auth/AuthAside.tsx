@@ -1,25 +1,26 @@
-import { Box, Coins, Cpu, Gift, Star, Wrench, Zap } from "lucide-react";
+import { Bookmark, Bot, Cpu, Gift, PackageCheck, ShieldCheck, Zap } from "lucide-react";
 
+/** Chỉ liệt kê tiện ích có thật khi có tài khoản — không hứa dịch vụ/số liệu mà hệ thống không có */
 const features = [
   {
     icon: Cpu,
-    title: "Cấu hình AI & Gaming tối thượng",
-    text: "100% chính hãng tuyển chọn từ ASUS ROG, MSI, GIGABYTE, Corsair.",
+    title: "Linh kiện chính hãng",
+    text: "Tuyển chọn từ ASUS ROG, MSI, GIGABYTE, Corsair…, giá và tồn kho cập nhật trực tiếp.",
   },
   {
-    icon: Coins,
-    title: "PCPoints VIP hoàn tiền tới 5%",
-    text: "Tích lũy điểm thưởng trực tiếp linh kiện, phụ kiện gaming đỉnh cao.",
+    icon: Bookmark,
+    title: "Lưu cấu hình Build PC",
+    text: "Cấu hình tự ráp và gợi ý AI được lưu vào \"Cấu hình của tôi\", chia sẻ bằng link ngắn.",
   },
   {
-    icon: Box,
-    title: "Đồng bộ AI PC Builder 3D",
-    text: "Lưu không giới hạn cấu hình mô phỏng 3D trên đám mây & tư vấn hiệu năng.",
+    icon: Bot,
+    title: "Trợ lý AI tư vấn",
+    text: "Hỏi cách chọn linh kiện; AI chỉ gợi ý sản phẩm đang bán kèm giá thật.",
   },
   {
-    icon: Wrench,
-    title: "Bảo hành On-site VIP 2 giờ",
-    text: "Kỹ thuật viên hỗ trợ tận nơi đối với mọi dàn máy Full PC Gaming & Workstation.",
+    icon: PackageCheck,
+    title: "Theo dõi đơn hàng & yêu thích",
+    text: "Xem lại đơn, huỷ đơn khi còn chờ xử lý, lưu sản phẩm yêu thích để mua sau.",
   },
 ];
 
@@ -63,8 +64,8 @@ export default function AuthAside({ mode }: { mode: "login" | "register" }) {
         {line2}
       </p>
       <p className="relative mt-3 max-w-sm text-[13px] leading-relaxed text-slate-400">
-        Nền tảng mua sắm linh kiện máy tính, Workstation &amp; AI Hardware cao cấp hàng đầu Việt
-        Nam.
+        Nền tảng mua sắm linh kiện máy tính, Workstation &amp; AI Hardware — tự ráp cấu hình có
+        kiểm tra tương thích.
       </p>
 
       <ul className="relative mt-6 space-y-2.5">
@@ -88,26 +89,21 @@ export default function AuthAside({ mode }: { mode: "login" | "register" }) {
             <Gift className="size-4.5" />
           </span>
           <div className="min-w-0">
-            <p className="text-[13px] font-bold text-gold-400">Quà tặng hội viên mới Voucher 500.000đ</p>
+            <p className="text-[13px] font-bold text-gold-400">Mã giảm giá đang áp dụng</p>
             <p className="mt-0.5 text-xs leading-snug text-slate-300">
-              Áp dụng trực tiếp ngay đơn hàng linh kiện đầu tiên sau khi kích hoạt tài khoản.
+              Xem các mã ở trang Khuyến mãi và nhập ngay lúc đặt hàng — hệ thống tự kiểm tra điều kiện áp dụng.
             </p>
           </div>
         </li>
       </ul>
 
       <div className="relative mt-auto pt-7">
-        <div className="flex items-center gap-2">
-          <span className="flex" aria-hidden>
-            {[0, 1, 2, 3, 4].map((star) => (
-              <Star key={star} className="size-4 fill-gold-400 text-gold-400" />
-            ))}
-          </span>
-          <span className="text-xs font-bold uppercase text-gold-400">4.98 / 5 đánh giá</span>
-        </div>
+        <p className="flex items-center gap-2 text-xs font-bold uppercase text-gold-400">
+          <ShieldCheck className="size-4" aria-hidden />
+          Đánh giá thật từ người mua
+        </p>
         <p className="mt-1.5 text-[11px] leading-snug text-slate-400">
-          Được tin dùng bởi hơn <strong className="text-slate-200">150.000+</strong> game thủ,
-          Streamer &amp; khách hàng công nghệ VIP.
+          Chỉ khách đã nhận hàng mới viết được đánh giá, và mỗi đánh giá được kiểm duyệt trước khi hiện công khai.
         </p>
       </div>
     </aside>

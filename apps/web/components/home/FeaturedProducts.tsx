@@ -23,7 +23,7 @@ export default async function FeaturedProducts() {
           icon={<Star className="size-5 fill-gold-400 text-gold-400" />}
           title="Sản phẩm nổi bật"
           badge={{ label: "Tuyển chọn", tone: "amber" }}
-          subtitle="Các sản phẩm phần cứng & laptop AI tuyển chọn hàng đầu được cộng đồng tin dùng"
+          subtitle="Các sản phẩm phần cứng & laptop tuyển chọn đang bán tại PCZone"
           href="/san-pham"
         />
 

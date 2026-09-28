@@ -21,14 +21,16 @@ async function resolveActiveProductId(productSlug: string): Promise<string> {
 }
 
 /**
- * Đơn đã thanh toán (paymentStatus=PAID) chứa sản phẩm này mà CHƯA dùng để đánh giá lần nào —
- * một người mua sản phẩm này ở nhiều đơn khác nhau thì đánh giá được từng đó lần (đúng
- * @@unique([productId, userId, orderId]) trong schema), nhưng mỗi đơn chỉ đánh giá được một lần.
+ * Đơn ĐÃ GIAO (status=DELIVERED — khách đã nhận hàng, nhân viên chuyển trạng thái ở /admin/orders) chứa
+ * sản phẩm này mà CHƯA dùng để đánh giá lần nào. Không xét paymentStatus: đơn COD có thể giao xong trước khi
+ * nhân viên ghi nhận tiền. Đơn đã hoàn hàng (RETURNED) không tính. Một người mua sản phẩm này ở nhiều đơn
+ * khác nhau thì đánh giá được từng đó lần (đúng @@unique([productId, userId, orderId]) trong schema), nhưng
+ * mỗi đơn chỉ đánh giá được một lần.
  */
 async function findUnusedEligibleOrderId(userId: string, productId: string): Promise<string | null> {
   const [orders, usedReviews] = await Promise.all([
     prisma.order.findMany({
-      where: { userId, paymentStatus: "PAID", items: { some: { productId } } },
+      where: { userId, status: "DELIVERED", items: { some: { productId } } },
       select: { id: true },
       orderBy: { createdAt: "desc" },
     }),
@@ -61,7 +63,7 @@ export async function createReview(userId: string, productSlug: string, input: C
   const productId = await resolveActiveProductId(productSlug);
   const orderId = await findUnusedEligibleOrderId(userId, productId);
   if (!orderId) {
-    throw new ConflictError("Bạn cần mua và hoàn tất thanh toán sản phẩm này trước khi đánh giá");
+    throw new ConflictError("Bạn chỉ đánh giá được sau khi đã nhận hàng — đơn có sản phẩm này cần ở trạng thái đã giao");
   }
 
   // Race cực hiếm: hai tab cùng gửi đánh giá cho cùng một đơn cùng lúc — @@unique chặn ở DB
@@ -74,7 +76,7 @@ export async function createReview(userId: string, productSlug: string, input: C
         rating: input.rating,
         title: input.title,
         content: input.content,
-        isVerified: true, // luôn gắn với một đơn đã thanh toán thật, không có luồng đánh giá "khách vãng lai"
+        isVerified: true, // luôn gắn với một đơn đã giao thật, không có luồng đánh giá "khách vãng lai"
       },
       include: reviewInclude,
     })

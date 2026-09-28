@@ -87,7 +87,7 @@ export default function Navbar() {
             className="flex items-center gap-1.5 rounded-lg border border-gold-400/50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-gold-400 transition hover:bg-gold-400/10"
           >
             <Gift className="size-3.5" />
-            <span className="hidden sm:inline">Khuyến mãi VIP</span>
+            <span className="hidden sm:inline">Khuyến mãi</span>
             <span className="sm:hidden">Sale</span>
           </Link>
           <Link

@@ -205,7 +205,7 @@ const products: ProductSeed[] = [
     warrantyMonths: 24,
     isFlashSale: true,
     flashSaleQuota: 90,
-    promoTag: "Quà tặng 3 triệu",
+    promoTag: "Nổi bật",
     promoTone: "amber",
   },
   {
@@ -224,7 +224,7 @@ const products: ProductSeed[] = [
     warrantyMonths: 36,
     isFlashSale: true,
     flashSaleQuota: 24,
-    promoTag: "Trả góp 0%",
+    promoTag: "Nổi bật",
     promoTone: "green",
   },
   {
@@ -243,7 +243,7 @@ const products: ProductSeed[] = [
     warrantyMonths: 36,
     isFlashSale: true,
     flashSaleQuota: 50,
-    promoTag: "Freeship 600K",
+    promoTag: "Nổi bật",
     promoTone: "amber",
   },
   {
@@ -303,7 +303,6 @@ const products: ProductSeed[] = [
     isFeatured: true,
     promoTag: "Nổi bật",
     promoTone: "amber",
-    giftNote: "Tặng Balo Legion 2.5tr",
   },
   {
     slug: "pc-gaming-pczone-dragon-knight",
@@ -322,7 +321,6 @@ const products: ProductSeed[] = [
     isFeatured: true,
     promoTag: "Bán chạy",
     promoTone: "red",
-    giftNote: "Tặng Chuột & Pad Master VIP",
   },
   {
     slug: "gigabyte-rtx-4080-super-gaming-oc-16gb",
@@ -341,7 +339,6 @@ const products: ProductSeed[] = [
     isFeatured: true,
     promoTag: "RTX AI",
     promoTone: "blue",
-    giftNote: "Sẵn hàng tại 18 chi nhánh",
   },
   {
     slug: "asus-rog-swift-oled-pg32ucdm",
@@ -360,7 +357,6 @@ const products: ProductSeed[] = [
     isFeatured: true,
     promoTag: "4K QD-OLED",
     promoTone: "green",
-    giftNote: "Bảo hành 36 tháng On-site VIP",
   },
   {
     slug: "logitech-g-pro-x-superlight-2",
@@ -379,7 +375,6 @@ const products: ProductSeed[] = [
     isFeatured: true,
     promoTag: "Gear Esports",
     promoTone: "amber",
-    giftNote: "Miễn phí giao hàng hỏa tốc 2h",
   },
 
   /* ---------- Top bán chạy ---------- */

@@ -37,18 +37,18 @@ export default function AiAdvisorSection() {
         <div className="relative max-w-3xl">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gold-400 ring-1 ring-gold-400/30">
             <Sparkles className="size-3.5" />
-            TechAI Hardware Copilot 2.0 · PCZone VIP
+            Trợ lý AI · Dùng dữ liệu kho thật
           </span>
 
           <h2 className="mt-4 font-display text-2xl font-extrabold uppercase leading-tight text-white sm:text-3xl lg:text-4xl">
             Trợ lý AI tư vấn cấu hình phần cứng chuyên sâu
           </h2>
 
+          {/* Chỉ mô tả đúng những gì trợ lý làm được: trả lời dựa trên sản phẩm đang bán, trích dẫn sản phẩm thật */}
           <p className="mt-3 text-sm leading-relaxed text-slate-300">
-            Chỉ cần nêu ngân sách và mục đích sử dụng (gaming 4K, đồ họa
-            Premiere, Blender 3D, lập trình AI), PCZone AI sẽ phân tích tương
-            thích 100% bus RAM, chân cắm nguồn PCIe 5.0 và cân đối tỷ lệ nghẽn cổ
-            chai hoàn hảo.
+            Chỉ cần nêu ngân sách và mục đích sử dụng (chơi game, đồ họa, dựng video, lập trình AI). Trợ
+            lý chỉ gợi ý sản phẩm PCZone đang bán, kèm giá và tồn kho thật. Muốn ráp cả bộ và kiểm tra
+            tương thích từng linh kiện, hãy dùng Build PC.
           </p>
 
           {/* Gợi ý câu hỏi */}
