@@ -7,23 +7,38 @@ import { CloudOff, LoaderCircle, Scale, X } from "lucide-react";
 import { useCompare } from "@/components/providers/CompareProvider";
 import { getProductBySlug } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
+import { canonicalSpecLabel } from "@/lib/spec-labels";
 import type { ProductDetail } from "@/types";
 
 type State = { status: "loading" } | { status: "error" } | { status: "ready"; products: ProductDetail[] };
+
+/**
+ * Thông số của một sản phẩm theo nhãn đã thống nhất ("CPU" và "Bộ vi xử lý (CPU)" là một dòng — xem
+ * `lib/spec-labels.ts`). Hiếm khi một sản phẩm có hai dòng cùng nghĩa: nối cả hai giá trị, không bỏ mất dòng nào.
+ */
+function specsByLabel(product: ProductDetail): Map<string, string> {
+  const specs = new Map<string, string>();
+  for (const row of product.specifications) {
+    const label = canonicalSpecLabel(row.label);
+    const existing = specs.get(label);
+    specs.set(label, existing && existing !== row.value ? `${existing}; ${row.value}` : row.value);
+  }
+  return specs;
+}
 
 /**
  * Gộp thông số của mọi sản phẩm thành danh sách nhãn duy nhất, giữ thứ tự xuất hiện đầu tiên.
  * Bỏ nhãn "Bảo hành" nếu có trong dữ liệu thô — đã có dòng riêng dựng từ `warrantyMonths` (trường có
  * cấu trúc, luôn đáng tin), tránh lặp khi đúng sản phẩm đó cũng có dòng "Bảo hành" trong thông số thô.
  */
-function unionSpecLabels(products: ProductDetail[]): string[] {
-  const seen = new Set<string>(["Bảo hành"]);
+function unionSpecLabels(specs: Map<string, string>[]): string[] {
+  const seen = new Set<string>([canonicalSpecLabel("Bảo hành")]);
   const labels: string[] = [];
-  for (const product of products) {
-    for (const row of product.specifications) {
-      if (!seen.has(row.label)) {
-        seen.add(row.label);
-        labels.push(row.label);
+  for (const productSpecs of specs) {
+    for (const label of productSpecs.keys()) {
+      if (!seen.has(label)) {
+        seen.add(label);
+        labels.push(label);
       }
     }
   }
@@ -101,7 +116,8 @@ export default function CompareView() {
   }
 
   const { products } = state;
-  const specLabels = unionSpecLabels(products);
+  const specs = products.map(specsByLabel);
+  const specLabels = unionSpecLabels(specs);
 
   return (
     <div className="space-y-4">
@@ -161,14 +177,11 @@ export default function CompareView() {
             {specLabels.map((label) => (
               <tr key={label}>
                 <td className="border-b border-slate-100 bg-slate-50 p-3 text-xs font-semibold text-slate-500">{label}</td>
-                {products.map((product) => {
-                  const row = product.specifications.find((item) => item.label === label);
-                  return (
-                    <td key={product.id} className="border-b border-slate-100 p-3 text-slate-700">
-                      {row?.value ?? "—"}
-                    </td>
-                  );
-                })}
+                {products.map((product, index) => (
+                  <td key={product.id} className="border-b border-slate-100 p-3 text-slate-700">
+                    {specs[index].get(label) ?? "—"}
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
