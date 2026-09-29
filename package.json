@@ -32,7 +32,9 @@
     "collect-demo": "npm run collect-demo -w @pczone/crawler --",
 
     "build": "npm run db:build && npm run build -w @pczone/api && npm run build -w @pczone/web",
-    "typecheck": "npm run db:build && npm run typecheck -w @pczone/api"
+    "typecheck": "npm run db:build && npm run typecheck -w @pczone/api",
+
+    "test:e2e": "npm run test -w @pczone/e2e"
   },
   "engines": {
     "node": ">=20"

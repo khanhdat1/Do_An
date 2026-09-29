@@ -1,0 +1,14 @@
+{
+  "name": "@pczone/e2e",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Kiểm thử đầu-cuối (Playwright) trên DB riêng pczone_e2e — không đụng dữ liệu thật",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}

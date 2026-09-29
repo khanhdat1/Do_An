@@ -19,3 +19,7 @@ apps/web/public/images/products/
 
 # Tệp cache của trình biên dịch TypeScript
 *.tsbuildinfo
+
+# Kết quả kiểm thử đầu-cuối (Playwright) — sinh lại mỗi lần chạy
+apps/e2e/test-results/
+apps/e2e/playwright-report/
