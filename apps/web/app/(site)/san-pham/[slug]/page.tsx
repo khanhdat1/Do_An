@@ -19,7 +19,7 @@ import ProductPurchasePanel from "@/components/product/ProductPurchasePanel";
 import ReviewList from "@/components/product/ReviewList";
 import SpecTable from "@/components/product/SpecTable";
 import SectionHeading from "@/components/ui/SectionHeading";
-import { getProductBySlug, getRelatedProducts } from "@/lib/api";
+import { getProductBySlug, getPublicSettings, getRelatedProducts } from "@/lib/api";
 import { discountPercent, formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Tone } from "@/types";
@@ -53,7 +53,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const related = await getRelatedProducts(product, 4);
+  const [related, settings] = await Promise.all([getRelatedProducts(product, 4), getPublicSettings()]);
 
   const discount = discountPercent(product.price, product.oldPrice);
   const saving = product.oldPrice ? product.oldPrice - product.price : 0;
@@ -225,6 +225,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 images={product.images}
                 productName={product.name}
                 categoryName={product.categoryName}
+                hotline={settings.store.hotline}
+                supportEmail={settings.store.supportEmail}
               />
             </section>
           ) : null}

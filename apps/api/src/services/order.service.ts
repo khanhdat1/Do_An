@@ -3,12 +3,13 @@ import { env } from "../env.js";
 import { orderInclude, orderSummaryInclude, toOrderDto, toOrderSummaryDto } from "../mappers/order.mapper.js";
 import { publicImages } from "../mappers/product.mapper.js";
 import { ConflictError, NotFoundError } from "../middleware/errors.js";
-import type { CreateOrderResultDto, OrderDto, Paginated, OrderSummaryDto } from "../types/dto.js";
+import type { CreateOrderResultDto, OrderDto, Paginated, OrderSummaryDto, ShippingSettingsDto } from "../types/dto.js";
 import { generateOrderCode } from "../utils/order-code.js";
 import { isUniqueViolation } from "../utils/prisma-errors.js";
 import { calcShippingFee } from "../utils/shipping.js";
 import { createAddress, type AddressInput } from "./address.service.js";
 import { isBankTransferConfigured, isMomoConfigured } from "./manual-payment.service.js";
+import { assertPaymentMethodEnabled, getSettings } from "./settings.service.js";
 import { buildPaymentUrl, isVnpayConfigured, type VerifiedCallback } from "./vnpay.service.js";
 import { redeemVoucher, validateVoucherForOrder } from "./voucher.service.js";
 
@@ -77,8 +78,9 @@ async function resolveShippingSnapshot(
  * Tạo đơn: kiểm tra lại tồn kho ngay tại thời điểm đặt (giỏ hàng có thể đã cũ), trừ kho, ghi sổ kho, snapshot
  * địa chỉ + từng dòng hàng, dọn giỏ — tất cả trong MỘT transaction để không bao giờ có nửa đơn (csdl.md mục 9).
  * Trả về id đơn vừa tạo và payUrl (nếu là VNPay) để hàm gọi bên ngoài đọc lại đầy đủ bằng include.
+ * `shippingConfig` = phí/ngưỡng HIỆN HÀNH trong cài đặt hệ thống, `createOrder` đọc ngay trước khi gọi.
  */
-async function runCreateOrder(input: CreateOrderInput): Promise<{ orderId: string; payUrl?: string }> {
+async function runCreateOrder(input: CreateOrderInput, shippingConfig: ShippingSettingsDto): Promise<{ orderId: string; payUrl?: string }> {
   return prisma.$transaction(async (tx) => {
     const shipping = await resolveShippingSnapshot(tx, input);
 
@@ -109,7 +111,7 @@ async function runCreateOrder(input: CreateOrderInput): Promise<{ orderId: strin
       ? await validateVoucherForOrder(tx, { code: input.voucherCode, subtotal, userId: input.userId })
       : null;
     const discountAmount = voucherResult?.discountAmount ?? 0;
-    const shippingFee = calcShippingFee(subtotal);
+    const shippingFee = calcShippingFee(subtotal, shippingConfig);
     const totalAmount = subtotal - discountAmount + shippingFee;
 
     let order: { id: string; orderCode: string } | undefined;
@@ -223,7 +225,12 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     throw new ConflictError("Thanh toán MoMo chưa được cấu hình. Vui lòng chọn phương thức khác.");
   }
 
-  const { orderId, payUrl } = await runCreateOrder(input);
+  // Đã cấu hình nhưng chủ website đang TẮT ở /admin/settings: chặn ở server (400), không chỉ dựa vào việc trang
+  // đặt hàng đã ẩn phương thức — request gửi thẳng tới API vẫn bị từ chối
+  const settings = await getSettings();
+  assertPaymentMethodEnabled(settings.payments, input.paymentMethod);
+
+  const { orderId, payUrl } = await runCreateOrder(input, settings.shipping);
   const row = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: orderInclude });
   return { order: toOrderDto(row), payUrl };
 }

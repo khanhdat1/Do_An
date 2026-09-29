@@ -1,12 +1,13 @@
+import type { ShippingSettings } from "@/types";
+
 /**
  * Chỉ để XEM TRƯỚC phí vận chuyển ở giỏ hàng / bước đặt hàng — con số THẬT luôn do API tính lại lúc tạo
- * đơn (`apps/api/src/utils/shipping.ts`), trình duyệt không tự quyết định được số tiền phải trả.
- * Đổi hai hằng số này thì sửa luôn bên API cho khớp.
+ * đơn (`apps/api/src/utils/shipping.ts`, cùng công thức), trình duyệt không tự quyết định được số tiền phải trả.
+ * Phí và ngưỡng miễn phí lấy từ cài đặt hệ thống (`useStoreSettings().shipping` ← `GET /api/settings`), không còn
+ * hằng số chép tay ở phía web — chủ website đổi ở `/admin/settings` là hai bên cùng đổi.
  */
-export const FREE_SHIPPING_THRESHOLD = 500_000;
-export const STANDARD_SHIPPING_FEE = 30_000;
-
-export function calcShippingFee(subtotal: number): number {
+export function calcShippingFee(subtotal: number, config: ShippingSettings): number {
   if (subtotal <= 0) return 0;
-  return subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : STANDARD_SHIPPING_FEE;
+  // Ngưỡng 0 = mọi đơn đều miễn phí
+  return subtotal >= config.freeThreshold ? 0 : config.flatFee;
 }

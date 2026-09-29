@@ -3,6 +3,7 @@ import { retrieveProducts } from "../ai/retrieval.js";
 import { productInclude, toProductDto } from "../mappers/product.mapper.js";
 import type { AiSearchResultDto } from "../types/dto.js";
 import { PUBLIC_FILTER } from "./product.service.js";
+import { isAiFeatureEnabled } from "./settings.service.js";
 
 const RESULT_LIMIT = 20;
 
@@ -24,6 +25,13 @@ async function loadProducts(ids: string[]) {
  */
 export async function aiSearchProducts(query: string): Promise<AiSearchResultDto> {
   const trimmed = query.trim();
+
+  // Chủ website tắt AI Search ở /admin/settings: trả ĐÚNG dạng như lúc chưa cấu hình AI (không phải lỗi) để trang
+  // lặng lẽ lùi về tìm kiếm từ khoá — không gọi embedding, không ghi AiSearchLog
+  if (!(await isAiFeatureEnabled("search"))) {
+    return { items: [], query: trimmed, usedAi: false };
+  }
+
   const { products, priceIntent } = await retrieveProducts(trimmed, { limit: RESULT_LIMIT });
 
   if (products.length === 0) {

@@ -10,6 +10,7 @@ import CheckoutSummary from "@/components/checkout/CheckoutSummary";
 import PaymentMethodPicker from "@/components/checkout/PaymentMethodPicker";
 import VoucherInput, { type AppliedVoucher } from "@/components/checkout/VoucherInput";
 import { useCart } from "@/components/providers/CartProvider";
+import { useStoreSettings } from "@/components/providers/StoreSettingsProvider";
 import { useRequireAuth } from "@/components/auth/useRequireAuth";
 import { useToast } from "@/components/providers/ToastProvider";
 import { apiFetch, errorMessage } from "@/lib/api-client";
@@ -17,12 +18,28 @@ import type { CreateOrderResult, PaymentMethods } from "@/types";
 
 const MAX_NOTE_LENGTH = 500;
 
-const SUBMIT_LABEL: Record<"COD" | "VNPAY" | "BANK_TRANSFER" | "MOMO", string> = {
+type Method = "COD" | "VNPAY" | "BANK_TRANSFER" | "MOMO";
+
+const SUBMIT_LABEL: Record<Method, string> = {
   COD: "Đặt hàng",
   VNPAY: "Đặt hàng & thanh toán VNPay",
   BANK_TRANSFER: "Đặt hàng & lấy mã QR chuyển khoản",
   MOMO: "Đặt hàng & lấy thông tin MoMo",
 };
+
+/** Thứ tự ưu tiên khi phải tự chọn lại (vd chủ website tắt COD): giống thứ tự hiện trong PaymentMethodPicker */
+const METHOD_PRIORITY: { method: Method; key: keyof PaymentMethods }[] = [
+  { method: "COD", key: "cod" },
+  { method: "VNPAY", key: "vnpay" },
+  { method: "BANK_TRANSFER", key: "bankTransfer" },
+  { method: "MOMO", key: "momo" },
+];
+
+/** Giữ phương thức đang chọn nếu còn dùng được, không thì chuyển sang phương thức dùng được đầu tiên */
+function keepOrFirstAvailable(current: Method, methods: PaymentMethods): Method {
+  if (methods[METHOD_PRIORITY.find((item) => item.method === current)!.key]) return current;
+  return METHOD_PRIORITY.find((item) => methods[item.key])?.method ?? current;
+}
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
@@ -42,9 +59,10 @@ export default function CheckoutGate() {
   const { cart, status: cartStatus, reload: reloadCart } = useCart();
   const router = useRouter();
   const toast = useToast();
+  const { store } = useStoreSettings();
 
   const [addressId, setAddressId] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<"COD" | "VNPAY" | "BANK_TRANSFER" | "MOMO">("COD");
+  const [paymentMethod, setPaymentMethod] = useState<Method>("COD");
   const [methods, setMethods] = useState<PaymentMethods | null>(null);
   const [voucher, setVoucher] = useState<AppliedVoucher | null>(null);
   const [customerNote, setCustomerNote] = useState("");
@@ -55,7 +73,10 @@ export default function CheckoutGate() {
     let cancelled = false;
     apiFetch<PaymentMethods>("/api/payments/methods")
       .then((result) => {
-        if (!cancelled) setMethods(result);
+        if (cancelled) return;
+        setMethods(result);
+        // Chủ website có thể tắt COD ở /admin/settings — mặc định đang chọn COD thì tự chuyển sang phương thức còn dùng được
+        setPaymentMethod((current) => keepOrFirstAvailable(current, result));
       })
       .catch(() => {
         // Không tải được thì cứ để mặc định (COD) — trang vẫn đặt hàng được, chỉ là chưa biết VNPay có bật hay không
@@ -105,6 +126,10 @@ export default function CheckoutGate() {
       </div>
     );
   }
+
+  // Hiếm: mọi phương thức đều đang tắt/chưa cấu hình (trang cài đặt đã chặn lưu trường hợp này, nhưng .env có thể
+  // đổi sau đó) — báo rõ thay vì để khách bấm Đặt hàng rồi mới nhận lỗi
+  const noMethodAvailable = methods !== null && !Object.values(methods).some(Boolean);
 
   // Nút "Đặt hàng" gọi thẳng hàm này (không đặt cả trang trong một <form>): AddressForm bên trong
   // AddressPicker đã tự là một <form> riêng (nút "Lưu địa chỉ") — HTML không cho phép form lồng form.
@@ -161,6 +186,13 @@ export default function CheckoutGate() {
         <section className="surface-card p-4 sm:p-5">
           <h2 className="mb-3 text-base font-bold text-slate-900">Phương thức thanh toán</h2>
           <PaymentMethodPicker value={paymentMethod} onChange={setPaymentMethod} methods={methods} />
+          {noMethodAvailable ? (
+            <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-gold-400/10 px-3 py-2 text-xs text-slate-600">
+              <TriangleAlert className="mt-px size-3.5 shrink-0 text-gold-600" />
+              Hiện chưa có phương thức thanh toán nào khả dụng. Vui lòng quay lại sau hoặc gọi hotline {store.hotline} để được
+              hỗ trợ đặt hàng.
+            </p>
+          ) : null}
         </section>
 
         <section className="surface-card p-4 sm:p-5">
@@ -192,7 +224,7 @@ export default function CheckoutGate() {
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={submitting || !addressId}
+          disabled={submitting || !addressId || noMethodAvailable}
           className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {submitting ? <LoaderCircle className="size-4.5 animate-spin" /> : null}

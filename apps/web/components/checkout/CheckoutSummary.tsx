@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import ProductThumb from "@/components/product/ProductThumb";
+import { useStoreSettings } from "@/components/providers/StoreSettingsProvider";
 import { formatPrice } from "@/lib/format";
-import { calcShippingFee, FREE_SHIPPING_THRESHOLD } from "@/lib/shipping";
+import { calcShippingFee } from "@/lib/shipping";
 import type { Cart } from "@/types";
 
 interface CheckoutSummaryProps {
@@ -12,7 +15,8 @@ interface CheckoutSummaryProps {
 
 /** Xem trước các dòng hàng + tổng tiền ở bước đặt hàng. Chỉ đọc — sửa số lượng thì quay lại trang giỏ hàng. */
 export default function CheckoutSummary({ cart, discountAmount = 0 }: CheckoutSummaryProps) {
-  const shippingFee = calcShippingFee(cart.subtotal);
+  const { shipping } = useStoreSettings();
+  const shippingFee = calcShippingFee(cart.subtotal, shipping);
   const total = cart.subtotal - discountAmount + shippingFee;
 
   return (
@@ -58,7 +62,7 @@ export default function CheckoutSummary({ cart, discountAmount = 0 }: CheckoutSu
         </div>
         {shippingFee > 0 ? (
           <p className="text-xs text-slate-400">
-            Miễn phí vận chuyển cho đơn từ {formatPrice(FREE_SHIPPING_THRESHOLD)}
+            Miễn phí vận chuyển cho đơn từ {formatPrice(shipping.freeThreshold)}
           </p>
         ) : null}
         {discountAmount > 0 ? (

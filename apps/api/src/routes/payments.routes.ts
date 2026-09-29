@@ -1,20 +1,22 @@
 import { Router } from "express";
 import { env } from "../env.js";
 import { applyVnpayCallback, type ApplyVnpayResult } from "../services/order.service.js";
-import { isBankTransferConfigured, isMomoConfigured } from "../services/manual-payment.service.js";
-import { isVnpayConfigured, verifyCallback, type VerifiedCallback } from "../services/vnpay.service.js";
+import { getAvailablePaymentMethods } from "../services/settings.service.js";
+import { verifyCallback, type VerifiedCallback } from "../services/vnpay.service.js";
 import { webUrl } from "../utils/redirect.js";
 
 export const paymentsRouter = Router();
 
-/** GET /api/payments/methods — trang đặt hàng dùng để ẩn/khoá phương thức chưa cấu hình (thiếu khoá/số tài khoản) */
-paymentsRouter.get("/methods", (_req, res) => {
-  res.json({
-    cod: true,
-    vnpay: isVnpayConfigured(env.vnpay),
-    bankTransfer: isBankTransferConfigured(env.bankTransfer),
-    momo: isMomoConfigured(env.momo),
-  });
+/**
+ * GET /api/payments/methods — trang đặt hàng dùng để khoá phương thức khách không chọn được: chưa cấu hình trong
+ * .env (thiếu khoá/số tài khoản) HOẶC chủ website đang tắt ở `/admin/settings`. Tạo đơn vẫn tự kiểm lại cả hai.
+ */
+paymentsRouter.get("/methods", async (_req, res, next) => {
+  try {
+    res.json(await getAvailablePaymentMethods());
+  } catch (error) {
+    next(error);
+  }
 });
 
 /**

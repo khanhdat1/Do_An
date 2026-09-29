@@ -680,7 +680,7 @@ export interface ReviewDto {
   title?: string;
   content?: string;
   images?: string[];
-  /** true vì mọi đánh giá đều gắn với một đơn đã thanh toán — xem `review.service.ts` */
+  /** true vì mọi đánh giá đều gắn với một đơn đã giao (khách đã nhận hàng) — xem `review.service.ts` */
   isVerified: boolean;
   reviewerName: string;
   reviewerAvatarUrl?: string;
@@ -999,4 +999,71 @@ export interface AdminAccountInput {
   fullName: string;
   role?: AdminAssignableRoleDto;
   password?: string;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Cài đặt hệ thống (quyền `settings:write`, chỉ OWNER)                      */
+/* -------------------------------------------------------------------------- */
+
+/** Thông tin liên hệ hiện ở thanh trên cùng, chân trang, bài mô tả sản phẩm, phiếu in đơn */
+export interface StoreInfoSettingsDto {
+  hotline: string;
+  supportEmail: string;
+  /** Chuỗi rỗng = chưa khai báo, các nơi hiển thị tự ẩn dòng địa chỉ */
+  showroomAddress: string;
+}
+
+/** Phí vận chuyển cố định, miễn phí khi tạm tính (trước giảm giá) đạt ngưỡng — đơn vị đồng */
+export interface ShippingSettingsDto {
+  flatFee: number;
+  freeThreshold: number;
+}
+
+/** Công tắc bật/tắt của chủ website — KHÁC `PaymentMethodsDto` (khả dụng thật = bật VÀ đã cấu hình trong .env) */
+export interface PaymentToggleSettingsDto {
+  cod: boolean;
+  vnpay: boolean;
+  bankTransfer: boolean;
+  momo: boolean;
+}
+
+export interface AiToggleSettingsDto {
+  /** Nút "AI Search" / `GET /api/ai/search` — tắt thì lặng lẽ lùi về tìm kiếm từ khoá */
+  search: boolean;
+  /** Trợ lý AI `/tro-ly-ai` / `POST /api/ai/chat` */
+  chat: boolean;
+  /** "Nhờ AI gợi ý cả bộ" trên `/ai-build-pc` / `POST /api/ai/build` — Build PC tự chọn không bị ảnh hưởng */
+  build: boolean;
+}
+
+/** Toàn bộ cài đặt — cũng là body `PUT /api/admin/settings` (gửi đủ cả 4 nhóm, thay thế nguyên bộ) */
+export interface SystemSettingsDto {
+  store: StoreInfoSettingsDto;
+  shipping: ShippingSettingsDto;
+  payments: PaymentToggleSettingsDto;
+  ai: AiToggleSettingsDto;
+}
+
+/** `GET`/`PUT /api/admin/settings` */
+export interface AdminSettingsDto {
+  settings: SystemSettingsDto;
+  /** Đã cấu hình trong .env hay chưa — CHỈ true/false, không bao giờ trả khoá hay số tài khoản */
+  configured: {
+    payments: PaymentMethodsDto;
+    ai: boolean;
+  };
+  /** Lần sửa gần nhất (bất kỳ nhóm nào); trống = chưa ai sửa, đang dùng toàn bộ giá trị mặc định */
+  updatedAt?: string;
+  updatedByName?: string;
+}
+
+/**
+ * `GET /api/settings` — công khai cho trang bán hàng, chỉ giá trị không nhạy cảm. `payments`/`ai` là trạng thái
+ * DÙNG ĐƯỢC THẬT (đang bật VÀ đã cấu hình), không phải công tắc thô.
+ */
+export interface PublicSettingsDto {
+  store: StoreInfoSettingsDto;
+  shipping: ShippingSettingsDto;
+  payments: PaymentMethodsDto;
+  ai: AiToggleSettingsDto;
 }
