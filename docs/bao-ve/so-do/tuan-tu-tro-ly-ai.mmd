@@ -1,0 +1,25 @@
+sequenceDiagram
+  autonumber
+  actor KH as Khách
+  participant W as Web
+  participant A as API
+  participant DB as MySQL
+  participant G as Gemini
+  KH->>W: "Laptop đồ hoạ dưới 30 triệu?"
+  W->>A: POST /api/ai/chat
+  A->>A: Tính năng đang bật? Giới hạn tần suất
+  A->>DB: Lưu câu hỏi vào hội thoại
+  A->>A: Tách cụm giá "dưới 30 triệu"
+  A->>G: Embedding câu hỏi
+  G-->>A: Vector
+  A->>A: Cosine similarity với chỉ mục embedding sản phẩm → top 20
+  A->>DB: Giá, tồn kho thật của sản phẩm ứng viên
+  A->>G: Sản phẩm ứng viên + lịch sử + câu hỏi (stream)
+  loop Từng đoạn trả lời
+    G-->>A: đoạn chữ
+    A-->>W: SSE "delta"
+  end
+  A->>A: Tự đối chiếu sản phẩm được nhắc (không tin AI tự khai)
+  A->>DB: Lưu câu trả lời + sản phẩm trích dẫn
+  A-->>W: SSE "done" + sản phẩm trích dẫn
+  W-->>KH: Câu trả lời + thẻ sản phẩm có link

@@ -1,0 +1,69 @@
+erDiagram
+  User {
+    string id PK
+    string email UK
+    string passwordHash
+    bool hasPassword
+    string fullName
+    string phone
+    string avatarUrl
+    UserRole role
+    bool isActive
+  }
+  OAuthAccount {
+    string id PK
+    string userId FK
+    OAuthProvider provider
+    string providerAccountId
+    string email
+  }
+  RefreshToken {
+    string id PK
+    string userId FK
+    string tokenHash UK
+    string userAgent
+    string ipAddress
+    datetime expiresAt
+    datetime revokedAt
+  }
+  PasswordResetToken {
+    string id PK
+    string userId FK
+    string tokenHash UK
+    datetime expiresAt
+    datetime usedAt
+  }
+  EmailVerificationToken {
+    string id PK
+    string userId FK
+    string tokenHash UK
+    datetime expiresAt
+    datetime usedAt
+  }
+  Address {
+    string id PK
+    string userId FK
+    string recipientName
+    string phone
+    string province
+    string district
+    string ward
+    string streetAddress
+    string note
+  }
+  AdminAuditLog {
+    string id PK
+    string actorId FK
+    UserRole actorRole
+    string action
+    string targetType
+    string targetId
+    json metadata
+    string ip
+  }
+  User ||--o{ OAuthAccount : "userId"
+  User ||--o{ RefreshToken : "userId"
+  User ||--o{ PasswordResetToken : "userId"
+  User ||--o{ EmailVerificationToken : "userId"
+  User ||--o{ Address : "userId"
+  User ||--o{ AdminAuditLog : "actorId"

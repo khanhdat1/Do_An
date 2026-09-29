@@ -1,0 +1,54 @@
+[
+  {
+    "id": "kien-truc",
+    "title": "Kiến trúc hệ thống"
+  },
+  {
+    "id": "use-case-khach",
+    "title": "Use case — phía khách hàng"
+  },
+  {
+    "id": "use-case-quan-tri",
+    "title": "Use case — khu quản trị (theo phân quyền)"
+  },
+  {
+    "id": "erd-tong-quat",
+    "title": "ERD tổng quát — 31 bảng"
+  },
+  {
+    "id": "erd-san-pham",
+    "title": "ERD — Sản phẩm & kho"
+  },
+  {
+    "id": "erd-nguoi-dung",
+    "title": "ERD — Người dùng & xác thực"
+  },
+  {
+    "id": "erd-don-hang",
+    "title": "ERD — Giỏ hàng, đơn hàng & thanh toán"
+  },
+  {
+    "id": "erd-ai-tuong-tac",
+    "title": "ERD — AI, Build PC, đánh giá & nội dung"
+  },
+  {
+    "id": "trang-thai-don",
+    "title": "Vòng đời đơn hàng (máy trạng thái)"
+  },
+  {
+    "id": "tuan-tu-dat-hang",
+    "title": "Sơ đồ tuần tự — Đặt hàng"
+  },
+  {
+    "id": "tuan-tu-ai-cau-hinh",
+    "title": "Sơ đồ tuần tự — AI gợi ý cấu hình"
+  },
+  {
+    "id": "tuan-tu-tro-ly-ai",
+    "title": "Sơ đồ tuần tự — Trợ lý AI (RAG)"
+  },
+  {
+    "id": "tuan-tu-dang-nhap-mxh",
+    "title": "Sơ đồ tuần tự — Đăng nhập Google / Facebook"
+  }
+]

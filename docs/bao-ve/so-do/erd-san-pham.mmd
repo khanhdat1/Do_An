@@ -1,0 +1,91 @@
+erDiagram
+  Category {
+    string id PK
+    string parentId FK
+    string name UK
+    string slug UK
+    string description
+    string imageUrl
+    string icon
+    ComponentType componentType
+    int sortOrder
+  }
+  Brand {
+    string id PK
+    string name UK
+    string slug UK
+    string logoUrl
+    string description
+    string website
+    bool isActive
+  }
+  Product {
+    string id PK
+    string categoryId FK
+    string brandId FK
+    string slug UK
+    string sku UK
+    string sourceUrl UK
+    string name
+    string source
+    decimal costPrice
+  }
+  ProductImage {
+    string id PK
+    string productId FK
+    string url
+    string alt
+    int position
+    bool isPrimary
+    string source
+    string sourceUrl
+    string remoteUrl
+  }
+  ProductSpec {
+    string id PK
+    string productId FK, UK
+    ComponentType componentType
+    string socket
+    string chipset
+    int cpuCores
+    int cpuThreads
+    decimal baseClock
+    decimal boostClock
+  }
+  ProductEmbedding {
+    string id PK
+    string productId FK, UK
+    string vectorId UK
+    string collection
+    string model
+    int dimensions
+    string contentHash
+    string chunkText
+    json vector
+  }
+  InventoryTransaction {
+    string id PK
+    string productId FK
+    string orderId FK
+    string createdById FK
+    InventoryTxType type
+    int quantityChange
+    int quantityAfter
+    decimal unitCost
+    string note
+  }
+  Order {
+    string id PK
+  }
+  User {
+    string id PK
+  }
+  Category |o--o{ Category : "parentId"
+  Category ||--o{ Product : "categoryId"
+  Brand |o--o{ Product : "brandId"
+  Product ||--o| ProductImage : "productId"
+  Product ||--o| ProductSpec : "productId"
+  Product ||--o| ProductEmbedding : "productId"
+  Product ||--o{ InventoryTransaction : "productId"
+  Order |o--o{ InventoryTransaction : "orderId"
+  User |o--o{ InventoryTransaction : "createdById"

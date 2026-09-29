@@ -1,0 +1,26 @@
+flowchart LR
+  NVDH["Nhân viên đơn hàng"]:::actor
+  NVSP["Nhân viên sản phẩm"]:::actor
+  QL["Quản lý"]:::actor
+  CW["Chủ website"]:::actor
+  QL -.->|"kế thừa"| NVDH
+  QL -.->|"kế thừa"| NVSP
+  CW -.->|"kế thừa"| QL
+  subgraph HT["Hệ thống PCZone — khu quản trị"]
+    A0(["Đăng nhập quản trị, xác thực 2 bước"])
+    A1(["Xử lý đơn: xác nhận, đóng gói, giao, mã vận đơn"])
+    A2(["Xác nhận chuyển khoản, huỷ, hoàn trả, hoàn tiền"])
+    A3(["Thêm, sửa, ẩn sản phẩm, duyệt DRAFT"])
+    A4(["Nhập, xuất, điều chỉnh tồn kho"])
+    A5(["Duyệt, trả lời đánh giá"])
+    A6(["Quản lý khách hàng, khoá tài khoản"])
+    A7(["Mã giảm giá, banner trang chủ"])
+    A8(["Báo cáo doanh thu, xuất Excel"])
+    A9(["Tài khoản quản trị, phân quyền"])
+    A10(["Cài đặt hệ thống"])
+  end
+  NVDH --- A0 & A1 & A2
+  NVSP --- A0 & A3 & A4 & A5
+  QL --- A6 & A7 & A8
+  CW --- A9 & A10
+  classDef actor fill:#fff7ed,stroke:#c2410c,stroke-width:2px,color:#1f2937

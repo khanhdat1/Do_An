@@ -1,0 +1,24 @@
+sequenceDiagram
+  autonumber
+  actor KH as Khách hàng
+  participant W as Web (Next.js)
+  participant A as API (Express)
+  participant DB as MySQL
+  KH->>W: Bấm "Đặt hàng" (địa chỉ, phương thức, mã giảm giá)
+  W->>A: POST /api/orders
+  A->>A: Kiểm tra dữ liệu (Zod), phương thức thanh toán đang bật
+  A->>DB: BEGIN TRANSACTION
+  A->>DB: Đọc giỏ hàng + sản phẩm
+  alt Hết hàng hoặc sản phẩm ngừng bán
+    A-->>W: 409 "không còn đủ số lượng"
+  end
+  A->>DB: Kiểm tra lại mã giảm giá (điều kiện, lượt dùng)
+  A->>A: Tổng = tạm tính − giảm giá + phí ship (tính trên tạm tính trước giảm)
+  A->>DB: Tạo Order (mã PCZyyyymmdd-nnnn), ghi nhận mã giảm giá
+  loop Từng sản phẩm
+    A->>DB: Trừ kho có điều kiện (tồn ≥ số lượng), InventoryTransaction, OrderItem (giá tại lúc mua)
+  end
+  A->>DB: OrderStatusHistory (Chờ xác nhận), Payment (chờ thanh toán), xoá giỏ
+  A->>DB: COMMIT
+  A-->>W: 201 Created
+  W-->>KH: Trang đơn hàng (chuyển khoản / MoMo: hiện mã QR)

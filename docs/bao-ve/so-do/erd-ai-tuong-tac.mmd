@@ -1,0 +1,101 @@
+erDiagram
+  AiConversation {
+    string id PK
+    string userId FK
+    string sessionId
+    string title
+    datetime lastMessageAt
+  }
+  AiMessage {
+    string id PK
+    string conversationId FK
+    MessageRole role
+    string content
+    json citedProductIds
+    json retrievedChunks
+    int tokensIn
+    int tokensOut
+    int latencyMs
+  }
+  AiSearchLog {
+    string id PK
+    string userId FK
+    string sessionId
+    string query
+    json parsedFilters
+    int resultCount
+    string clickedProductId
+    int tookMs
+  }
+  PcBuild {
+    string id PK
+    string userId FK
+    string shareCode UK
+    string sessionId
+    string name
+    string purpose
+    decimal budget
+    decimal totalPrice
+    int estimatedWattage
+  }
+  PcBuildItem {
+    string id PK
+    string buildId FK
+    string productId FK
+    ComponentType componentType
+    int quantity
+    decimal priceAtAdd
+  }
+  Review {
+    string id PK
+    string productId FK
+    string userId FK
+    string orderId FK
+    int rating
+    string title
+    string content
+    json images
+    bool isApproved
+  }
+  WishlistItem {
+    string id PK
+    string userId FK
+    string productId FK
+  }
+  Banner {
+    string id PK
+    string title
+    string subtitle
+    string imageUrl
+    string linkUrl
+    int displayOrder
+    BannerStatus status
+    datetime startsAt
+    datetime endsAt
+  }
+  Setting {
+    string key PK
+    string updatedById FK
+    json value
+  }
+  User {
+    string id PK
+  }
+  Product {
+    string id PK
+  }
+  Order {
+    string id PK
+  }
+  User |o--o{ AiConversation : "userId"
+  AiConversation ||--o{ AiMessage : "conversationId"
+  User |o--o{ AiSearchLog : "userId"
+  User |o--o{ PcBuild : "userId"
+  PcBuild ||--o{ PcBuildItem : "buildId"
+  Product ||--o{ PcBuildItem : "productId"
+  Product ||--o{ Review : "productId"
+  User ||--o{ Review : "userId"
+  Order |o--o{ Review : "orderId"
+  User ||--o{ WishlistItem : "userId"
+  Product ||--o{ WishlistItem : "productId"
+  User |o--o{ Setting : "updatedById"

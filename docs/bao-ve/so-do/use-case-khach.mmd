@@ -1,0 +1,27 @@
+flowchart LR
+  KVL["Khách vãng lai"]:::actor
+  KH["Khách hàng<br/>(đã đăng nhập)"]:::actor
+  GEM["Google Gemini"]:::ext
+  OA["Google / Facebook"]:::ext
+  KH -.->|"kế thừa"| KVL
+  subgraph HT["Hệ thống PCZone — phía khách"]
+    U1(["Xem danh mục, chi tiết sản phẩm"])
+    U2(["Tìm kiếm từ khoá, tìm bằng AI"])
+    U3(["So sánh sản phẩm"])
+    U4(["Quản lý giỏ hàng"])
+    U5(["Tra cứu đơn bằng mã đơn + SĐT"])
+    U6(["Hỏi trợ lý AI"])
+    U7(["Tự ráp cấu hình, kiểm tra tương thích"])
+    U8(["AI gợi ý cấu hình theo ngân sách"])
+    U9(["Đăng ký, đăng nhập: email, Google, Facebook"])
+    U10(["Đặt hàng: COD, chuyển khoản, MoMo, mã giảm giá"])
+    U11(["Theo dõi, tự huỷ đơn"])
+    U12(["Đánh giá sản phẩm đã nhận"])
+    U13(["Sổ địa chỉ, yêu thích, cấu hình đã lưu"])
+  end
+  KVL --- U1 & U2 & U3 & U4 & U5 & U6 & U7 & U8 & U9
+  KH --- U10 & U11 & U12 & U13
+  U2 & U6 & U8 -.- GEM
+  U9 -.- OA
+  classDef actor fill:#fff7ed,stroke:#c2410c,stroke-width:2px,color:#1f2937
+  classDef ext fill:#f1f5f9,stroke:#475569,stroke-dasharray:4 3,color:#1f2937
