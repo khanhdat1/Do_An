@@ -29,6 +29,8 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
+      args:
+        SITE_URL: ${PUBLIC_URL}
     image: pczone-app
     restart: unless-stopped
     env_file: .env
@@ -63,6 +65,8 @@ services:
     environment:
       NODE_ENV: production
       API_URL: http://api:4000
+      # sitemap.xml, robots.txt (apps/web/lib/site-url.ts)
+      SITE_URL: ${PUBLIC_URL}
     command: /app/node_modules/.bin/next start -H 0.0.0.0 -p 3000
     depends_on:
       api:

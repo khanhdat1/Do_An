@@ -69,7 +69,7 @@ export default defineConfig({
       reuseExistingServer: false,
       stdout: "ignore",
       stderr: "pipe",
-      env: { NEXT_PUBLIC_API_URL: "", API_URL },
+      env: { NEXT_PUBLIC_API_URL: "", API_URL, SITE_URL: WEB_URL },
     },
   ],
 });

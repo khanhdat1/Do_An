@@ -30,6 +30,9 @@ RUN npx prisma generate --schema packages/db/prisma/schema.prisma \
 # mạng Docker. Lúc build chưa có API chạy nên các trang dựng sẵn tạm dùng dữ liệu dự phòng, tự thay bằng dữ liệu thật
 # ở lần tải kế tiếp (ISR 60 giây) — deploy.sh tự "làm nóng" các trang này sau khi khởi động.
 ENV API_URL=http://api:4000 NEXT_PUBLIC_API_URL=""
+# Địa chỉ công khai (PUBLIC_URL trong deploy/.env) — link tuyệt đối của ảnh chia sẻ mạng xã hội trong các trang dựng sẵn
+ARG SITE_URL=""
+ENV SITE_URL=$SITE_URL
 RUN npm run build -w @pczone/web
 
 ENV NODE_ENV=production

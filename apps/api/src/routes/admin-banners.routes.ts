@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
+import { unlink } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Router, type NextFunction, type Request, type Response } from "express";
@@ -10,6 +11,7 @@ import { adminWriteLimiter, noStore } from "../middleware/security.js";
 import { requirePermission } from "../middleware/permissions.js";
 import { BadRequestError } from "../middleware/errors.js";
 import { createBanner, deleteBanner, getBannerForAdmin, listBannersForAdmin, updateBanner } from "../services/admin-banner.service.js";
+import { fileMatchesImageSignature } from "../utils/image-signature.js";
 
 /** Quản trị banner trang chủ (Đợt 6 phần 2 — nội dung). */
 export const adminBannersRouter = Router();
@@ -57,9 +59,14 @@ function uploadImageMiddleware(req: Request, res: Response, next: NextFunction) 
 }
 
 /** POST /api/admin/banners/upload-image — multipart field "image", trả về {url} để đưa vào form tạo/sửa banner */
-adminBannersRouter.post("/upload-image", requirePermission("content:write"), adminWriteLimiter, uploadImageMiddleware, (req, res, next) => {
+adminBannersRouter.post("/upload-image", requirePermission("content:write"), adminWriteLimiter, uploadImageMiddleware, async (req, res, next) => {
   try {
     if (!req.file) throw new BadRequestError("Thiếu file ảnh");
+    // Kiểu MIME do người gửi tự khai — đối chiếu nội dung thật trước khi file được phục vụ công khai
+    if (!(await fileMatchesImageSignature(req.file.path, req.file.mimetype))) {
+      await unlink(req.file.path).catch(() => {});
+      throw new BadRequestError("Tệp tải lên không phải ảnh JPEG/PNG/WEBP/GIF hợp lệ");
+    }
     res.status(201).json({ url: `/images/banners/${req.file.filename}` });
   } catch (error) {
     next(error);

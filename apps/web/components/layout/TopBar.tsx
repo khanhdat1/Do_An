@@ -33,7 +33,7 @@ export default async function TopBar() {
             <PhoneCall className="size-3.5 text-brand-500" />
             Hotline:
             <span className="font-semibold text-gold-400">{store.hotline}</span>
-            <span className="text-slate-500">(Miễn phí)</span>
+            <span className="text-slate-400">(Miễn phí)</span>
           </span>
 
           {topBarLinks.map((item) => {

@@ -6,6 +6,14 @@
 {$SITE_ADDRESS} {
 	encode zstd gzip
 
+	# HSTS: trình duyệt đã vào qua HTTPS thì từ đó luôn dùng HTTPS (bỏ qua khi chạy thử HTTP trên máy dev); nosniff cho
+	# cả file banner Caddy tự phục vụ; bỏ header "Server". Header bảo mật của trang web đặt ở apps/web/next.config.ts
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
+
 	handle /api/* {
 		reverse_proxy api:4000
 	}

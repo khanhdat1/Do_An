@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { WEB_URL } from "../e2e-env";
-import { MOUSE, placeCodOrderViaApi, registerCustomerViaApi } from "./helpers";
+import { loginAdminViaApi, MOUSE, placeCodOrderViaApi, registerCustomerViaApi } from "./helpers";
 
 test.describe("Phân quyền", () => {
   test("chưa đăng nhập quản trị mà mở trang /admin/* thì bị đưa về trang đăng nhập quản trị", async ({ page }) => {
@@ -31,5 +31,17 @@ test.describe("Phân quyền", () => {
 
     await owner.dispose();
     await stranger.dispose();
+  });
+
+  test("tải ảnh banner: nội dung không phải ảnh bị từ chối dù tự khai là image/png", async ({ request }) => {
+    await loginAdminViaApi(request);
+    // Bị từ chối thì API tự xoá file vừa nhận — test không để lại gì trong thư mục banner
+    const response = await request.post("/api/admin/banners/upload-image", {
+      multipart: {
+        image: { name: "banner.png", mimeType: "image/png", buffer: Buffer.from("<html><script>alert(1)</script></html>") },
+      },
+    });
+    expect(response.status()).toBe(400);
+    expect(await response.text()).toContain("không phải ảnh");
   });
 });

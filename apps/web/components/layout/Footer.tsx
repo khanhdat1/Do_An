@@ -14,7 +14,7 @@ const PAYMENT_LABELS: Record<keyof PaymentMethods, string> = {
 };
 
 /**
- * Footer tối 5 cột: giới thiệu, khám phá, mua sắm, hỗ trợ, thanh toán.
+ * Footer tối 6 cột: giới thiệu, khám phá, mua sắm, chính sách, hỗ trợ, thanh toán.
  * Tổng đài / email / địa chỉ showroom và phương thức thanh toán lấy từ cài đặt hệ thống (`/admin/settings`) —
  * cùng số với TopBar (trước đây Footer ghi 1800 6868 trong khi TopBar ghi 1800 8888), và chỉ liệt kê phương thức
  * khách dùng được thật (đang bật và đã cấu hình), không in logo đối tác/chứng nhận không có thật.
@@ -25,7 +25,7 @@ export default async function Footer() {
 
   return (
     <footer className="mt-10 bg-ink-950 text-slate-400">
-      <div className="container-page grid gap-10 py-12 md:grid-cols-2 lg:grid-cols-5">
+      <div className="container-page grid gap-10 py-12 md:grid-cols-3 lg:grid-cols-6">
         {/* Cột giới thiệu */}
         <div className="lg:col-span-1">
           <Logo />

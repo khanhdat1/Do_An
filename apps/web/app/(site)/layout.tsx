@@ -5,8 +5,11 @@ import Footer from "@/components/layout/Footer";
 import CompareBar from "@/components/product/CompareBar";
 import AppProviders from "@/components/providers/AppProviders";
 import { getPublicSettings } from "@/lib/api";
+import { siteUrl } from "@/lib/site-url";
 
 export const metadata: Metadata = {
+  // Gốc để Next dựng link tuyệt đối cho ảnh chia sẻ mạng xã hội (Open Graph) — lib/site-url.ts
+  metadataBase: new URL(siteUrl()),
   title: "PCZone – Build Your Power, Own Your Zone",
   description:
     "Hệ thống bán lẻ PC Gaming, laptop và linh kiện chính hãng tích hợp trợ lý AI tư vấn cấu hình, kiểm tra tương thích và build PC thông minh.",

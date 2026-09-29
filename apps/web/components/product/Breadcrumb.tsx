@@ -13,7 +13,8 @@ interface BreadcrumbProps {
 export default function Breadcrumb({ categories, current }: BreadcrumbProps) {
   return (
     <nav aria-label="Đường dẫn" className="mb-4">
-      <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-500">
+      {/* slate-600: slate-500 trên nền xám của trang chỉ đạt 4.1:1, dưới chuẩn tương phản 4.5:1 cho chữ nhỏ */}
+      <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-600">
         <li>
           <Link href="/" className="transition hover:text-brand-600">
             Trang chủ
