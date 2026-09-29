@@ -37,7 +37,8 @@ export function errorMessage(error: unknown): string {
 }
 
 interface ApiRequest {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  /** PUT: thay thế nguyên một tài nguyên (hiện chỉ `PUT /api/admin/settings`) */
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   signal?: AbortSignal;
 }

@@ -320,6 +320,7 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | GET | `/api/vouchers` | Mã giảm giá công khai đang áp dụng được (không cần đăng nhập) |
 | GET | `/api/vouchers/preview?code=&subtotal=` | Xem trước số tiền được giảm trước khi đặt hàng (cần đăng nhập, để kiểm tra lượt dùng của riêng người đó) |
 | GET | `/api/banners` | Dải banner khuyến mãi trang chủ đang hiện được (đã đăng + trong khoảng ngày hiệu lực), công khai |
+| GET | `/api/settings` | Cài đặt công khai cho trang bán hàng: `store` (hotline, email hỗ trợ, địa chỉ showroom), `shipping` (`flatFee`, `freeThreshold`), `payments`/`ai` = phương thức thanh toán / tính năng AI **dùng được thật** (đang bật VÀ đã cấu hình). Không chứa khoá hay số tài khoản (mục 11, "Cài đặt hệ thống") |
 | GET | `/api/products/:slug/reviews?page=&pageSize=` | Đánh giá ĐÃ DUYỆT của một sản phẩm, công khai, mới nhất trước |
 | GET | `/api/products/:slug/reviews/eligibility` | Đã mua và nhận hàng (đơn đã giao) và còn đơn nào chưa dùng để đánh giá không (cần đăng nhập) |
 | POST | `/api/products/:slug/reviews` | Gửi đánh giá `{ rating, title?, content? }` — chỉ khách có đơn `status=DELIVERED` chứa sản phẩm này; vào hàng chờ duyệt, chưa hiện công khai ngay |
@@ -344,7 +345,7 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | POST | `/api/orders/:orderCode/cancel` | Tự huỷ đơn — chỉ khi chưa thanh toán và chưa đóng gói |
 | POST | `/api/orders/:orderCode/pay` | Mở một lượt thử thanh toán VNPay mới cho đơn chưa trả tiền thành công |
 | GET | `/api/order-lookup?code=&phone=` | Tra cứu đơn hàng công khai (không cần đăng nhập), phải khớp cả mã đơn lẫn số điện thoại nhận hàng |
-| GET | `/api/payments/methods` | Phương thức thanh toán nào đang bật (`{ cod, vnpay, bankTransfer, momo }`, `false` nếu thiếu cấu hình) |
+| GET | `/api/payments/methods` | Phương thức khách chọn được (`{ cod, vnpay, bankTransfer, momo }`) — `false` nếu thiếu cấu hình trong `.env` HOẶC đang tắt ở `/admin/settings` |
 | GET | `/api/payments/vnpay/return`, `/api/payments/vnpay/ipn` | VNPay gọi về sau khi thanh toán (mục 9 bên dưới) — không gọi trực tiếp từ frontend |
 | GET | `/api/admin/orders?status=&paymentStatus=&paymentMethod=&page=` | Danh sách đơn cho quản trị — cần quyền `orders:read` |
 | GET | `/api/admin/orders/export?status=&paymentStatus=&paymentMethod=` | File `.xlsx` TẤT CẢ đơn khớp bộ lọc (không phân trang, đúng số liệu danh sách trên) — cần quyền `orders:read` |
@@ -380,6 +381,8 @@ Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu 
 | POST | `/api/admin/accounts`, PATCH `/api/admin/accounts/:id` | Tạo/sửa tài khoản — `role`/`password` bắt buộc lúc tạo, để trống lúc sửa = giữ nguyên; tự đổi vai trò chính mình bị chặn — cần quyền `admins:manage` |
 | PATCH | `/api/admin/accounts/:id/lock` | Khoá/mở khoá — tự khoá chính mình bị chặn — cần quyền `admins:manage` |
 | POST | `/api/admin/accounts/:id/disable-2fa` | Tắt 2FA HỘ một tài khoản khác — dùng khi họ mất thiết bị xác thực và không tự đăng nhập để tự tắt được nữa — cần quyền `admins:manage` |
+| GET | `/api/admin/settings` | Toàn bộ cài đặt + tình trạng cấu hình `.env` (chỉ true/false) + lần sửa gần nhất — cần quyền `settings:write` (chỉ OWNER) |
+| PUT | `/api/admin/settings` | Lưu cả 4 nhóm `{ store, shipping, payments, ai }` (thay nguyên bộ); kiểm tra giới hạn; ghi `AdminAuditLog` `settings.updated` kèm trước/sau của đúng các trường đã đổi — cần quyền `settings:write` |
 
 Tham số của `/api/products`:
 
@@ -1084,6 +1087,40 @@ khi triển khai mới (chưa có ai đăng nhập được để dùng giao di�
   để chuyển đổi, nhưng KHÔNG bắt buộc phải chuyển ngay mới sửa/khoá được các trường khác (để trống vai
   trò = giữ nguyên).
 
+### Cài đặt hệ thống
+
+`/admin/settings` (chỉ OWNER — quyền `settings:write` có từ Đợt 1; cần quyền này cả để XEM, vì trang lộ tình
+trạng cấu hình `.env`). Một form cho 4 nhóm, lưu một lần, không cần sửa code hay khởi động lại máy chủ:
+
+- **Thông tin cửa hàng** — hotline, email hỗ trợ, địa chỉ showroom (không bắt buộc). Trước đây viết cứng và lệch
+  nhau (thanh trên cùng, mô tả sản phẩm, phiếu in ghi 1800 8888 còn chân trang ghi 1800 6868); giờ mọi nơi đọc chung
+  một nguồn. Mặc định 1800 8888 / support@pczone.vn / chưa có địa chỉ (chân trang và phiếu in tự ẩn dòng địa chỉ khi
+  để trống — không bịa một địa chỉ).
+- **Phí vận chuyển** — phí cố định (0–1.000.000đ, mặc định 30.000đ) và ngưỡng miễn phí theo tạm tính trước giảm giá
+  (0–100.000.000đ, mặc định 500.000đ; 0 = mọi đơn miễn phí). Máy chủ luôn đọc số HIỆN HÀNH và tính lại lúc tạo đơn;
+  giỏ hàng/trang đặt hàng xem trước bằng cùng công thức với số lấy từ `GET /api/settings` — phía web không còn hằng số
+  chép tay.
+- **Phương thức thanh toán** — bật/tắt COD, chuyển khoản, MoMo, VNPay. Khách chỉ chọn được phương thức vừa BẬT vừa đã
+  cấu hình trong `.env` (khoá/số tài khoản vẫn chỉ nằm trong `.env`, không bao giờ vào cơ sở dữ liệu). Đặt đơn bằng
+  phương thức đang tắt bị máy chủ từ chối (400 "Phương thức … đang tạm tắt…"), không chỉ ẩn nút; trang không cho lưu
+  nếu không còn phương thức nào dùng được. Đơn đã đặt trước đó không bị ảnh hưởng. Chân trang cũng chỉ liệt kê đúng
+  các phương thức đang dùng được.
+- **Tính năng AI** — bật/tắt Tìm kiếm bằng AI, Trợ lý AI, AI gợi ý cấu hình. Tắt AI Search thì lặng lẽ lùi về tìm
+  kiếm từ khoá (giống hệt lúc chưa cấu hình khoá AI). Tắt Trợ lý AI / AI gợi ý cấu hình thì API trả 503 "Tính năng …
+  đang tạm tắt." và giao diện hiện thông báo ngay (`/tro-ly-ai` kèm hotline, khối AI trên `/ai-build-pc`). Build PC tự
+  chọn linh kiện không dùng AI nên vẫn chạy bình thường. Hữu ích khi hết quota Gemini lúc demo.
+
+Lưu ở bảng `Setting` (mỗi dòng một nhóm, giá trị JSON, người sửa gần nhất), migration
+`20260928134703_add_system_settings` chỉ thêm bảng mới. Giá trị mặc định viết trong code
+(`apps/api/src/settings/system-settings.ts`): chưa có dòng, thiếu trường hay trường hỏng đều dùng mặc định — y như
+trước khi có trang này. API giữ bộ nhớ đệm 30 giây và xoá ngay khi lưu, nên đơn hàng, trang đặt hàng và tính năng AI
+áp dụng số mới tức thì; đầu/chân trang bán hàng dựng ở server có cache 60 giây nên cập nhật trong khoảng 1 phút. Mỗi
+lần lưu ghi `AdminAuditLog` (`settings.updated`) kèm giá trị trước/sau của đúng các trường đã đổi; lưu mà không đổi gì
+thì không ghi. Kiểm thử phần tính toán: `src/settings/settings.test.ts` (đã có trong `npm test -w @pczone/api`).
+
+Chưa làm: đổi tên cửa hàng (là thương hiệu gắn ở logo, tiêu đề mọi trang và prompt AI — đổi riêng một chỗ sẽ lại
+lệch); hai người cùng mở trang rồi lưu thì người lưu sau ghi đè cả form (chưa có kiểm tra xung đột).
+
 ### Tình trạng — đã xong Đợt 1-6/6 + quản lý tài khoản quản trị khác
 
 Đã xong: đăng nhập/phân quyền tách biệt (Đợt 1), khung giao diện `/admin` (sidebar theo quyền, tương
@@ -1118,7 +1155,8 @@ quảng cáo "PCPoints" ở trang đăng nhập cũng đã gỡ.
 - [x] Sản phẩm yêu thích (`/yeu-thich`) và mã giảm giá (`/khuyen-mai`, áp dụng được lúc đặt hàng)
 - [x] Đánh giá sản phẩm (`/san-pham/[slug]`, chỉ khách đã nhận hàng — đơn đã giao — mới gửi được, chờ duyệt ở `/admin/reviews` mới hiện công khai — mục 10)
 - [x] So sánh sản phẩm (`/so-sanh`, tối đa 4 sản phẩm, chỉ lưu ở trình duyệt qua localStorage — không cần đăng nhập, không gọi API mới; bảng gộp mọi nhãn thông số của các sản phẩm đã chọn)
-- [x] Gỡ chữ quảng cáo không có thật (Bottleneck AI, Stress-test 24H, "tương thích 100%", 4.98/5, 150.000+ game thủ, PCPoints, AI PC Builder 3D, bảo hành On-site 2 giờ, nhãn cấu hình gắn lên ảnh minh hoạ) — trang chủ và trang đăng nhập chỉ nêu tính năng có thật. Điểm thưởng/hạng thành viên: đã bỏ khỏi kế hoạch
+- [x] Gỡ chữ quảng cáo không có thật (Bottleneck AI, Stress-test 24H, "tương thích 100%", 4.98/5, 150.000+ game thủ, PCPoints, AI PC Builder 3D, bảo hành On-site 2 giờ, nhãn cấu hình gắn lên ảnh minh hoạ; ở chân trang: số GPĐKKD và huy hiệu "Bộ Công Thương" không có thật, logo trả góp FE Credit/HomeCredit, "cố vấn AI đầu tiên tại Việt Nam") — trang chủ, trang đăng nhập và chân trang chỉ nêu tính năng có thật. Điểm thưởng/hạng thành viên: đã bỏ khỏi kế hoạch
+- [x] **Cài đặt hệ thống** (`/admin/settings`, chỉ OWNER — mục 11): thông tin cửa hàng, phí vận chuyển, bật/tắt phương thức thanh toán và tính năng AI, có nhật ký thay đổi
 - [ ] Làm lại giao diện Tổng quan tài khoản / danh sách đơn hàng theo phong cách bảng điều khiển (thẻ số liệu, dòng thời gian ngang) — đã bàn hướng làm, chưa triển khai
 - [x] Chuyển khoản ngân hàng (QR VietQR tự điền số tiền/nội dung) và ví MoMo (số điện thoại) làm thủ công, không qua cổng — xác nhận tay ở `/admin/orders` (mục 9, 11)
 - [ ] Cổng thanh toán thật cho thẻ quốc tế / trả góp (MoMo Business API, OnePay...) — mỗi cổng cần tự đăng ký tài khoản sandbox riêng như VNPay; thẻ ATM/Visa/Master nội địa đã dùng được ngay qua VNPay (mục 9)

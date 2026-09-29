@@ -9,7 +9,10 @@ type Method = "COD" | "VNPAY" | "BANK_TRANSFER" | "MOMO";
 interface PaymentMethodPickerProps {
   value: Method;
   onChange: (method: Method) => void;
-  /** `null` = chưa tải xong `/api/payments/methods`: tạm coi mọi phương thức khả dụng, không khoá nhầm trong lúc chờ */
+  /**
+   * `null` = chưa tải xong `/api/payments/methods`: tạm coi mọi phương thức khả dụng, không khoá nhầm trong lúc chờ.
+   * Một phương thức bị khoá khi chưa cấu hình trong .env HOẶC chủ website đang tắt ở `/admin/settings`.
+   */
   methods: PaymentMethods | null;
 }
 
@@ -61,7 +64,7 @@ export default function PaymentMethodPicker({ value, onChange, methods }: Paymen
             <span className="min-w-0 flex-1">
               <span className="block font-semibold text-slate-800">{option.label}</span>
               <span className="block text-xs text-slate-500">
-                {disabled ? "Phương thức này hiện chưa khả dụng, vui lòng chọn COD" : option.note}
+                {disabled ? "Phương thức này hiện chưa khả dụng, vui lòng chọn phương thức khác" : option.note}
               </span>
             </span>
           </label>

@@ -4,6 +4,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CompareBar from "@/components/product/CompareBar";
 import AppProviders from "@/components/providers/AppProviders";
+import { getPublicSettings } from "@/lib/api";
 
 export const metadata: Metadata = {
   title: "PCZone – Build Your Power, Own Your Zone",
@@ -18,9 +19,13 @@ export const metadata: Metadata = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Cài đặt công khai (phí vận chuyển, tính năng AI đang bật...) truyền sẵn cho client component qua
+  // StoreSettingsProvider — cùng một request với TopBar/Footer (Next.js gộp fetch trùng địa chỉ)
+  const settings = await getPublicSettings();
+
   return (
     <html lang="vi" data-scroll-behavior="smooth">
       <head>
@@ -44,7 +49,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <AppProviders>
+        <AppProviders settings={settings}>
           <Header />
           <main className="min-h-screen pb-6">{children}</main>
           <Footer />

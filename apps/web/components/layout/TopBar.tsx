@@ -7,6 +7,7 @@ import {
   Store,
 } from "lucide-react";
 
+import { getPublicSettings } from "@/lib/api";
 import { topBarLinks } from "@/lib/data/navigation";
 import TopBarAccount from "./TopBarAccount";
 
@@ -19,8 +20,11 @@ const linkIcons = {
 /**
  * Thanh thông tin trên cùng: hotline, showroom, tra cứu bảo hành,
  * đăng nhập và chọn ngôn ngữ. Ẩn trên màn hình nhỏ.
+ * Hotline lấy từ cài đặt hệ thống (`/admin/settings`), cùng số với Footer và bài mô tả sản phẩm.
  */
-export default function TopBar() {
+export default async function TopBar() {
+  const { store } = await getPublicSettings();
+
   return (
     <div className="hidden border-b border-white/5 bg-ink-950 lg:block">
       <div className="container-page flex h-9 items-center justify-between text-[11px] font-medium text-slate-400">
@@ -28,7 +32,7 @@ export default function TopBar() {
           <span className="flex items-center gap-1.5 text-slate-300">
             <PhoneCall className="size-3.5 text-brand-500" />
             Hotline:
-            <span className="font-semibold text-gold-400">1800 8888</span>
+            <span className="font-semibold text-gold-400">{store.hotline}</span>
             <span className="text-slate-500">(Miễn phí)</span>
           </span>
 

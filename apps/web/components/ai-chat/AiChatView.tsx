@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Sparkles } from "lucide-react";
+import Link from "next/link";
+import { BotOff, Sparkles } from "lucide-react";
+import { useStoreSettings } from "@/components/providers/StoreSettingsProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { streamChatMessage } from "@/lib/ai-chat-client";
 import { aiAdvisorSuggestions } from "@/lib/data/ai-advisor";
@@ -27,6 +29,10 @@ export default function AiChatView({ initialQuestion }: AiChatViewProps) {
   const [sending, setSending] = useState(() => Boolean(initialQuestion));
   const conversationIdRef = useRef<string | undefined>(undefined);
   const toast = useToast();
+  // Chủ website tắt trợ lý AI ở /admin/settings (hoặc chưa cấu hình khoá AI): hiện thông báo ngay, không để khách
+  // gõ xong mới nhận lỗi. API vẫn tự chặn (503) nếu cài đặt đổi trong lúc trang đang mở — lỗi đó hiện qua toast.
+  const { ai, store } = useStoreSettings();
+  const chatEnabled = ai.chat;
 
   /** Thêm 2 bong bóng (người dùng + placeholder trả lời) rồi bắt đầu stream — dùng chung cho gửi tay và tự gửi lúc vào trang */
   function startTurn(text: string): { userMessageId: string; assistantMessageId: string; controller: AbortController } {
@@ -80,7 +86,7 @@ export default function AiChatView({ initialQuestion }: AiChatViewProps) {
    * (đóng trong closure qua id), không ảnh hưởng lượt chạy lại.
    */
   useEffect(() => {
-    if (!initialQuestion) return;
+    if (!initialQuestion || !chatEnabled) return;
     // Bắt đầu một cuộc gọi mạng thật (gửi câu hỏi cho AI) khi vào trang với ?q= trên URL — không phải
     // kiểu "suy ra state từ state khác" mà rule này nhắm tới, mà là tác dụng phụ thật sự cần khi mount
     // (cùng tinh thần các chỗ khác trong dự án đã tắt rule này có chủ đích, vd CompareProvider hydrate từ localStorage).
@@ -91,7 +97,38 @@ export default function AiChatView({ initialQuestion }: AiChatViewProps) {
       setMessages((prev) => prev.filter((m) => m.id !== userMessageId && m.id !== assistantMessageId));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialQuestion]);
+  }, [initialQuestion, chatEnabled]);
+
+  if (!chatEnabled) {
+    return (
+      <div className="container-page py-4">
+        <div className="surface-card mx-auto flex max-w-2xl flex-col items-center px-6 py-14 text-center">
+          <span className="grid size-14 place-items-center rounded-full bg-slate-100 text-slate-400">
+            <BotOff className="size-7" />
+          </span>
+          <h1 className="mt-4 font-display text-lg font-bold text-slate-900">Trợ lý AI đang tạm tắt</h1>
+          <p className="mt-1.5 max-w-md text-sm text-slate-500">
+            Tính năng tư vấn bằng AI hiện không hoạt động. Bạn vẫn có thể tìm sản phẩm bằng ô tìm kiếm, tự ráp cấu hình ở Build
+            PC, hoặc gọi hotline <strong className="font-semibold text-slate-700">{store.hotline}</strong> để được tư vấn trực tiếp.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            <Link
+              href="/ai-build-pc"
+              className="rounded-xl bg-brand-500 px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition hover:bg-brand-600"
+            >
+              Tự ráp cấu hình PC
+            </Link>
+            <Link
+              href="/"
+              className="rounded-xl px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
+            >
+              Về trang chủ
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container-page flex h-[calc(100dvh-4rem)] max-h-[900px] flex-col py-4">

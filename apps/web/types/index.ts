@@ -977,3 +977,62 @@ export interface AdminAccountInput {
   /** Bắt buộc lúc tạo; để trống lúc sửa = giữ nguyên mật khẩu */
   password?: string;
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Cài đặt hệ thống — khớp các DTO cùng tên trong apps/api/src/types/dto.ts  */
+/* -------------------------------------------------------------------------- */
+
+export interface StoreInfoSettings {
+  hotline: string;
+  supportEmail: string;
+  /** Chuỗi rỗng = chưa khai báo, các nơi hiển thị tự ẩn dòng địa chỉ */
+  showroomAddress: string;
+}
+
+/** Đơn vị đồng; miễn phí khi tạm tính (trước giảm giá) đạt `freeThreshold` */
+export interface ShippingSettings {
+  flatFee: number;
+  freeThreshold: number;
+}
+
+/** Công tắc bật/tắt thô của chủ website — khác `PaymentMethods` (khả dụng thật = bật VÀ đã cấu hình .env) */
+export interface PaymentToggleSettings {
+  cod: boolean;
+  vnpay: boolean;
+  bankTransfer: boolean;
+  momo: boolean;
+}
+
+export interface AiToggleSettings {
+  search: boolean;
+  chat: boolean;
+  build: boolean;
+}
+
+/** Cũng là body `PUT /api/admin/settings` (đủ cả 4 nhóm) */
+export interface SystemSettings {
+  store: StoreInfoSettings;
+  shipping: ShippingSettings;
+  payments: PaymentToggleSettings;
+  ai: AiToggleSettings;
+}
+
+/** `GET`/`PUT /api/admin/settings` */
+export interface AdminSettings {
+  settings: SystemSettings;
+  /** Đã cấu hình trong .env hay chưa — chỉ true/false, không có khoá/số tài khoản */
+  configured: {
+    payments: PaymentMethods;
+    ai: boolean;
+  };
+  updatedAt?: string;
+  updatedByName?: string;
+}
+
+/** `GET /api/settings` — công khai; `payments`/`ai` là trạng thái dùng được thật (đang bật VÀ đã cấu hình) */
+export interface PublicSettings {
+  store: StoreInfoSettings;
+  shipping: ShippingSettings;
+  payments: PaymentMethods;
+  ai: AiToggleSettings;
+}

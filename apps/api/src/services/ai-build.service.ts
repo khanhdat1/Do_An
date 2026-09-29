@@ -22,6 +22,7 @@ import { formatMoneyLabel } from "../search/price-intent.js";
 import type { AiBuildSuggestionDto } from "../types/dto.js";
 import { formatPrice } from "../utils/format.js";
 import { loadSellableComponents, saveBuild } from "./pc-build.service.js";
+import { assertAiFeatureEnabled } from "./settings.service.js";
 
 interface Attempt {
   suggestion: ParsedSuggestion | null;
@@ -52,6 +53,10 @@ function evaluate(reply: string, catalog: Catalog, partById: Map<string, BuildPa
  * vẫn vượt ngân sách thì hệ thống tự đổi vài món sang món rẻ hơn bằng luật cố định (không tốn thêm lượt gọi AI).
  */
 export async function suggestBuild(userId: string | null, prompt: string): Promise<AiBuildSuggestionDto> {
+  // Tắt ở /admin/settings: 503 kèm câu báo rõ, không tốn lượt đọc DB hay gọi AI. Build PC tự chọn (/api/pc-build/*)
+  // không đi qua đây nên vẫn chạy bình thường
+  await assertAiFeatureEnabled("build");
+
   const components = await loadSellableComponents();
   const entries = components.map(({ slot, row, part }) => ({ slot, productId: row.id, name: row.name, price: part.price, keySpecs: keySpecs(slot, part.spec) }));
 

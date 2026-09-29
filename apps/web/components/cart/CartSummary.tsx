@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { ArrowRight, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { useStoreSettings } from "@/components/providers/StoreSettingsProvider";
 import { formatPrice } from "@/lib/format";
 import { authHref } from "@/lib/navigation";
-import { calcShippingFee, FREE_SHIPPING_THRESHOLD } from "@/lib/shipping";
+import { calcShippingFee } from "@/lib/shipping";
 import type { Cart, CartItem } from "@/types";
 
 /** Trang đặt hàng — cửa ngõ sang bước thanh toán */
@@ -30,10 +31,11 @@ function calcSavings(items: CartItem[]): number {
 /** Khối tổng tiền bên phải trang giỏ hàng + nút đi tiếp tuỳ theo trạng thái đăng nhập */
 export default function CartSummary({ cart }: { cart: Cart }) {
   const { status } = useAuth();
+  const { shipping } = useStoreSettings();
   const billable = cart.items.filter(isBillable);
   const billableCount = billable.reduce((sum, item) => sum + item.quantity, 0);
   const savings = calcSavings(billable);
-  const shippingFee = calcShippingFee(cart.subtotal);
+  const shippingFee = calcShippingFee(cart.subtotal, shipping);
 
   return (
     <aside className="surface-card p-4 sm:p-5">
@@ -59,7 +61,7 @@ export default function CartSummary({ cart }: { cart: Cart }) {
           </dd>
         </div>
         {shippingFee > 0 ? (
-          <p className="text-right text-xs text-slate-400">Miễn phí vận chuyển cho đơn từ {formatPrice(FREE_SHIPPING_THRESHOLD)}</p>
+          <p className="text-right text-xs text-slate-400">Miễn phí vận chuyển cho đơn từ {formatPrice(shipping.freeThreshold)}</p>
         ) : null}
       </dl>
 
@@ -106,7 +108,7 @@ export default function CartSummary({ cart }: { cart: Cart }) {
 
       <p className="mt-4 flex items-center justify-center gap-1.5 border-t border-slate-100 pt-4 text-[11px] text-slate-500">
         <ShieldCheck className="size-3.5 text-emerald-500" />
-        100% chính hãng — đổi trả trong 30 ngày
+        Hàng chính hãng — bảo hành theo chính sách từng sản phẩm
       </p>
     </aside>
   );

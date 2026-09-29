@@ -15,6 +15,7 @@ import { productInclude, toProductDto } from "../mappers/product.mapper.js";
 import type { ProductDto } from "../types/dto.js";
 import { formatPrice } from "../utils/format.js";
 import { PUBLIC_FILTER } from "./product.service.js";
+import { assertAiFeatureEnabled } from "./settings.service.js";
 
 export type ChatIdentity = { userId: string } | { sessionId: string };
 
@@ -97,6 +98,8 @@ export interface PreparedChatTurn {
 
 /** Mọi bước có thể lỗi "sạch" (thiếu cấu hình, DB, retrieval) — CHƯA mở HTTP stream */
 export async function prepareChatTurn(identity: ChatIdentity, input: { conversationId?: string; message: string }): Promise<PreparedChatTurn> {
+  // Tắt ở /admin/settings: 503 kèm câu báo rõ TRƯỚC khi ghi tin nhắn nào vào DB (route chưa mở stream nên vẫn là lỗi HTTP thường)
+  await assertAiFeatureEnabled("chat", "Vui lòng quay lại sau hoặc gọi hotline để được tư vấn trực tiếp.");
   if (!isConfigured()) throw new ServiceUnavailableError("Tính năng AI chưa được cấu hình.");
 
   const conversation = await resolveConversation(identity, input.conversationId);

@@ -6,6 +6,7 @@ import type {
   Paginated,
   Product,
   ProductDetail,
+  PublicSettings,
   SavedBuild,
   SearchResult,
   Voucher,
@@ -17,6 +18,7 @@ import {
   flashSaleProducts,
 } from "@/lib/data/products";
 import { featuredCategories } from "@/lib/data/categories";
+import { DEFAULT_PUBLIC_SETTINGS } from "@/lib/data/store-settings";
 import { activeVouchers } from "@/lib/data/vouchers";
 
 /**
@@ -349,4 +351,19 @@ export async function getActiveVouchers(): Promise<Voucher[]> {
 export async function getBanners(): Promise<Banner[]> {
   const data = await apiGet<{ items: Banner[] }>("/api/banners", { items: [] });
   return data.items;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Cài đặt cửa hàng                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Cài đặt công khai do chủ website chỉnh ở `/admin/settings`: hotline/email/địa chỉ, phí vận chuyển, phương thức
+ * thanh toán và tính năng AI nào đang dùng được. Cache ISR 60 giây như các hàm trên — đổi hotline thì đầu/chân
+ * trang cập nhật trong vòng 1 phút. API tắt thì dùng mặc định `lib/data/store-settings.ts` (đúng các số trước đây
+ * viết cứng), trang vẫn dựng được. Nhiều Server Component cùng gọi trong một lượt dựng trang chỉ tốn MỘT request
+ * (Next.js tự gộp các fetch trùng địa chỉ).
+ */
+export async function getPublicSettings(): Promise<PublicSettings> {
+  return apiGet<PublicSettings>("/api/settings", DEFAULT_PUBLIC_SETTINGS);
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LoaderCircle, Sparkles } from "lucide-react";
+import { BotOff, LoaderCircle, Sparkles } from "lucide-react";
+import { useStoreSettings } from "@/components/providers/StoreSettingsProvider";
 import { errorMessage } from "@/lib/api-client";
 import { suggestBuild } from "@/lib/pc-build-client";
 import type { AiBuildSuggestion } from "@/types";
@@ -21,8 +22,28 @@ export default function AiBuildPanel({ onSuggested }: { onSuggested: (suggestion
   const [prompt, setPrompt] = useState("");
   const [state, setState] = useState<PanelState>({ status: "idle" });
   const controllerRef = useRef<AbortController | null>(null);
+  const { ai } = useStoreSettings();
 
   useEffect(() => () => controllerRef.current?.abort(), []);
+
+  // Chủ website tắt "AI gợi ý cấu hình" ở /admin/settings (hoặc chưa cấu hình khoá AI): báo rõ ngay tại chỗ thay vì
+  // để khách bấm rồi mới lỗi. Phần tự chọn linh kiện bên dưới không dùng AI nên vẫn chạy bình thường.
+  if (!ai.build) {
+    return (
+      <section id="ai-goi-y" className="surface-card scroll-mt-48 p-4 sm:p-5" aria-labelledby="ai-build-title">
+        <h2 id="ai-build-title" className="flex items-center gap-2 font-display text-base font-bold text-slate-900">
+          <span className="grid size-8 place-items-center rounded-lg bg-slate-100">
+            <BotOff className="size-4.5 text-slate-400" aria-hidden />
+          </span>
+          AI gợi ý cấu hình đang tạm tắt
+        </h2>
+        <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+          Bạn vẫn tự chọn từng linh kiện bên dưới được — hệ thống vẫn tự kiểm tra tương thích, tính tổng tiền và công suất nguồn
+          như bình thường.
+        </p>
+      </section>
+    );
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();

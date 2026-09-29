@@ -6,7 +6,8 @@ import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
 import { ApiError, adminApiFetch } from "@/lib/admin-api-client";
 import { formatPrice } from "@/lib/format";
 import { ORDER_STATUS_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL } from "@/lib/data/orders";
-import type { AdminOrder } from "@/types";
+import { DEFAULT_PUBLIC_SETTINGS } from "@/lib/data/store-settings";
+import type { AdminOrder, PublicSettings, StoreInfoSettings } from "@/types";
 
 type State = { status: "loading" } | { status: "not_found" } | { status: "error" } | { status: "ready"; order: AdminOrder };
 
@@ -22,7 +23,24 @@ function formatDate(iso: string): string {
 export default function AdminOrderPrintView({ orderCode }: { orderCode: string }) {
   const { user } = useAdminAuth();
   const [state, setState] = useState<State>({ status: "loading" });
+  // Hotline/email/địa chỉ in trên phiếu lấy từ cài đặt hệ thống CÔNG KHAI (`/api/settings`) — nhân viên đơn hàng
+  // không có quyền `settings:write` vẫn in được; tải không được thì dùng mặc định, không chặn việc in phiếu
+  const [store, setStore] = useState<StoreInfoSettings>(DEFAULT_PUBLIC_SETTINGS.store);
   const allowed = user ? user.permissions.includes("orders:read") : null;
+
+  useEffect(() => {
+    let cancelled = false;
+    adminApiFetch<PublicSettings>("/api/settings")
+      .then((settings) => {
+        if (!cancelled) setStore(settings.store);
+      })
+      .catch(() => {
+        // Giữ mặc định
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!allowed) return;
@@ -192,9 +210,12 @@ export default function AdminOrderPrintView({ orderCode }: { orderCode: string }
         </div>
       ) : null}
 
-      <p className="mt-10 text-center text-xs text-slate-400">
-        Cảm ơn quý khách đã mua hàng tại PCZone. Hotline hỗ trợ: 1800 8888.
-      </p>
+      <div className="mt-10 space-y-0.5 text-center text-xs text-slate-400">
+        <p>
+          Cảm ơn quý khách đã mua hàng tại PCZone. Hotline hỗ trợ: {store.hotline} · Email: {store.supportEmail}
+        </p>
+        {store.showroomAddress ? <p>Showroom: {store.showroomAddress}</p> : null}
+      </div>
 
       <style>{`@media print { .no-print { display: none !important; } @page { margin: 14mm; } }`}</style>
     </div>

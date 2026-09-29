@@ -15,6 +15,7 @@ import { adminDashboardRouter } from "./routes/admin-dashboard.routes.js";
 import { adminOrdersRouter } from "./routes/admin-orders.routes.js";
 import { adminProductsRouter } from "./routes/admin-products.routes.js";
 import { adminReviewsRouter } from "./routes/admin-reviews.routes.js";
+import { adminSettingsRouter } from "./routes/admin-settings.routes.js";
 import { adminVouchersRouter } from "./routes/admin-vouchers.routes.js";
 import { aiBuildRouter } from "./routes/ai-build.routes.js";
 import { aiChatRouter } from "./routes/ai-chat.routes.js";
@@ -31,6 +32,7 @@ import { pcBuildRouter } from "./routes/pc-build.routes.js";
 import { productsRouter } from "./routes/products.routes.js";
 import { reviewsRouter } from "./routes/reviews.routes.js";
 import { searchRouter } from "./routes/search.routes.js";
+import { settingsRouter } from "./routes/settings.routes.js";
 import { vouchersRouter } from "./routes/vouchers.routes.js";
 import { wishlistRouter } from "./routes/wishlist.routes.js";
 
@@ -66,6 +68,7 @@ export function createApp() {
   app.use("/api/pc-build", pcBuildRouter);
   app.use("/api/vouchers", vouchersRouter);
   app.use("/api/banners", bannersRouter);
+  app.use("/api/settings", settingsRouter);
   app.use("/api/auth", authRouter);
   // Sau authRouter để /api/auth/me, /login... khớp trước; :provider chỉ nhận google | facebook
   app.use("/api/auth", oauthRouter);
@@ -83,6 +86,7 @@ export function createApp() {
   app.use("/api/admin/orders", adminOrdersRouter);
   app.use("/api/admin/products", adminProductsRouter);
   app.use("/api/admin/reviews", adminReviewsRouter);
+  app.use("/api/admin/settings", adminSettingsRouter);
   app.use("/api/admin/vouchers", adminVouchersRouter);
 
   app.use(notFoundHandler);

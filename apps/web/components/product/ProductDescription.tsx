@@ -2,10 +2,6 @@ import Image from "next/image";
 import { parseDescription } from "@/lib/description";
 import type { ProductImage } from "@/types";
 
-/** Cùng số với thanh trên cùng (TopBar) và chân trang (Footer) */
-const HOTLINE = "1800 8888";
-const SUPPORT_EMAIL = "support@pczone.vn";
-
 interface ProductDescriptionProps {
   /** Văn bản thuần kèm quy ước nhẹ (tiêu đề, mục, gạch đầu dòng, ảnh) — xem lib/description.ts */
   text: string;
@@ -13,6 +9,9 @@ interface ProductDescriptionProps {
   images: ProductImage[];
   productName: string;
   categoryName?: string;
+  /** Từ cài đặt hệ thống (`getPublicSettings()`) — cùng số với thanh trên cùng (TopBar) và chân trang (Footer) */
+  hotline: string;
+  supportEmail: string;
 }
 
 /**
@@ -24,6 +23,8 @@ export default function ProductDescription({
   images,
   productName,
   categoryName,
+  hotline,
+  supportEmail,
 }: ProductDescriptionProps) {
   const blocks = parseDescription(text);
 
@@ -108,12 +109,12 @@ export default function ProductDescription({
             <strong className="font-semibold text-slate-800">{categoryName}</strong>
           ) : null}{" "}
           chính hãng khác. Hãy liên hệ Hotline{" "}
-          <strong className="font-semibold text-slate-800">{HOTLINE}</strong> (miễn phí) hoặc email{" "}
+          <strong className="font-semibold text-slate-800">{hotline}</strong> (miễn phí) hoặc email{" "}
           <a
-            href={`mailto:${SUPPORT_EMAIL}`}
+            href={`mailto:${supportEmail}`}
             className="font-semibold text-brand-600 hover:underline"
           >
-            {SUPPORT_EMAIL}
+            {supportEmail}
           </a>{" "}
           để được tư vấn và chọn sản phẩm ưng ý với giá tốt nhất.
         </p>
