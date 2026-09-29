@@ -40,11 +40,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!product) return { title: "Không tìm thấy sản phẩm | PCZone" };
 
+  const description = product.summary ?? `Mua ${product.name} chính hãng, giá tốt, bảo hành đầy đủ tại PCZone.`;
+  const image = product.images[0];
+
   return {
     title: `${product.name} | PCZone`,
-    description:
-      product.summary ??
-      `Mua ${product.name} chính hãng, giá tốt, bảo hành đầy đủ tại PCZone.`,
+    description,
+    // Ảnh + tiêu đề hiện khi dán link sản phẩm lên Facebook/Zalo (link tuyệt đối nhờ metadataBase ở layout)
+    openGraph: {
+      title: product.name,
+      description,
+      siteName: "PCZone",
+      locale: "vi_VN",
+      type: "website",
+      ...(image ? { images: [{ url: image.url, alt: image.alt }] } : {}),
+    },
   };
 }
 

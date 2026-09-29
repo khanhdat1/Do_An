@@ -24,7 +24,7 @@ export default async function FeaturedProducts() {
           title="Sản phẩm nổi bật"
           badge={{ label: "Tuyển chọn", tone: "amber" }}
           subtitle="Các sản phẩm phần cứng & laptop tuyển chọn đang bán tại PCZone"
-          href="/san-pham"
+          href="/danh-muc"
         />
 
         <FeaturedProductsTabs products={products} tabs={featuredTabs} />

@@ -1,3 +1,4 @@
+import { POLICY_PAGES } from "@/lib/data/policies";
 import type { NavItem } from "@/types";
 
 /**
@@ -19,7 +20,7 @@ export const topBarLinks: NavItem[] = [
   { label: "Mã khuyến mãi", href: "/khuyen-mai", icon: "BadgeCheck" },
 ];
 
-/** Cột link trong footer — chỉ trang có thật (chưa có trang giới thiệu/chính sách/tin tức nên không đặt link chết) */
+/** Cột link trong footer — chỉ trang có thật (chưa có trang giới thiệu/tin tức nên không đặt link chết) */
 export const footerColumns = [
   {
     title: "Khám phá",
@@ -38,5 +39,9 @@ export const footerColumns = [
       { label: "Sản phẩm yêu thích", href: "/yeu-thich" },
       { label: "Giỏ hàng", href: "/gio-hang" },
     ],
+  },
+  {
+    title: "Chính sách",
+    links: POLICY_PAGES.map((page) => ({ label: page.label, href: page.href })),
   },
 ];

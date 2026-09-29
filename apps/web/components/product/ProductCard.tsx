@@ -82,7 +82,9 @@ export default function ProductCard({
       <CompareButton slug={product.slug} name={product.name} />
 
       <div className="p-2.5 pb-0">
-        <Link href={`/san-pham/${product.slug}`} className="block">
+        {/* Trùng đích với link tên sản phẩm bên dưới: ẩn khỏi trình đọc màn hình và phím Tab (mỗi thẻ một điểm dừng) —
+            chuột vẫn bấm vào ảnh được. Không ẩn thì sản phẩm chưa có ảnh sinh ra một link không có tên */}
+        <Link href={`/san-pham/${product.slug}`} className="block" aria-hidden="true" tabIndex={-1}>
           <ProductThumb
             name={product.name}
             image={product.image}

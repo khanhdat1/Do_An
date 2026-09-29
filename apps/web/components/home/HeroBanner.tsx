@@ -63,7 +63,7 @@ export default function HeroBanner() {
                 Build PC ngay
               </Link>
               <Link
-                href="/san-pham"
+                href="/danh-muc"
                 className="flex items-center gap-2 rounded-xl bg-white/5 px-5 py-3 text-xs font-bold uppercase tracking-wide text-white ring-1 ring-white/15 transition hover:bg-white/10"
               >
                 <Monitor className="size-4" />

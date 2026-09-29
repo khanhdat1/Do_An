@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ArrowRight, LoaderCircle, Lock, Mail, Phone, UserRound } from "lucide-react";
 import TextField from "@/components/ui/TextField";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -207,6 +208,18 @@ export default function RegisterForm({ next, oauthError = null }: RegisterFormPr
           <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
         )}
       </button>
+
+      <p className="text-center text-xs leading-relaxed text-slate-500">
+        Khi tạo tài khoản, bạn đồng ý với{" "}
+        <Link href="/dieu-khoan-su-dung" className="font-semibold text-brand-700 hover:underline">
+          Điều khoản sử dụng
+        </Link>{" "}
+        và{" "}
+        <Link href="/chinh-sach-bao-mat" className="font-semibold text-brand-700 hover:underline">
+          Chính sách bảo mật
+        </Link>{" "}
+        của PCZone.
+      </p>
     </form>
   );
 }

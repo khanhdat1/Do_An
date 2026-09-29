@@ -22,7 +22,8 @@ export default function RatingStars({ value, onChange, size = "md", className }:
   return (
     <div
       className={cn("flex items-center gap-0.5", className)}
-      role={interactive ? "radiogroup" : undefined}
+      // Dạng chỉ xem là một "hình" gồm 5 ngôi sao — aria-label trên thẻ div không có role là sai chuẩn ARIA
+      role={interactive ? "radiogroup" : "img"}
       aria-label={interactive ? "Chọn số sao" : `${value} trên 5 sao`}
     >
       {[1, 2, 3, 4, 5].map((star) => {
