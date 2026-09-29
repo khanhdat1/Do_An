@@ -71,6 +71,11 @@ pczone/
 │   ├── lib/data/               dữ liệu dự phòng
 │   └── types/index.ts          khớp với apps/api/src/types/dto.ts
 │
+├── apps/e2e/               Kiểm thử đầu-cuối (Playwright) — tự bật API + web riêng trên DB `pczone_e2e` (mục 4)
+│   ├── playwright.config.ts    cổng 4101/3101, trình duyệt Edge có sẵn, tắt mọi dịch vụ ngoài (AI, email, VNPay...)
+│   ├── scripts/prepare-db.mjs  tạo/cập nhật DB kiểm thử (migrate deploy + seed) — không xoá dữ liệu nào
+│   └── tests/                  kịch bản: cửa hàng, vòng đời đơn hàng, cài đặt quản trị, Build PC, phân quyền
+│
 └── apps/crawler/           Thu thập dữ liệu tham khảo + nạp ảnh thật
     ├── data/demo-catalog.json  bản chụp ~420 sản phẩm demo (đưa vào git, xem "Dữ liệu demo" ở mục 4)
     └── src/
@@ -156,6 +161,8 @@ Muốn link cố định thì phải đưa lên hosting thật.
 | `npm run dev:web` | Chạy web ở chế độ dev |
 | `npm run crawl` | Chạy crawler lấy dữ liệu tham khảo |
 | `npm run build` | Build cả db + api + web |
+| `npm test -w @pczone/api` | Chạy kiểm thử đơn vị của API (xem "Kiểm thử tự động" bên dưới) |
+| `npm run test:e2e` | Kiểm thử đầu-cuối bằng trình duyệt thật trên DB riêng `pczone_e2e` (xem "Kiểm thử tự động" bên dưới) |
 
 ### Ảnh sản phẩm
 
@@ -272,6 +279,38 @@ và email). Bảng thông số kỹ thuật nằm bên cạnh và đứng yên k
 | dòng trống | Ngăn cách các đoạn |
 
 Mô tả cũ dạng chữ thuần (nhập tay, crawler) không dùng ký hiệu nào vẫn hiển thị bình thường.
+
+### Kiểm thử tự động
+
+Hai tầng kiểm thử:
+
+- **Kiểm thử đơn vị** — `npm test -w @pczone/api`: logic thuần, không cần DB hay mạng (bộ máy tìm kiếm, ký/xác minh
+  VNPay, mã giảm giá, chuyển khoản thủ công, đánh giá, bộ đọc thông số + luật tương thích Build PC, tự điều chỉnh cấu
+  hình theo ngân sách, cài đặt hệ thống...).
+- **Kiểm thử đầu-cuối (E2E)** — `npm run test:e2e` (cần MySQL đang chạy: `npm run db:up`): Playwright điều khiển
+  trình duyệt thật, bấm qua đúng giao diện như người dùng, trên một bộ máy chủ riêng do nó tự bật rồi tự tắt:
+  - **DB riêng `pczone_e2e`** trên cùng MySQL — lần đầu tự tạo (`prisma migrate deploy` + `seed.ts` + chuẩn hoá thông
+    số), các lần sau chỉ cập nhật. Không xoá dữ liệu nào; tên DB bắt buộc có đuôi `_e2e` nên không bao giờ ghi nhầm
+    vào DB `pczone` đang dùng. Dữ liệu các lượt trước được giữ lại — mỗi test tự tạo khách/đơn/đánh giá riêng có dấu
+    thời gian, và Cài đặt hệ thống được đưa về mặc định qua API quản trị trước khi chạy. Đổi MySQL khác bằng biến
+    `E2E_DATABASE_URL`.
+  - **API cổng 4101, web cổng 3101** — web là bản production thật (`next build` + `next start`), không đụng server dev
+    đang chạy ở 3000/4000. Sau khi chạy, `apps/web/.next` chứa bản build dành cho E2E (proxy `/api` trỏ sang cổng
+    4101): muốn chạy production thật thì `npm run build` lại.
+  - **Không gọi dịch vụ ngoài**: khoá AI, email, VNPay, chuyển khoản/MoMo, Google/Facebook đều để trống cho riêng lượt
+    chạy này (ghi đè `.env`) — nên các tính năng AI hiện trạng thái "tạm tắt" và chỉ COD dùng được. Không tốn lượt gọi AI.
+  - Dùng **Microsoft Edge có sẵn trên Windows**, không phải tải trình duyệt. Máy khác: đặt `E2E_BROWSER_CHANNEL=chrome`
+    (hoặc `npx playwright install chromium` rồi `E2E_BROWSER_CHANNEL=chromium`).
+  - Lần chạy mất khoảng 3-5 phút, phần lớn là `next build`. Báo cáo chi tiết (kèm ảnh chụp + trace của test lỗi):
+    `npm run report -w @pczone/e2e`.
+
+| Kịch bản (`apps/e2e/tests/`) | Kiểm tra |
+| ---------------------------- | -------- |
+| `storefront.spec.ts` | Trang chủ lấy sản phẩm và hotline thật từ API; tìm kiếm từ khoá; trang danh mục; giỏ hàng khách vãng lai (tạm tính, miễn phí vận chuyển theo ngưỡng, bắt đăng nhập khi đặt); so sánh gộp nhãn thông số trùng nghĩa về một dòng |
+| `order-lifecycle.spec.ts` | Hai trình duyệt tách biệt (khách + quản trị): đăng ký → đặt hàng COD kèm mã WELCOME10 (giảm đúng mức trần 300.000đ) → quản trị xác nhận, đóng gói, giao hàng kèm mã vận đơn, đã giao → khách thấy tiến trình, mã vận đơn, tab "Đã giao" → đánh giá chỉ mở sau khi nhận hàng, chưa hiện khi chưa duyệt → quản trị duyệt → hiện công khai |
+| `admin-settings.spec.ts` | Đổi phí vận chuyển và ngưỡng miễn phí ở `/admin/settings` → giỏ hàng của khách áp dụng ngay; máy chủ không cho tắt phương thức thanh toán cuối cùng còn dùng được (hotline ở đầu/chân trang không kiểm ở đây vì có bộ nhớ đệm ~1 phút, như trang Cài đặt đã ghi) |
+| `build-pc.spec.ts` | Không có khoá AI thì báo "AI gợi ý cấu hình đang tạm tắt"; tự chọn linh kiện vẫn chạy, tổng tiền đúng |
+| `security.spec.ts` | Trang `/admin/*` đòi đăng nhập quản trị; API quản trị từ chối cả khách vãng lai lẫn phiên đăng nhập của khách hàng; khách không xem được đơn của người khác |
 
 ## 5. Danh sách API hiện có
 
@@ -1159,6 +1198,7 @@ quảng cáo "PCPoints" ở trang đăng nhập cũng đã gỡ.
 - [x] Gỡ chữ quảng cáo không có thật (Bottleneck AI, Stress-test 24H, "tương thích 100%", 4.98/5, 150.000+ game thủ, PCPoints, AI PC Builder 3D, bảo hành On-site 2 giờ, nhãn cấu hình gắn lên ảnh minh hoạ; ở chân trang: số GPĐKKD và huy hiệu "Bộ Công Thương" không có thật, logo trả góp FE Credit/HomeCredit, "cố vấn AI đầu tiên tại Việt Nam") — trang chủ, trang đăng nhập và chân trang chỉ nêu tính năng có thật. Điểm thưởng/hạng thành viên: đã bỏ khỏi kế hoạch
 - [x] **Cài đặt hệ thống** (`/admin/settings`, chỉ OWNER — mục 11): thông tin cửa hàng, phí vận chuyển, bật/tắt phương thức thanh toán và tính năng AI, có nhật ký thay đổi
 - [x] Trang Tài khoản dạng bảng điều khiển (`/tai-khoan`): thẻ số liệu thật (số đơn, đơn đang xử lý, tổng chi tiêu, yêu thích, cấu hình đã lưu), đơn gần đây, lối tắt; "Đơn hàng của tôi" có tab lọc theo nhóm trạng thái kèm số đếm; tiến trình đơn 5 bước nằm ngang (Đặt hàng → Xác nhận → Đóng gói → Đang giao → Đã giao) dựng từ lịch sử trạng thái thật, có mốc thời gian, đánh dấu bước bị dừng khi huỷ/hoàn; hiện mã vận đơn cho khách. Số serial/IMEI và biên bản kiểm tra máy mới giữ chỗ, ghi rõ "Sắp ra mắt" (chưa có dữ liệu thật). Không làm bản đồ/định vị tài xế
+- [x] **Kiểm thử đầu-cuối tự động** (`npm run test:e2e`, mục 4 "Kiểm thử tự động"): Playwright chạy trình duyệt thật trên API + web + DB riêng — cửa hàng, trọn vòng đời đơn hàng (đặt → quản trị xử lý → giao → đánh giá → duyệt), cài đặt quản trị, Build PC, phân quyền
 - [x] Chuyển khoản ngân hàng (QR VietQR tự điền số tiền/nội dung) và ví MoMo (số điện thoại) làm thủ công, không qua cổng — xác nhận tay ở `/admin/orders` (mục 9, 11)
 - [ ] Cổng thanh toán thật cho thẻ quốc tế / trả góp (MoMo Business API, OnePay...) — mỗi cổng cần tự đăng ký tài khoản sandbox riêng như VNPay; thẻ ATM/Visa/Master nội địa đã dùng được ngay qua VNPay (mục 9)
 - [x] **AI Search** (mục "Tìm kiếm bằng AI" ở mục 5): tìm kiếm ngữ nghĩa thật bằng embedding OpenAI, không cần dịch vụ Python/FastAPI riêng — gọi thẳng từ Express API hiện có (`apps/api/src/ai/`); tự lùi về tìm kiếm từ khoá khi chưa cấu hình
