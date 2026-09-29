@@ -31,7 +31,9 @@ giờ có chuyện API và crawler hiểu cấu trúc bảng khác nhau.
 ```
 pczone/
 ├── package.json            npm workspaces + toàn bộ script điều khiển
-├── docker-compose.yml      MySQL 8
+├── docker-compose.yml      MySQL 8 cho máy dev
+├── Dockerfile              image chung cho API + web khi triển khai (mục 14)
+├── deploy/                 triển khai lên VPS: docker-compose.yml, Caddyfile, .env.example, deploy.sh, export-data.sh
 ├── .env                    biến môi trường dùng chung (KHÔNG commit)
 ├── .env.example            mẫu để copy
 │
@@ -822,10 +824,14 @@ không ai theo dõi — cần trang quản trị (mục 11) để xử lý.
 
 ### Thanh toán VNPay Sandbox
 
-Tuỳ chọn — thiếu `VNPAY_TMN_CODE` / `VNPAY_HASH_SECRET` thì trang đặt hàng ẩn phương thức VNPay (khoá
-với ghi chú "chưa khả dụng"), COD vẫn hoạt động bình thường, cùng nguyên tắc với đăng nhập Google /
+Tuỳ chọn — thiếu `VNPAY_TMN_CODE` / `VNPAY_HASH_SECRET` (hoặc chủ website tắt VNPay ở `/admin/settings`) thì
+trang đặt hàng ẩn hẳn phương thức VNPay, COD vẫn hoạt động bình thường, cùng nguyên tắc với đăng nhập Google /
 Facebook (mục 8). Đăng ký tài khoản thử nghiệm **miễn phí** tại <https://sandbox.vnpayment.vn> để lấy
 hai khoá này, điền vào `.env` rồi khởi động lại API.
+
+**Tình trạng (30/09/2026):** mã nguồn đầy đủ và bộ ký/xác minh đã có kiểm thử bằng khoá giả, nhưng dự án
+**chưa đăng ký tài khoản sandbox nên VNPay chưa từng chạy thật** và đang tắt — nhiều khả năng không dùng
+trong bản demo; thanh toán dùng COD và chuyển khoản/MoMo thủ công.
 
 Bộ máy ký/xác minh nằm ở `apps/api/src/services/vnpay.service.ts`, **không tự đọc `env`** — nhận cấu
 hình qua tham số nên kiểm thử được bằng khoá giả (`npm test -w @pczone/api` chạy cả bộ này, không cần
@@ -1191,7 +1197,7 @@ quảng cáo "PCPoints" ở trang đăng nhập cũng đã gỡ.
 - [x] Xác minh email lúc đăng ký (gửi qua Resend, trang tự xác nhận khi bấm link, banner + nút gửi lại ở trang Tài khoản — mục 8)
 - [x] Giỏ hàng (khách vãng lai + tài khoản, gộp giỏ khi đăng nhập)
 - [x] Đặt hàng (`/thanh-toan`): sổ địa chỉ, tạo đơn có trừ kho trong transaction, huỷ đơn tự hoàn kho, lịch sử đơn (`/tai-khoan/don-hang`, `/don-hang/[code]`), tra cứu công khai (`/tra-cuu-don-hang`)
-- [x] Thanh toán VNPay Sandbox (mã ký/xác minh đầy đủ, có test; cần tự đăng ký tài khoản sandbox để bật — mục 9)
+- [x] Thanh toán VNPay Sandbox — **có mã nguồn**, bộ ký/xác minh có test bằng khoá giả; **chưa chạy thật** (chưa đăng ký tài khoản sandbox), đang tắt và ẩn khỏi trang đặt hàng, nhiều khả năng không dùng trong bản demo (mục 9)
 - [x] Sản phẩm yêu thích (`/yeu-thich`) và mã giảm giá (`/khuyen-mai`, áp dụng được lúc đặt hàng)
 - [x] Đánh giá sản phẩm (`/san-pham/[slug]`, chỉ khách đã nhận hàng — đơn đã giao — mới gửi được, chờ duyệt ở `/admin/reviews` mới hiện công khai — mục 10)
 - [x] So sánh sản phẩm (`/so-sanh`, tối đa 4 sản phẩm, chỉ lưu ở trình duyệt qua localStorage — không cần đăng nhập, không gọi API mới; bảng gộp mọi nhãn thông số của các sản phẩm đã chọn, nhãn trùng nghĩa từ các nguồn dữ liệu khác nhau — "CPU" / "Bộ vi xử lý (CPU)", "RAM" / "Bộ nhớ RAM", "Card đồ họa" / "Card đồ họa (VGA)"… — gộp về một dòng theo bảng đồng nghĩa so khớp nguyên văn ở `apps/web/lib/spec-labels.ts`)
@@ -1199,6 +1205,8 @@ quảng cáo "PCPoints" ở trang đăng nhập cũng đã gỡ.
 - [x] **Cài đặt hệ thống** (`/admin/settings`, chỉ OWNER — mục 11): thông tin cửa hàng, phí vận chuyển, bật/tắt phương thức thanh toán và tính năng AI, có nhật ký thay đổi
 - [x] Trang Tài khoản dạng bảng điều khiển (`/tai-khoan`): thẻ số liệu thật (số đơn, đơn đang xử lý, tổng chi tiêu, yêu thích, cấu hình đã lưu), đơn gần đây, lối tắt; "Đơn hàng của tôi" có tab lọc theo nhóm trạng thái kèm số đếm; tiến trình đơn 5 bước nằm ngang (Đặt hàng → Xác nhận → Đóng gói → Đang giao → Đã giao) dựng từ lịch sử trạng thái thật, có mốc thời gian, đánh dấu bước bị dừng khi huỷ/hoàn; hiện mã vận đơn cho khách. Số serial/IMEI và biên bản kiểm tra máy mới giữ chỗ, ghi rõ "Sắp ra mắt" (chưa có dữ liệu thật). Không làm bản đồ/định vị tài xế
 - [x] **Kiểm thử đầu-cuối tự động** (`npm run test:e2e`, mục 4 "Kiểm thử tự động"): Playwright chạy trình duyệt thật trên API + web + DB riêng — cửa hàng, trọn vòng đời đơn hàng (đặt → quản trị xử lý → giao → đánh giá → duyệt), cài đặt quản trị, Build PC, phân quyền
+- [x] **Đóng gói triển khai** (mục 14): Docker Compose trên một máy chủ (MySQL + API + web + Caddy tự cấp HTTPS), script chuyển dữ liệu từ máy dev, đã chạy thử trọn quy trình trên máy dev
+- [ ] Đưa lên VPS thật — cần máy chủ và tên miền (mục 14)
 - [x] Chuyển khoản ngân hàng (QR VietQR tự điền số tiền/nội dung) và ví MoMo (số điện thoại) làm thủ công, không qua cổng — xác nhận tay ở `/admin/orders` (mục 9, 11)
 - [ ] Cổng thanh toán thật cho thẻ quốc tế / trả góp (MoMo Business API, OnePay...) — mỗi cổng cần tự đăng ký tài khoản sandbox riêng như VNPay; thẻ ATM/Visa/Master nội địa đã dùng được ngay qua VNPay (mục 9)
 - [x] **AI Search** (mục "Tìm kiếm bằng AI" ở mục 5): tìm kiếm ngữ nghĩa thật bằng embedding OpenAI, không cần dịch vụ Python/FastAPI riêng — gọi thẳng từ Express API hiện có (`apps/api/src/ai/`); tự lùi về tìm kiếm từ khoá khi chưa cấu hình
@@ -1213,3 +1221,97 @@ quảng cáo "PCPoints" ở trang đăng nhập cũng đã gỡ.
 - [x] **Admin Dashboard — Đợt 6, phần 1/2** (mục 11): giao diện quản trị mã giảm giá (tạo/sửa/tắt/xoá — xoá bị chặn nếu mã đã được dùng, chỉ tắt được)
 - [x] **Admin Dashboard — Đợt 6, phần 2/2** (mục 11): banner trang chủ (tải ảnh thật lên, lên lịch hiển thị, nháp/đã đăng) — menu/bài viết/trang tĩnh xác nhận không làm ở đợt này
 - [x] **Quản lý tài khoản quản trị khác** (mục 1): tạo/sửa/khoá/mở khoá, đặt lại mật khẩu hộ, tắt 2FA hộ — chặn tự đổi vai trò/tự khoá chính mình
+
+## 14. Triển khai lên máy chủ (VPS + Docker)
+
+Toàn bộ hệ thống chạy trên **một** máy chủ bằng Docker Compose (thư mục `deploy/`, image build từ `Dockerfile` ở
+gốc):
+
+```
+Internet ──HTTPS──► Caddy ─┬─ /api/* ────────────► api (Express :4000) ──► mysql (8.0, không mở ra ngoài)
+                           ├─ /images/banners/* ─► đọc thẳng deploy/data/banners
+                           └─ còn lại ───────────► web (Next.js :3000) ──► api (gọi trong mạng Docker)
+```
+
+- **Caddy** là cổng vào duy nhất (80/443), tự xin và gia hạn chứng chỉ HTTPS Let's Encrypt; MySQL, API, web không mở
+  cổng nào ra Internet.
+- Web và API chạy chung một máy vì banner quản trị tải lên được API ghi vào thư mục mà Caddy phục vụ thẳng (`next start`
+  chỉ phục vụ file có sẵn lúc khởi động — `apps/web/lib/uploaded-images.ts`); ~126 MB ảnh sản phẩm không nằm trong git
+  mà được chép từ máy dev.
+- API đặt `TRUST_PROXY=1` (đứng sau Caddy): giới hạn đăng nhập sai/tần suất và nhật ký quản trị tính theo IP thật của
+  từng khách, không phải IP của Caddy.
+
+**Đã chạy thử trọn quy trình trên máy dev (30/09/2026):** đóng gói dữ liệu → `deploy.sh` build image, nạp bản sao DB
+(32 bảng, 437 sản phẩm), bật đủ 4 dịch vụ trong ~3,5 phút. Kiểm tra qua Caddy: trang chủ/danh mục/tìm kiếm/chi tiết sản
+phẩm hiện dữ liệu thật, ảnh sản phẩm qua bộ tối ưu ảnh của Next, đăng nhập quản trị với cookie production, tải banner
+mới lên và hiện ngay trên trang chủ, log API ghi đúng IP khách. **Chưa đưa lên VPS thật** (cần máy chủ + tên miền).
+
+### Chuẩn bị
+
+- VPS Ubuntu 22.04/24.04, **tối thiểu 2 GB RAM** (bước build Next.js tốn RAM — máy 2 GB thêm swap như bên dưới), **tối
+  thiểu 15 GB ổ trống** (image ~2 GB cộng bộ nhớ đệm lúc build), mở cổng 80 và 443 ở tường lửa của nhà cung cấp.
+- Tên miền trỏ bản ghi A về IP máy chủ. Chưa có tên miền thì dùng `<IP viết bằng gạch ngang>.sslip.io` (vd
+  `203-0-113-5.sslip.io`, tự trỏ về đúng IP đó).
+
+### Các bước
+
+1. **Cài Docker** trên máy chủ (một lần). Máy 2 GB RAM thêm swap:
+   ```bash
+   curl -fsSL https://get.docker.com | sudo sh
+   sudo usermod -aG docker $USER      # rồi thoát SSH đăng nhập lại để dùng docker không cần sudo
+   sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+   echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+   ```
+2. **Lấy mã nguồn và tạo cấu hình**:
+   ```bash
+   git clone https://github.com/khanhdat1/Do_An.git
+   cd Do_An/pczone/deploy
+   cp .env.example .env
+   nano .env
+   ```
+   Điền `SITE_ADDRESS`, `PUBLIC_URL`, `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD`, `JWT_SECRET` (sinh bằng
+   `openssl rand -hex 32`), rồi các khoá tuỳ chọn — Google/Facebook, email, AI, chuyển khoản/MoMo — chép từ `.env` máy
+   dev. `deploy/.env` chứa bí mật: không commit, không gửi qua chat/email.
+3. **Ở máy dev** (Git Bash, Docker Desktop đang chạy): đóng gói bản sao DB + ảnh rồi chép lên máy chủ:
+   ```bash
+   bash deploy/export-data.sh
+   scp deploy/data/pczone-data.tar.gz <user>@<IP máy chủ>:~/Do_An/pczone/deploy/
+   ```
+4. **Trên máy chủ**, trong `Do_An/pczone/deploy`:
+   ```bash
+   bash deploy.sh pczone-data.tar.gz
+   ```
+   Lần đầu mất ~5–10 phút. Script hỏi xác nhận vì nạp dữ liệu sẽ **ghi đè DB trên máy chủ**, rồi: giải nén ảnh, build
+   image, bật MySQL, nạp bản sao DB, bật API (tự áp migration), web, Caddy và làm mới các trang dựng sẵn. Xong thì xoá
+   `pczone-data.tar.gz` ở cả hai máy (chứa dữ liệu thật).
+5. **Bảo mật ngay sau khi lên:** bản sao DB mang theo tài khoản mẫu `admin@pczone.vn` với mật khẩu mặc định ở mục 12 —
+   đổi ngay (cùng lệnh này tạo được tài khoản quản trị mới), rồi bật 2FA cho các tài khoản quản trị (mục 11):
+   ```bash
+   docker compose exec -w /app/apps/api api npx tsx src/scripts/create-admin.mts --email=admin@pczone.vn --password="<mật khẩu mạnh>" --role=OWNER
+   ```
+6. **Khai địa chỉ mới ở các dịch vụ ngoài:**
+   - Google (mục 8): thêm redirect URI `https://<tên miền>/api/auth/google/callback`.
+   - Facebook (mục 8): thêm `https://<tên miền>/api/auth/facebook/callback`. App còn ở chế độ *Đang phát triển* thì chỉ
+     tài khoản có vai trò trong app đăng nhập được (thêm người cần thử làm *Người thử nghiệm*); chuyển sang *Trực tiếp*
+     cần URL chính sách quyền riêng tư — site chưa có trang này.
+   - Email (Resend): người gửi mặc định `onboarding@resend.dev` chỉ gửi được tới email chủ tài khoản Resend; gửi cho
+     khách thật cần xác minh tên miền trên Resend rồi đặt `EMAIL_FROM`.
+   - AI: site công khai thì ai cũng dùng được, tốn lượt gọi của khoá — tạm tắt từng tính năng ở `/admin/settings` khi cần.
+   - VNPay (nếu sau này bật — mục 9): khai IPN `https://<tên miền>/api/payments/vnpay/ipn` ở trang quản lý của VNPay.
+
+### Vận hành
+
+| Lệnh (trong `deploy/`) | Tác dụng |
+| ---------------------- | -------- |
+| `git pull && bash deploy.sh` | Cập nhật mã: build lại, API tự áp migration mới, giữ nguyên DB và ảnh |
+| `docker compose ps` / `docker compose logs -f api web` | Trạng thái / xem log |
+| `docker compose restart web` | Sau khi chép thêm ảnh sản phẩm vào `data/products` (web chỉ thấy ảnh có sẵn lúc khởi động) |
+| `docker compose exec -T mysql sh -c 'exec mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" --single-transaction pczone' > backup-$(date +%F).sql` | Sao lưu DB — nên đặt cron chạy hằng ngày và chép bản sao ra khỏi máy chủ; banner nằm ở `data/banners` |
+| `docker compose down` | Tắt hệ thống, giữ dữ liệu (`down -v` thì **xoá luôn DB**) |
+
+### Chạy thử cả cụm trên máy dev
+
+Tạo `deploy/.env` với `SITE_ADDRESS=:80`, `PUBLIC_URL=http://localhost:8080`, `HTTP_PORT=8080`, `HTTPS_PORT=8443` cùng
+mật khẩu/khoá như trên, rồi trong Git Bash: `bash deploy/export-data.sh && bash deploy/deploy.sh deploy/data/pczone-data.tar.gz`
+và mở http://localhost:8080. Thử xong dọn bằng `cd deploy && docker compose down -v` (xoá DB bản sao của lần thử), xoá
+`deploy/data` và `deploy/.env`.

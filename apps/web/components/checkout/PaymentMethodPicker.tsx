@@ -1,6 +1,7 @@
 "use client";
 
 import { Banknote, CreditCard, Landmark, Wallet } from "lucide-react";
+import { useStoreSettings } from "@/components/providers/StoreSettingsProvider";
 import { cn } from "@/lib/utils";
 import type { PaymentMethods } from "@/types";
 
@@ -10,8 +11,9 @@ interface PaymentMethodPickerProps {
   value: Method;
   onChange: (method: Method) => void;
   /**
-   * `null` = chưa tải xong `/api/payments/methods`: tạm coi mọi phương thức khả dụng, không khoá nhầm trong lúc chờ.
-   * Một phương thức bị khoá khi chưa cấu hình trong .env HOẶC chủ website đang tắt ở `/admin/settings`.
+   * Phương thức khách dùng được (`/api/payments/methods`) = đã cấu hình trong .env VÀ chủ website đang bật ở
+   * `/admin/settings`; `null` = chưa tải xong, tạm theo cài đặt công khai của trang. Phương thức không dùng được thì ẨN
+   * hẳn (vd VNPay khi cửa hàng chưa đăng ký cổng) — không hiện một lựa chọn mờ mà khách không bấm được.
    */
   methods: PaymentMethods | null;
 }
@@ -24,11 +26,13 @@ const OPTIONS: { value: Method; label: string; note: string; icon: typeof Bankno
 ];
 
 export default function PaymentMethodPicker({ value, onChange, methods }: PaymentMethodPickerProps) {
+  const { payments } = useStoreSettings();
+  const available = methods ?? payments;
+
   return (
     <div role="radiogroup" aria-label="Phương thức thanh toán" className="space-y-2.5">
-      {OPTIONS.map((option) => {
-        const disabled = methods !== null && !methods[option.configKey];
-        const selected = value === option.value && !disabled;
+      {OPTIONS.filter((option) => available[option.configKey]).map((option) => {
+        const selected = value === option.value;
         const Icon = option.icon;
 
         return (
@@ -36,7 +40,6 @@ export default function PaymentMethodPicker({ value, onChange, methods }: Paymen
             key={option.value}
             className={cn(
               "flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition",
-              disabled && "cursor-not-allowed opacity-50",
               selected ? "border-brand-500 bg-brand-50/60 ring-1 ring-brand-500" : "border-slate-200 bg-white hover:border-slate-300",
             )}
           >
@@ -45,7 +48,6 @@ export default function PaymentMethodPicker({ value, onChange, methods }: Paymen
               name="paymentMethod"
               value={option.value}
               checked={selected}
-              disabled={disabled}
               onChange={() => onChange(option.value)}
               className="sr-only"
             />
@@ -63,9 +65,7 @@ export default function PaymentMethodPicker({ value, onChange, methods }: Paymen
 
             <span className="min-w-0 flex-1">
               <span className="block font-semibold text-slate-800">{option.label}</span>
-              <span className="block text-xs text-slate-500">
-                {disabled ? "Phương thức này hiện chưa khả dụng, vui lòng chọn phương thức khác" : option.note}
-              </span>
+              <span className="block text-xs text-slate-500">{option.note}</span>
             </span>
           </label>
         );

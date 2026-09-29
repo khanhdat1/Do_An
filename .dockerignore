@@ -1,0 +1,19 @@
+# Không đưa vào image khi build: thư viện và bản build của máy dev (image tự cài/build lại trên Linux),
+# bí mật (.env*), dữ liệu và kết quả kiểm thử
+**/node_modules
+**/.next
+**/dist
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+.git
+docs
+deploy/data
+apps/e2e/test-results
+apps/e2e/playwright-report
+*.log
+
+# Ảnh sản phẩm (~126 MB) và banner quản trị tải lên nằm trên ổ của máy chủ, gắn vào container lúc chạy
+# (deploy/docker-compose.yml) — không nằm trong image
+apps/web/public/images/products
+apps/web/public/images/banners

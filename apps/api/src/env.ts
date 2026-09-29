@@ -53,6 +53,14 @@ function requiredSecret(name: string, minLength: number): string {
 
 const port = Number(process.env.API_PORT ?? 4000);
 
+/**
+ * Số tầng reverse proxy đứng trước API (bản triển khai Docker: Caddy → API là 1). Đặt đúng thì `req.ip` là IP thật
+ * của khách, đọc từ X-Forwarded-For — giới hạn đăng nhập sai/tần suất và nhật ký quản trị mới tính theo TỪNG khách,
+ * thay vì mọi khách chung một IP của proxy (một người gõ sai mật khẩu là khoá đăng nhập của tất cả). Để trống (chạy dev
+ * trực tiếp) thì KHÔNG tin header này, để khách không tự gửi X-Forwarded-For giả mà lách được giới hạn.
+ */
+const trustProxyHops = Number(process.env.TRUST_PROXY ?? 0);
+
 const corsOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:3000")
   .split(",")
   .map((origin) => origin.trim())
@@ -67,6 +75,7 @@ export const env = {
   port,
   nodeEnv: process.env.NODE_ENV ?? "development",
   isDev: (process.env.NODE_ENV ?? "development") !== "production",
+  trustProxy: Number.isInteger(trustProxyHops) && trustProxyHops > 0 ? trustProxyHops : 0,
 
   /** Danh sách origin được phép gọi API, ngăn cách bằng dấu phẩy */
   corsOrigins,

@@ -9,6 +9,7 @@ import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { ApiError, adminApiFetch, errorMessage, uploadAdminImage } from "@/lib/admin-api-client";
 import { toDateInput } from "@/lib/format";
+import { isRuntimeUpload } from "@/lib/uploaded-images";
 import type { AdminBanner, AdminBannerInput, BannerStatus } from "@/types";
 
 type LoadState = { status: "loading" } | { status: "not_found" } | { status: "error" } | { status: "ready"; banner: AdminBanner | null };
@@ -247,7 +248,14 @@ export default function AdminBannerFormView({ bannerId }: { bannerId?: string })
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex h-24 w-44 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-100 ring-1 ring-slate-200">
               {form.imageUrl ? (
-                <Image src={form.imageUrl} alt="Xem trước banner" fill sizes="176px" className="object-cover" />
+                <Image
+                  src={form.imageUrl}
+                  alt="Xem trước banner"
+                  fill
+                  sizes="176px"
+                  className="object-cover"
+                  unoptimized={isRuntimeUpload(form.imageUrl)}
+                />
               ) : (
                 <ImageOff className="size-6 text-slate-400" />
               )}
