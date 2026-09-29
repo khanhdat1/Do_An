@@ -25,6 +25,8 @@ const orderCodeParam = z.object({ orderCode: z.string().min(1).max(30) });
 const listQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(10),
+  /** Tab ở trang "Đơn hàng của tôi" — bỏ trống = tất cả */
+  group: z.enum(["processing", "delivered", "cancelled"]).optional(),
 });
 
 const createOrderBody = z
@@ -42,11 +44,11 @@ const createOrderBody = z
 
 const cancelBody = z.object({ reason: z.string().trim().max(300).optional() });
 
-/** GET /api/orders?page=&pageSize= — mới nhất trước */
+/** GET /api/orders?page=&pageSize=&group= — mới nhất trước; group: processing | delivered | cancelled */
 ordersRouter.get("/", async (req, res, next) => {
   try {
-    const { page, pageSize } = listQuery.parse(req.query);
-    res.json(await listOrders(req.auth!.userId, page, pageSize));
+    const { page, pageSize, group } = listQuery.parse(req.query);
+    res.json(await listOrders(req.auth!.userId, page, pageSize, group));
   } catch (error) {
     next(error);
   }

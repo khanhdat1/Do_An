@@ -119,6 +119,7 @@ export function toOrderDto(
       streetAddress: order.shippingAddress,
     },
     customerNote: order.customerNote ?? undefined,
+    trackingNumber: order.trackingNumber ?? undefined,
     items: order.items.map(toOrderItemDto),
     statusHistory: order.statusHistory.map(historyMapper),
     createdAt: order.createdAt.toISOString(),
@@ -235,7 +236,6 @@ export function toAdminOrderDto(order: AdminOrderWithRelations): AdminOrderDto {
 
   return {
     ...base,
-    trackingNumber: order.trackingNumber ?? undefined,
     internalNote: order.internalNote ?? undefined,
     cancelReason: order.cancelReason ?? undefined,
     returnReason: order.returnReason ?? undefined,

@@ -3,10 +3,11 @@ import { env } from "../env.js";
 import { orderInclude, orderSummaryInclude, toOrderDto, toOrderSummaryDto } from "../mappers/order.mapper.js";
 import { publicImages } from "../mappers/product.mapper.js";
 import { ConflictError, NotFoundError } from "../middleware/errors.js";
-import type { CreateOrderResultDto, OrderDto, Paginated, OrderSummaryDto, ShippingSettingsDto } from "../types/dto.js";
+import type { CreateOrderResultDto, OrderDto, OrderGroupDto, Paginated, OrderSummaryDto, ShippingSettingsDto } from "../types/dto.js";
 import { generateOrderCode } from "../utils/order-code.js";
 import { isUniqueViolation } from "../utils/prisma-errors.js";
 import { calcShippingFee } from "../utils/shipping.js";
+import { ORDER_GROUP_STATUSES } from "./account.service.js";
 import { createAddress, type AddressInput } from "./address.service.js";
 import { isBankTransferConfigured, isMomoConfigured } from "./manual-payment.service.js";
 import { assertPaymentMethodEnabled, getSettings } from "./settings.service.js";
@@ -235,16 +236,18 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   return { order: toOrderDto(row), payUrl };
 }
 
-export async function listOrders(userId: string, page: number, pageSize: number): Promise<Paginated<OrderSummaryDto>> {
+export async function listOrders(userId: string, page: number, pageSize: number, group?: OrderGroupDto): Promise<Paginated<OrderSummaryDto>> {
+  const where = { userId, ...(group ? { status: { in: ORDER_GROUP_STATUSES[group] } } : {}) } satisfies Prisma.OrderWhereInput;
   const [rows, total] = await Promise.all([
     prisma.order.findMany({
-      where: { userId },
+      where,
       include: orderSummaryInclude,
-      orderBy: { createdAt: "desc" },
+      // Tie-break theo id để hai đơn cùng thời điểm không lặp/mất giữa các trang
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    prisma.order.count({ where: { userId } }),
+    prisma.order.count({ where }),
   ]);
 
   return {

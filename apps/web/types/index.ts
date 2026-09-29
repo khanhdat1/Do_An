@@ -588,6 +588,8 @@ export interface Order {
   canCancel: boolean;
   shippingAddress: OrderShippingAddress;
   customerNote?: string;
+  /** Mã vận đơn nhân viên nhập khi giao cho đơn vị vận chuyển */
+  trackingNumber?: string;
   items: OrderItem[];
   /** Từ cũ tới mới */
   statusHistory: OrderStatusEvent[];
@@ -604,6 +606,19 @@ export interface OrderSummary {
   itemCount: number;
   previewItems: { name: string; image?: string }[];
   createdAt: string;
+}
+
+/** Tab lọc ở trang "Đơn hàng của tôi" (`?group=` của `GET /api/orders`) */
+export type OrderGroup = "processing" | "delivered" | "cancelled";
+
+/** `GET /api/account/summary` — số liệu thật cho bảng điều khiển trang Tài khoản */
+export interface AccountSummary {
+  orders: { total: number; processing: number; delivered: number; cancelled: number };
+  /** Tổng các đơn đã thanh toán */
+  totalSpent: number;
+  wishlistCount: number;
+  savedBuildCount: number;
+  recentOrders: OrderSummary[];
 }
 
 export interface CreateOrderResult {

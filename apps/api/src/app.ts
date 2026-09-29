@@ -7,6 +7,7 @@ import { env } from "./env.js";
 import { errorHandler, notFoundHandler } from "./middleware/errors.js";
 import { originGuard } from "./middleware/security.js";
 import { addressesRouter } from "./routes/addresses.routes.js";
+import { accountRouter } from "./routes/account.routes.js";
 import { adminAccountsRouter } from "./routes/admin-accounts.routes.js";
 import { adminAuthRouter } from "./routes/admin-auth.routes.js";
 import { adminBannersRouter } from "./routes/admin-banners.routes.js";
@@ -76,6 +77,7 @@ export function createApp() {
   app.use("/api/addresses", addressesRouter);
   app.use("/api/wishlist", wishlistRouter);
   app.use("/api/orders", ordersRouter);
+  app.use("/api/account", accountRouter);
   app.use("/api/order-lookup", orderLookupRouter);
   app.use("/api/payments", paymentsRouter);
   app.use("/api/admin/accounts", adminAccountsRouter);

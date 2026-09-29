@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { MapPin, MessageSquareText, Package } from "lucide-react";
+import { FileClock, MapPin, MessageSquareText, Package, Truck } from "lucide-react";
 import ProductThumb from "@/components/product/ProductThumb";
 import CancelOrderButton from "@/components/orders/CancelOrderButton";
 import ManualPaymentPanel from "@/components/orders/ManualPaymentPanel";
+import OrderProgress from "@/components/orders/OrderProgress";
 import OrderStatusBadge from "@/components/orders/OrderStatusBadge";
 import OrderTimeline from "@/components/orders/OrderTimeline";
 import RetryPaymentButton from "@/components/orders/RetryPaymentButton";
@@ -35,6 +36,8 @@ export default function OrderDetailView({ order, interactive = false, onOrderCha
             </div>
             <OrderStatusBadge status={order.status} />
           </div>
+
+          <OrderProgress status={order.status} history={order.statusHistory} className="mt-5 border-t border-slate-100 pt-5" />
 
           {interactive && (order.canCancel || order.canRetryPayment) ? (
             <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4">
@@ -129,6 +132,12 @@ export default function OrderDetailView({ order, interactive = false, onOrderCha
             {order.shippingAddress.streetAddress}, {order.shippingAddress.ward}, {order.shippingAddress.district},{" "}
             {order.shippingAddress.province}
           </p>
+          {order.trackingNumber ? (
+            <p className="mt-3 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              <Truck className="size-4 shrink-0 text-slate-400" aria-hidden />
+              Mã vận đơn: <span className="font-semibold text-slate-800">{order.trackingNumber}</span>
+            </p>
+          ) : null}
 
           <div className="mt-3 space-y-0.5 border-t border-slate-100 pt-3 text-sm">
             <p className="text-slate-500">
@@ -141,8 +150,29 @@ export default function OrderDetailView({ order, interactive = false, onOrderCha
         </section>
 
         <section className="surface-card p-4 sm:p-5">
-          <h2 className="mb-3 text-base font-bold text-slate-900">Trạng thái đơn hàng</h2>
+          <h2 className="mb-3 text-base font-bold text-slate-900">Lịch sử trạng thái</h2>
           <OrderTimeline events={order.statusHistory} />
+        </section>
+
+        {/*
+          Giữ chỗ theo bố cục mẫu nhưng ghi rõ "Sắp ra mắt": cửa hàng chưa nhập số serial/IMEI hay biên bản kiểm
+          tra máy nên KHÔNG hiện số liệu giả — chỉ báo trước tính năng.
+        */}
+        <section className="surface-card p-4 sm:p-5" aria-labelledby="coming-soon-title">
+          <h2 id="coming-soon-title" className="mb-3 text-base font-bold text-slate-900">
+            Hồ sơ sản phẩm
+          </h2>
+          <ul className="space-y-2.5 text-sm">
+            {["Số serial / IMEI từng sản phẩm", "Biên bản kiểm tra máy (PC lắp ráp)"].map((item) => (
+              <li key={item} className="flex items-center justify-between gap-3 text-slate-500">
+                <span className="flex items-center gap-2">
+                  <FileClock className="size-4 shrink-0 text-slate-300" aria-hidden />
+                  {item}
+                </span>
+                <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">Sắp ra mắt</span>
+              </li>
+            ))}
+          </ul>
         </section>
       </div>
     </div>
