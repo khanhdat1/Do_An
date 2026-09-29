@@ -23,3 +23,6 @@ apps/web/public/images/products/
 # Kết quả kiểm thử đầu-cuối (Playwright) — sinh lại mỗi lần chạy
 apps/e2e/test-results/
 apps/e2e/playwright-report/
+
+# Dữ liệu đóng gói để triển khai (bản sao DB + ảnh) — chứa dữ liệu thật, không commit
+deploy/data/

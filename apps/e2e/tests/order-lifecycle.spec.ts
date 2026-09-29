@@ -48,6 +48,12 @@ test("vòng đời đơn hàng: đặt hàng → quản trị xử lý → giao 
     // 10% của 3.490.000đ = 349.000đ, bị chặn ở mức giảm tối đa 300.000đ; miễn phí vận chuyển → 3.190.000đ
     await expect(customer.getByText("-300.000đ").first()).toBeVisible();
 
+    // Phương thức chưa dùng được bị ẩn hẳn, không hiện mờ — máy kiểm thử để trống khoá VNPay/chuyển khoản/MoMo nên chỉ còn COD
+    const paymentMethods = customer.getByRole("radiogroup", { name: "Phương thức thanh toán" });
+    await expect(paymentMethods.getByText("Thanh toán khi nhận hàng")).toBeVisible();
+    await expect(paymentMethods.getByRole("radio")).toHaveCount(1);
+    await expect(customer.getByText("Thanh toán qua VNPay")).toHaveCount(0);
+
     await customer.getByRole("button", { name: "Đặt hàng", exact: true }).click();
     await customer.waitForURL(/\/don-hang\/[^/?]+$/);
     orderCode = decodeURIComponent(new URL(customer.url()).pathname.split("/").pop() ?? "");

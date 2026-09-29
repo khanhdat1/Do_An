@@ -7,6 +7,7 @@ import { CloudOff, ImageOff, LoaderCircle, Plus, ShieldAlert } from "lucide-reac
 import AdminBadge from "@/components/admin/AdminBadge";
 import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
 import { adminApiFetch } from "@/lib/admin-api-client";
+import { isRuntimeUpload } from "@/lib/uploaded-images";
 import type { AdminBanner } from "@/types";
 
 type State = { status: "loading" } | { status: "error" } | { status: "ready"; items: AdminBanner[] };
@@ -117,7 +118,14 @@ export default function AdminBannerListView() {
                   <td className="px-4 py-2.5">
                     <Link href={`/admin/banners/${banner.id}`} className="flex items-center gap-3">
                       <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                        <Image src={banner.imageUrl} alt={banner.title ?? "Banner"} fill sizes="80px" className="object-cover" />
+                        <Image
+                          src={banner.imageUrl}
+                          alt={banner.title ?? "Banner"}
+                          fill
+                          sizes="80px"
+                          className="object-cover"
+                          unoptimized={isRuntimeUpload(banner.imageUrl)}
+                        />
                       </div>
                       <div className="min-w-0">
                         <p className="line-clamp-1 font-bold text-slate-800 hover:text-brand-600">{banner.title || "(Không có tiêu đề)"}</p>

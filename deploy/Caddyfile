@@ -1,0 +1,21 @@
+# Cổng vào duy nhất của PCZone: HTTPS tự động (Let's Encrypt) cho SITE_ADDRESS trong deploy/.env, rồi chia đường:
+#   /api/*             → API (không vòng qua proxy của Next)
+#   /images/banners/*  → đọc thẳng ổ lưu trữ chung: banner quản trị tải lên LÚC ĐANG CHẠY, mà `next start` chỉ phục vụ
+#                        file có sẵn lúc khởi động (apps/web/lib/uploaded-images.ts)
+#   còn lại            → web (Next.js)
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy api:4000
+	}
+
+	handle /images/banners/* {
+		root * /srv/public
+		file_server
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

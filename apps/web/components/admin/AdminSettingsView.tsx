@@ -398,7 +398,7 @@ export default function AdminSettingsView() {
       <SettingsCard
         icon={CreditCard}
         title="Phương thức thanh toán"
-        description="Khách chỉ chọn được phương thức vừa BẬT ở đây vừa đã có khoá/số tài khoản trong .env (những thông tin đó không bao giờ lưu vào cơ sở dữ liệu). Tắt một phương thức thì trang đặt hàng khoá lựa chọn đó và máy chủ từ chối đơn mới dùng nó; đơn đã đặt trước đó không bị ảnh hưởng."
+        description="Khách chỉ chọn được phương thức vừa BẬT ở đây vừa đã có khoá/số tài khoản trong .env (những thông tin đó không bao giờ lưu vào cơ sở dữ liệu). Tắt một phương thức thì trang đặt hàng ẩn lựa chọn đó và máy chủ từ chối đơn mới dùng nó; đơn đã đặt trước đó không bị ảnh hưởng."
       >
         {PAYMENT_ROWS.map((row) => (
           <ToggleRow

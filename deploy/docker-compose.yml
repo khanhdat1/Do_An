@@ -1,0 +1,94 @@
+# Triển khai PCZone lên một máy chủ (VPS) bằng Docker Compose — hướng dẫn đầy đủ ở README mục 14.
+# Chạy trong thư mục deploy/ (thường qua `bash deploy.sh`). Cấu hình + bí mật ở deploy/.env (copy từ .env.example,
+# KHÔNG commit). Tên dự án riêng "pczone-prod" để không đụng container MySQL dev `pczone-mysql` trên máy dev.
+name: pczone-prod
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Thiếu MYSQL_ROOT_PASSWORD trong deploy/.env}
+      MYSQL_DATABASE: pczone
+      MYSQL_USER: pczone
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Thiếu MYSQL_PASSWORD trong deploy/.env}
+    # utf8mb4 bắt buộc (tên sản phẩm, đánh giá có ký tự 4 byte) — giống docker-compose.yml bản dev
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    # Không mở cổng 3306 ra ngoài: chỉ API trong cùng mạng Docker kết nối được
+
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: pczone-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      API_PORT: "4000"
+      # Caddy đứng trước API: lấy IP khách thật cho giới hạn đăng nhập sai / tần suất (apps/api/src/env.ts)
+      TRUST_PROXY: "1"
+      DATABASE_URL: mysql://pczone:${MYSQL_PASSWORD}@mysql:3306/pczone
+      WEB_URL: ${PUBLIC_URL:?Thiếu PUBLIC_URL trong deploy/.env}
+      CORS_ORIGIN: ${PUBLIC_URL}
+      API_PUBLIC_URL: ${PUBLIC_URL}
+    # Áp migration mới (nếu có) rồi mới mở cổng — cập nhật mã có đổi schema không phải chạy tay
+    command: sh -c "npx prisma migrate deploy --schema packages/db/prisma/schema.prisma && node apps/api/dist/server.js"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      # API ghi banner quản trị tải lên vào đây (apps/api/src/routes/admin-banners.routes.ts)
+      - ${BANNER_DIR:-./data/banners}:/app/apps/web/public/images/banners
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  web:
+    image: pczone-app
+    pull_policy: never
+    restart: unless-stopped
+    working_dir: /app/apps/web
+    environment:
+      NODE_ENV: production
+      API_URL: http://api:4000
+    command: /app/node_modules/.bin/next start -H 0.0.0.0 -p 3000
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      # next start chỉ phục vụ file có sẵn trong public/ lúc khởi động → chép ảnh sản phẩm xong phải khởi động lại web
+      - ${PRODUCT_IMAGE_DIR:-./data/products}:/app/apps/web/public/images/products:ro
+      - ${BANNER_DIR:-./data/banners}:/app/apps/web/public/images/banners:ro
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?Thiếu SITE_ADDRESS trong deploy/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${BANNER_DIR:-./data/banners}:/srv/public/images/banners:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  mysql_data:
+  caddy_data:
+  caddy_config:

@@ -39,6 +39,8 @@ import { wishlistRouter } from "./routes/wishlist.routes.js";
 
 export function createApp() {
   const app = express();
+  // Chạy sau reverse proxy (TRUST_PROXY, xem env.ts) thì lấy IP khách thật từ X-Forwarded-For
+  if (env.trustProxy > 0) app.set("trust proxy", env.trustProxy);
 
   app.use(helmet());
   app.use(
