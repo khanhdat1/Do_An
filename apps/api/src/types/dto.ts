@@ -560,6 +560,8 @@ export interface OrderDto {
   canCancel: boolean;
   shippingAddress: OrderShippingAddressDto;
   customerNote?: string;
+  /** Mã vận đơn nhân viên nhập ở trang quản trị khi giao cho đơn vị vận chuyển — khách dùng để tra hành trình */
+  trackingNumber?: string;
   items: OrderItemDto[];
   /** Từ cũ tới mới */
   statusHistory: OrderStatusEventDto[];
@@ -577,6 +579,27 @@ export interface OrderSummaryDto {
   /** Ảnh + tên vài sản phẩm đầu, đủ để vẽ thumbnail trong danh sách */
   previewItems: { name: string; image?: string }[];
   createdAt: string;
+}
+
+/** Nhóm trạng thái để lọc danh sách đơn của khách: đang xử lý / đã giao / đã huỷ-hoàn */
+export type OrderGroupDto = "processing" | "delivered" | "cancelled";
+
+/** `GET /api/account/summary` — số liệu thật cho bảng điều khiển trang Tài khoản */
+export interface AccountSummaryDto {
+  orders: {
+    total: number;
+    /** Chờ xác nhận, đã xác nhận, đang đóng gói, đang giao */
+    processing: number;
+    delivered: number;
+    /** Đã huỷ + đã hoàn trả */
+    cancelled: number;
+  };
+  /** Tổng tiền các đơn ĐÃ THANH TOÁN (paymentStatus = PAID) — cùng cách tính "tổng chi tiêu" ở trang quản trị khách hàng */
+  totalSpent: number;
+  wishlistCount: number;
+  savedBuildCount: number;
+  /** 3 đơn mới nhất */
+  recentOrders: OrderSummaryDto[];
 }
 
 export interface CreateOrderResultDto {
@@ -628,7 +651,6 @@ export interface AdminPaymentRecordDto {
  * TỪ TRẠNG THÁI HIỆN TẠI (server tính sẵn — frontend không tự suy luận vòng đời đơn).
  */
 export interface AdminOrderDto extends OrderDto {
-  trackingNumber?: string;
   internalNote?: string;
   cancelReason?: string;
   returnReason?: string;

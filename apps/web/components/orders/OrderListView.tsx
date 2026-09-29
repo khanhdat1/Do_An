@@ -4,13 +4,22 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, CloudOff, LoaderCircle, PackageSearch } from "lucide-react";
 import ProductThumb from "@/components/product/ProductThumb";
+import OrderProgress from "@/components/orders/OrderProgress";
 import OrderStatusBadge from "@/components/orders/OrderStatusBadge";
 import { apiFetch } from "@/lib/api-client";
 import { formatPrice } from "@/lib/format";
 import { PAYMENT_METHOD_LABEL } from "@/lib/data/orders";
-import type { OrderSummary, Paginated } from "@/types";
+import { cn } from "@/lib/utils";
+import type { AccountSummary, OrderGroup, OrderSummary, Paginated } from "@/types";
 
 const PAGE_SIZE = 10;
+
+const TABS: { group: OrderGroup | null; label: string; count: (orders: AccountSummary["orders"]) => number }[] = [
+  { group: null, label: "Tất cả", count: (orders) => orders.total },
+  { group: "processing", label: "Đang xử lý", count: (orders) => orders.processing },
+  { group: "delivered", label: "Đã giao", count: (orders) => orders.delivered },
+  { group: "cancelled", label: "Đã huỷ / hoàn", count: (orders) => orders.cancelled },
+];
 
 type State = { status: "loading" } | { status: "error" } | { status: "ready"; data: Paginated<OrderSummary> };
 
@@ -21,55 +30,78 @@ function formatDate(iso: string): string {
 
 function OrderCard({ order }: { order: OrderSummary }) {
   return (
-    <Link
-      href={`/don-hang/${order.orderCode}`}
-      className="surface-card flex items-center gap-4 p-4 transition hover:border-brand-300 hover:shadow-md"
-    >
-      <div className="flex shrink-0 -space-x-3">
-        {order.previewItems.map((item, index) => (
-          <ProductThumb
-            key={index}
-            name={item.name}
-            image={item.image}
-            sizes="56px"
-            className="aspect-square size-14 w-14 shrink-0 ring-2 ring-white"
-          />
-        ))}
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="font-semibold text-slate-800">{order.orderCode}</p>
-          <OrderStatusBadge status={order.status} />
+    <Link href={`/don-hang/${order.orderCode}`} className="surface-card block p-4 transition hover:border-brand-300 hover:shadow-md">
+      <div className="flex items-center gap-4">
+        <div className="flex shrink-0 -space-x-3">
+          {order.previewItems.map((item, index) => (
+            <ProductThumb
+              key={index}
+              name={item.name}
+              image={item.image}
+              sizes="56px"
+              className="aspect-square size-14 w-14 shrink-0 ring-2 ring-white"
+            />
+          ))}
         </div>
-        <p className="mt-0.5 text-xs text-slate-500">
-          {formatDate(order.createdAt)} · {order.itemCount} sản phẩm · {PAYMENT_METHOD_LABEL[order.paymentMethod]}
-        </p>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-semibold text-slate-800">{order.orderCode}</p>
+            <OrderStatusBadge status={order.status} />
+          </div>
+          <p className="mt-0.5 text-xs text-slate-500">
+            {formatDate(order.createdAt)} · {order.itemCount} sản phẩm · {PAYMENT_METHOD_LABEL[order.paymentMethod]}
+          </p>
+        </div>
+
+        <div className="shrink-0 text-right">
+          <p className="font-display text-lg font-bold text-sale-600">{formatPrice(order.totalAmount)}</p>
+        </div>
       </div>
 
-      <div className="shrink-0 text-right">
-        <p className="font-display text-lg font-bold text-sale-600">{formatPrice(order.totalAmount)}</p>
-      </div>
+      <OrderProgress status={order.status} size="sm" className="mt-4 border-t border-slate-100 pt-3" />
     </Link>
   );
 }
 
-/** Danh sách đơn hàng của tài khoản, mới nhất trước — trang `/tai-khoan/don-hang` */
+/** Danh sách đơn hàng của tài khoản, mới nhất trước, có tab lọc theo nhóm trạng thái — trang `/tai-khoan/don-hang` */
 export default function OrderListView() {
   const [page, setPage] = useState(1);
+  const [group, setGroup] = useState<OrderGroup | null>(null);
   const [state, setState] = useState<State>({ status: "loading" });
+  const [counts, setCounts] = useState<AccountSummary["orders"] | null>(null);
 
-  // Đổi trang: state chuyển về "loading" ngay trong sự kiện bấm nút, KHÔNG phải ở đầu effect bên dưới
-  // (setState đồng bộ ngay lúc effect chạy bị lint react-hooks/set-state-in-effect chặn) — xem nút Trước/Sau.
+  // Đổi trang/tab: state chuyển về "loading" ngay trong sự kiện bấm nút, KHÔNG phải ở đầu effect bên dưới
+  // (setState đồng bộ ngay lúc effect chạy bị lint react-hooks/set-state-in-effect chặn) — xem nút Trước/Sau, các tab.
   function goToPage(next: number) {
     setPage(next);
     setState({ status: "loading" });
   }
 
+  function selectGroup(next: OrderGroup | null) {
+    if (next === group) return;
+    setGroup(next);
+    setPage(1);
+    setState({ status: "loading" });
+  }
+
+  // Số đơn từng tab — dùng lại số liệu của bảng điều khiển tài khoản; không tải được thì tab chỉ không có số
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch<AccountSummary>("/api/account/summary")
+      .then((summary) => {
+        if (!cancelled) setCounts(summary.orders);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
-    apiFetch<Paginated<OrderSummary>>(`/api/orders?page=${page}&pageSize=${PAGE_SIZE}`)
+    apiFetch<Paginated<OrderSummary>>(`/api/orders?page=${page}&pageSize=${PAGE_SIZE}${group ? `&group=${group}` : ""}`)
       .then((data) => {
         if (!cancelled) setState({ status: "ready", data });
       })
@@ -80,22 +112,52 @@ export default function OrderListView() {
     return () => {
       cancelled = true;
     };
-  }, [page]);
+  }, [page, group]);
+
+  const tabs = (
+    <div role="tablist" aria-label="Lọc đơn hàng" className="flex gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1">
+      {TABS.map((tab) => {
+        const selected = tab.group === group;
+        return (
+          <button
+            key={tab.label}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            onClick={() => selectGroup(tab.group)}
+            className={cn(
+              "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold transition",
+              selected ? "bg-white text-brand-600 shadow-sm" : "text-slate-500 hover:text-slate-700",
+            )}
+          >
+            {tab.label}
+            {counts ? <span className={cn("rounded-full px-1.5 text-[10px]", selected ? "bg-brand-50" : "bg-slate-200/70")}>{tab.count(counts)}</span> : null}
+          </button>
+        );
+      })}
+    </div>
+  );
 
   if (state.status === "loading") {
     return (
-      <div className="surface-card flex items-center justify-center gap-2 p-10 text-sm text-slate-500">
-        <LoaderCircle className="size-4.5 animate-spin" />
-        Đang tải danh sách đơn hàng...
+      <div className="space-y-3">
+        {tabs}
+        <div className="surface-card flex items-center justify-center gap-2 p-10 text-sm text-slate-500">
+          <LoaderCircle className="size-4.5 animate-spin" />
+          Đang tải danh sách đơn hàng...
+        </div>
       </div>
     );
   }
 
   if (state.status === "error") {
     return (
-      <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
-        <CloudOff className="size-8 text-slate-400" />
-        <p className="mt-3 text-sm text-slate-500">Không tải được danh sách đơn hàng. Vui lòng tải lại trang.</p>
+      <div className="space-y-3">
+        {tabs}
+        <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
+          <CloudOff className="size-8 text-slate-400" />
+          <p className="mt-3 text-sm text-slate-500">Không tải được danh sách đơn hàng. Vui lòng tải lại trang.</p>
+        </div>
       </div>
     );
   }
@@ -104,24 +166,32 @@ export default function OrderListView() {
 
   if (data.items.length === 0 && page === 1) {
     return (
-      <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
-        <span className="grid size-16 place-items-center rounded-full bg-slate-100 text-slate-400">
-          <PackageSearch className="size-8" />
-        </span>
-        <h2 className="mt-4 text-lg font-bold text-slate-800">Bạn chưa có đơn hàng nào</h2>
-        <p className="mt-1.5 max-w-sm text-sm text-slate-500">Đơn hàng sau khi đặt sẽ hiện ở đây.</p>
-        <Link
-          href="/"
-          className="mt-6 rounded-xl bg-brand-500 px-6 py-3 text-xs font-bold uppercase tracking-wide text-white transition hover:bg-brand-600"
-        >
-          Tiếp tục mua sắm
-        </Link>
+      <div className="space-y-3">
+        {tabs}
+        <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
+          <span className="grid size-16 place-items-center rounded-full bg-slate-100 text-slate-400">
+            <PackageSearch className="size-8" />
+          </span>
+          <h2 className="mt-4 text-lg font-bold text-slate-800">{group ? "Không có đơn nào trong mục này" : "Bạn chưa có đơn hàng nào"}</h2>
+          <p className="mt-1.5 max-w-sm text-sm text-slate-500">
+            {group ? "Chọn tab khác để xem các đơn còn lại." : "Đơn hàng sau khi đặt sẽ hiện ở đây."}
+          </p>
+          {group ? null : (
+            <Link
+              href="/"
+              className="mt-6 rounded-xl bg-brand-500 px-6 py-3 text-xs font-bold uppercase tracking-wide text-white transition hover:bg-brand-600"
+            >
+              Tiếp tục mua sắm
+            </Link>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
+      {tabs}
       {data.items.map((order) => (
         <OrderCard key={order.orderCode} order={order} />
       ))}
