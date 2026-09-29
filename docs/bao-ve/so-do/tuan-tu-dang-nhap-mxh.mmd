@@ -1,0 +1,23 @@
+sequenceDiagram
+  autonumber
+  actor KH as Khách
+  participant A as API
+  participant P as Google / Facebook
+  participant DB as MySQL
+  KH->>A: GET /api/auth/google
+  A-->>KH: Cookie state (httpOnly) + chuyển sang Google
+  KH->>P: Chọn tài khoản, đồng ý
+  P-->>A: GET /api/auth/google/callback?code&state
+  A->>A: So state với cookie (chống giả mạo yêu cầu)
+  A->>P: Đổi code lấy hồ sơ (máy chủ với máy chủ, có client secret)
+  P-->>A: Mã tài khoản, email, tên, ảnh
+  A->>DB: Tìm OAuthAccount theo (nhà cung cấp, mã tài khoản)
+  alt Đã liên kết trước đó
+    A->>DB: Đăng nhập vào User đó
+  else Chưa có User nào dùng email này
+    A->>DB: Tạo User + OAuthAccount
+  else Email trùng User có sẵn
+    A->>A: Google, email đã xác minh: liên kết. Facebook: từ chối (chống chiếm trước tài khoản)
+  end
+  A->>DB: Refresh token (lưu dạng băm), gộp giỏ hàng khách
+  A-->>KH: Cookie phiên httpOnly + chuyển về trang trước đó

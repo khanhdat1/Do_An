@@ -1,0 +1,31 @@
+flowchart LR
+  subgraph NguoiDung["Người dùng"]
+    KH["Khách hàng<br/>(trình duyệt)"]
+    QT["Quản trị viên<br/>(trình duyệt)"]
+  end
+  subgraph MayChu["Máy chủ — Docker Compose"]
+    CD["Caddy<br/>HTTPS tự động, reverse proxy"]
+    WEB["Web — Next.js 16<br/>React 19, SSR/ISR, Tailwind 4"]
+    API["API — Express 5<br/>TypeScript, Zod, Prisma 6"]
+    DB[("MySQL 8<br/>31 bảng")]
+    FS[/"Ảnh sản phẩm<br/>& banner"/]
+  end
+  subgraph BenNgoai["Dịch vụ bên ngoài"]
+    GEM["Google Gemini<br/>chat + embedding"]
+    OA["Google / Facebook<br/>OAuth 2.0"]
+    RS["Resend<br/>gửi email"]
+    QR["VietQR<br/>ảnh mã QR"]
+  end
+  KH -->|HTTPS| CD
+  QT -->|HTTPS| CD
+  CD -->|"/api/*"| API
+  CD -->|"/images/banners/*"| FS
+  CD -->|"các trang"| WEB
+  WEB -->|"dữ liệu dựng trang"| API
+  WEB --- FS
+  API -->|Prisma| DB
+  API -->|"ghi banner"| FS
+  API --> GEM
+  API --> OA
+  API --> RS
+  KH -.->|"ảnh QR chuyển khoản"| QR

@@ -1,0 +1,91 @@
+erDiagram
+  Cart {
+    string id PK
+    string userId FK, UK
+    string sessionId UK
+  }
+  CartItem {
+    string id PK
+    string cartId FK
+    string productId FK
+    int quantity
+    decimal priceAtAdd
+    string buildId
+  }
+  Order {
+    string id PK
+    string userId FK
+    string voucherId FK
+    string orderCode UK
+    OrderStatus status
+    decimal subtotal
+    decimal discountAmount
+    decimal shippingFee
+    decimal totalAmount
+  }
+  OrderItem {
+    string id PK
+    string orderId FK
+    string productId FK
+    string productName
+    string productSku
+    string productImage
+    decimal unitPrice
+    int quantity
+    decimal lineTotal
+  }
+  OrderStatusHistory {
+    string id PK
+    string orderId FK
+    string changedBy FK
+    OrderStatus fromStatus
+    OrderStatus toStatus
+    string note
+  }
+  Payment {
+    string id PK
+    string orderId FK
+    PaymentMethod method
+    PaymentStatus status
+    decimal amount
+    string transactionNo
+    string bankCode
+    string responseCode
+    string payUrl
+  }
+  Voucher {
+    string id PK
+    string code UK
+    string name
+    string description
+    DiscountType discountType
+    decimal discountValue
+    decimal minOrderAmount
+    decimal maxDiscount
+    int usageLimit
+  }
+  VoucherRedemption {
+    string id PK
+    string voucherId FK
+    string userId FK
+    string orderId
+    decimal discountApplied
+  }
+  User {
+    string id PK
+  }
+  Product {
+    string id PK
+  }
+  User |o--o| Cart : "userId"
+  Cart ||--o{ CartItem : "cartId"
+  Product ||--o{ CartItem : "productId"
+  User |o--o{ Order : "userId"
+  Voucher |o--o{ Order : "voucherId"
+  Order ||--o{ OrderItem : "orderId"
+  Product |o--o{ OrderItem : "productId"
+  Order ||--o{ OrderStatusHistory : "orderId"
+  User |o--o{ OrderStatusHistory : "changedBy"
+  Order ||--o{ Payment : "orderId"
+  Voucher ||--o{ VoucherRedemption : "voucherId"
+  User ||--o{ VoucherRedemption : "userId"

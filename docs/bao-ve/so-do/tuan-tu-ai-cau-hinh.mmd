@@ -1,0 +1,25 @@
+sequenceDiagram
+  autonumber
+  actor KH as Khách
+  participant W as Web
+  participant A as API
+  participant DB as MySQL
+  participant G as Gemini
+  KH->>W: "PC chơi game tầm 25 triệu"
+  W->>A: POST /api/ai/build
+  A->>A: Tính năng đang bật? Giới hạn tần suất
+  A->>DB: Linh kiện còn hàng + thông số chuẩn hoá
+  A->>A: Đọc ngân sách. Thấp hơn bộ rẻ nhất thì báo ngay, không gọi AI
+  A->>G: Danh mục linh kiện (mã) + yêu cầu, đòi trả JSON
+  G-->>A: Cấu hình: mã từng món + lý do
+  A->>A: Bỏ mã không có thật, kiểm tra 9 luật tương thích
+  opt Còn lỗi
+    A->>G: Nhờ sửa đúng 1 lần, kèm danh sách lỗi
+    G-->>A: Cấu hình đã sửa
+  end
+  opt Vẫn vượt ngân sách
+    A->>A: Tự đổi món rẻ hơn cùng loại (nhánh cận, không dùng AI), giữ tương thích
+  end
+  A->>DB: Lưu PcBuild + mã chia sẻ 8 ký tự
+  A-->>W: Cấu hình, lý do, trạng thái sửa và điều chỉnh
+  W-->>KH: Cấu hình + kiểm tra tương thích + link chia sẻ

@@ -1,0 +1,26 @@
+stateDiagram-v2
+  direction TB
+  state "Chờ xác nhận" as PENDING
+  state "Đã xác nhận" as CONFIRMED
+  state "Đang đóng gói" as PACKING
+  state "Đang giao hàng" as SHIPPING
+  state "Đã giao hàng" as DELIVERED
+  state "Đã huỷ" as CANCELLED
+  state "Đã hoàn trả" as RETURNED
+  [*] --> PENDING: Khách đặt hàng
+  PENDING --> CONFIRMED: Nhân viên xác nhận / đã nhận tiền
+  CONFIRMED --> PACKING: Bắt đầu đóng gói
+  PACKING --> SHIPPING: Bắt đầu giao (mã vận đơn)
+  SHIPPING --> DELIVERED: Giao thành công
+  PENDING --> CANCELLED: Khách huỷ (chưa trả tiền) / nhân viên huỷ
+  CONFIRMED --> CANCELLED
+  PACKING --> CANCELLED: Nhân viên huỷ
+  SHIPPING --> CANCELLED
+  DELIVERED --> RETURNED: Nhân viên nhận hoàn trả
+  DELIVERED --> [*]
+  CANCELLED --> [*]
+  RETURNED --> [*]
+  note right of CANCELLED
+    Huỷ, hoàn trả: hoàn kho, trả lượt mã giảm giá.
+    Đơn đã thanh toán: hoàn tiền thủ công (PAID → REFUNDED)
+  end note
