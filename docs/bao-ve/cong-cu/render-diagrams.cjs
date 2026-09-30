@@ -1,4 +1,5 @@
 // Vẽ docs/bao-ve/so-do/*.mmd ra .svg + .png (nền trắng, gấp đôi độ phân giải) để chèn vào báo cáo Word / slide
+// node render-diagrams.cjs [mã sơ đồ ...] — không truyền mã thì vẽ lại tất cả trong manifest.json
 const { createRequire } = require("node:module");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -8,7 +9,10 @@ const ROOT = path.resolve(__dirname, "../../..");
 const repoRequire = createRequire(path.join(ROOT, "apps/e2e/package.json"));
 const { chromium } = repoRequire("@playwright/test");
 const DIR = path.join(ROOT, "docs/bao-ve/so-do");
-const manifest = JSON.parse(fs.readFileSync(path.join(DIR, "manifest.json"), "utf8"));
+const onlyIds = process.argv.slice(2);
+const manifest = JSON.parse(fs.readFileSync(path.join(DIR, "manifest.json"), "utf8")).filter(
+  ({ id }) => onlyIds.length === 0 || onlyIds.includes(id),
+);
 
 (async () => {
   const browser = await chromium.launch({ channel: "msedge" });

@@ -233,7 +233,8 @@ const HAND = {
   CONFIRMED --> CANCELLED
   PACKING --> CANCELLED: Nhân viên huỷ
   SHIPPING --> CANCELLED
-  DELIVERED --> RETURNED: Nhân viên nhận hoàn trả
+  SHIPPING --> RETURNED: Giao không thành công
+  DELIVERED --> RETURNED: Khách trả hàng
   DELIVERED --> [*]
   CANCELLED --> [*]
   RETURNED --> [*]
@@ -313,12 +314,12 @@ const HAND = {
   A->>A: Tách cụm giá "dưới 30 triệu"
   A->>G: Embedding câu hỏi
   G-->>A: Vector
-  A->>A: Cosine similarity với chỉ mục embedding sản phẩm → top 20
+  A->>A: Cosine similarity với chỉ mục embedding sản phẩm → 8 ứng viên
   A->>DB: Giá, tồn kho thật của sản phẩm ứng viên
-  A->>G: Sản phẩm ứng viên + lịch sử + câu hỏi (stream)
+  A->>G: Sản phẩm ứng viên + 12 tin nhắn gần nhất + câu hỏi (stream)
   loop Từng đoạn trả lời
     G-->>A: đoạn chữ
-    A-->>W: SSE "delta"
+    A-->>W: SSE "chunk"
   end
   A->>A: Tự đối chiếu sản phẩm được nhắc (không tin AI tự khai)
   A->>DB: Lưu câu trả lời + sản phẩm trích dẫn

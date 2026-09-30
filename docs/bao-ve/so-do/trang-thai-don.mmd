@@ -16,7 +16,8 @@ stateDiagram-v2
   CONFIRMED --> CANCELLED
   PACKING --> CANCELLED: Nhân viên huỷ
   SHIPPING --> CANCELLED
-  DELIVERED --> RETURNED: Nhân viên nhận hoàn trả
+  SHIPPING --> RETURNED: Giao không thành công
+  DELIVERED --> RETURNED: Khách trả hàng
   DELIVERED --> [*]
   CANCELLED --> [*]
   RETURNED --> [*]
