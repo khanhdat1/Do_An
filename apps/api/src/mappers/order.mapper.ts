@@ -1,6 +1,6 @@
 import type { Order, OrderStatus, OrderStatusHistory, Prisma } from "@pczone/db";
 import { env } from "../env.js";
-import { buildBankQrUrl, isBankTransferConfigured, isMomoConfigured } from "../services/manual-payment.service.js";
+import { buildBankQrUrl, isBankTransferConfigured, isMomoConfigured, manualPaymentBlockReason } from "../services/manual-payment.service.js";
 import type {
   AdminOrderDto,
   AdminOrderSummaryDto,
@@ -244,5 +244,6 @@ export function toAdminOrderDto(order: AdminOrderWithRelations): AdminOrderDto {
     canAdminCancel: canAdminCancelOrder(order.status),
     canReturn: canReturnOrder(order.status),
     canMarkRefunded: order.paymentStatus === "PAID" && (order.status === "CANCELLED" || order.status === "RETURNED"),
+    canConfirmPayment: manualPaymentBlockReason(order) === null,
   };
 }

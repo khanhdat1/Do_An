@@ -71,16 +71,18 @@ function AdvanceStatusButton({ orderCode, targetStatus, onUpdated }: { orderCode
   );
 }
 
-function ConfirmPaymentButton({ orderCode, onUpdated }: { orderCode: string; onUpdated: (order: AdminOrder) => void }) {
+/** Chuyển khoản/MoMo: tiền đã về tài khoản cửa hàng; COD: nhân viên giao hàng đã thu tiền khi giao */
+function ConfirmPaymentButton({ order, onUpdated }: { order: AdminOrder; onUpdated: (order: AdminOrder) => void }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const isCod = order.paymentMethod === "COD";
 
   async function handle() {
     setBusy(true);
     try {
-      const order = await adminApiFetch<AdminOrder>(`/api/admin/orders/${orderCode}/confirm-payment`, { method: "POST", body: {} });
-      onUpdated(order);
-      toast.success("Đã xác nhận thanh toán");
+      const updated = await adminApiFetch<AdminOrder>(`/api/admin/orders/${order.orderCode}/confirm-payment`, { method: "POST", body: {} });
+      onUpdated(updated);
+      toast.success(isCod ? "Đã ghi nhận thu tiền COD" : "Đã xác nhận thanh toán");
     } catch (error) {
       toast.error(errorMessage(error));
     } finally {
@@ -96,7 +98,7 @@ function ConfirmPaymentButton({ orderCode, onUpdated }: { orderCode: string; onU
       className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {busy ? <LoaderCircle className="size-4 animate-spin" /> : <Banknote className="size-4" />}
-      Xác nhận đã nhận tiền
+      {isCod ? "Xác nhận đã thu tiền COD" : "Xác nhận đã nhận tiền"}
     </button>
   );
 }
@@ -403,10 +405,7 @@ export default function AdminOrderDetailView({ orderCode }: { orderCode: string 
 
               {canWrite ? (
                 <div className="mt-4 flex flex-wrap items-center gap-2.5 border-t border-slate-100 pt-4">
-                  {state.order.paymentStatus === "PENDING" &&
-                  (state.order.paymentMethod === "BANK_TRANSFER" || state.order.paymentMethod === "MOMO") ? (
-                    <ConfirmPaymentButton orderCode={state.order.orderCode} onUpdated={applyOrder} />
-                  ) : null}
+                  {state.order.canConfirmPayment ? <ConfirmPaymentButton order={state.order} onUpdated={applyOrder} /> : null}
                   {state.order.nextStatuses.map((next) => (
                     <AdvanceStatusButton key={next} orderCode={state.order.orderCode} targetStatus={next} onUpdated={applyOrder} />
                   ))}

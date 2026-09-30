@@ -6,9 +6,9 @@ Cập nhật: 30/09/2026 (Asia/Bangkok), lần 2 — sau đợt đổi màu nh�
 
 - Người dùng yêu cầu lưu hiểu biết dự án để tiếp nối ở các phiên chat sau; bản này viết lại toàn bộ theo trạng thái thật ngày 30/09.
 - Dự án: thư mục `pczone/` (cùng cấp với `AGENTS.md`). Đồ án chuyên ngành: website thương mại điện tử bán PC gaming, laptop, linh kiện, gaming gear, có AI Search, AI Chat, Build PC + AI gợi ý cấu hình. Giao diện và trao đổi bằng tiếng Việt.
-- Khác bản 23/09: bản này dựa trên mã nguồn **và** các lần chạy thật trong phiên 29–30/09: kiểm thử đơn vị API (454 đạt trong 15 bộ — lần 1 ghi nhầm 294 vì chỉ cộng 9 bộ in kiểu `===== N pass`), kiểm thử đầu-cuối Playwright (56/56 đạt, DB riêng `pczone_e2e`), chạy thử toàn bộ cụm triển khai Docker trên máy dev. Mỗi mục ở phần 3 ghi rõ mức kiểm chứng.
+- Khác bản 23/09: bản này dựa trên mã nguồn **và** các lần chạy thật trong phiên 29–30/09: kiểm thử đơn vị API (465 đạt trong 15 bộ — lần 1 ghi nhầm 294 vì chỉ cộng 9 bộ in kiểu `===== N pass`), kiểm thử đầu-cuối Playwright (56/56 đạt, DB riêng `pczone_e2e`), chạy thử toàn bộ cụm triển khai Docker trên máy dev. Mỗi mục ở phần 3 ghi rõ mức kiểm chứng.
 - Không đọc hoặc chép giá trị trong `.env` / `.env.local` / `deploy/.env`; bản này không chứa khoá, token, mật khẩu hay dữ liệu khách hàng.
-- `docs/` (bản ngữ cảnh này + hồ sơ bảo vệ) được đưa lên git ngày 30/09 theo yêu cầu người dùng. Ảnh `apps/web/public/images/banners/32741475-….jpg` (banner người dùng tải lên lúc chạy, chưa gắn với banner nào) vẫn chưa commit — hỏi trước.
+- `docs/` (bản ngữ cảnh này, hồ sơ bảo vệ, báo cáo Word) được đưa lên git theo yêu cầu người dùng. Ảnh banner tải lên lúc chạy (`apps/web/public/images/banners/`) được bỏ qua trong `.gitignore` theo lựa chọn của người dùng ngày 30/09.
 
 ## 2. Kiến trúc và cách chạy
 
@@ -58,7 +58,7 @@ Mức kiểm chứng: **E2E** = có kịch bản Playwright đang đạt; **ch�
 - Sản phẩm công khai: `Product.status=ACTIVE`. DTO qua `src/mappers`; hợp đồng ở `apps/api/src/types/dto.ts`, kiểu web riêng ở `apps/web/types/index.ts` — đổi API thì đối chiếu cả hai.
 - Web: `lib/api.ts` cache ISR 60 giây, có dữ liệu dự phòng khi API tắt (trang hiện được không chứng minh backend chạy). TopBar/Footer đọc cài đặt phía server nên hotline đổi có hiệu lực trong ~1 phút; phí ship ở giỏ hàng thì client hỏi lại API nên đúng ngay.
 - Cài đặt hệ thống: bảng `Setting` (một dòng JSON mỗi nhóm), mặc định trong `apps/api/src/settings/system-settings.ts` (phí 30.000đ, miễn phí từ 500.000đ), API cache 30 giây, xoá cache khi lưu; chỉ OWNER (và ADMIN/STAFF cũ) có `settings:write`. Phương thức dùng được = đang bật **và** đã cấu hình `.env`; không cho lưu khi không còn phương thức nào dùng được.
-- Đơn hàng: mã `PCZYYYYMMDD-NNNN`; phí ship tính trên tạm tính **trước** giảm giá. Vòng đời: PENDING → CONFIRMED → PACKING → SHIPPING → DELIVERED, nhân viên tiến đúng một bước mỗi lần. Khách tự huỷ khi PENDING/CONFIRMED và chưa thanh toán; nhân viên huỷ tới trước khi giao xong; hoàn trả từ SHIPPING (giao không thành công) hoặc DELIVERED. Huỷ/hoàn trả hoàn kho + trả lượt mã giảm giá; đơn đã trả tiền → hoàn tiền thủ công (PAID → REFUNDED). Xác nhận tiền chuyển khoản tự đưa đơn PENDING lên CONFIRMED.
+- Đơn hàng: mã `PCZYYYYMMDD-NNNN`; phí ship tính trên tạm tính **trước** giảm giá. Vòng đời: PENDING → CONFIRMED → PACKING → SHIPPING → DELIVERED, nhân viên tiến đúng một bước mỗi lần. Khách tự huỷ khi PENDING/CONFIRMED và chưa thanh toán; nhân viên huỷ tới trước khi giao xong; hoàn trả từ SHIPPING (giao không thành công) hoặc DELIVERED. Huỷ/hoàn trả hoàn kho + trả lượt mã giảm giá; đơn đã trả tiền → hoàn tiền thủ công (PAID → REFUNDED). Xác nhận tiền chuyển khoản tự đưa đơn PENDING lên CONFIRMED. Đơn COD ghi nhận "đã thu tiền" bằng nút riêng khi đang giao/đã giao (không đổi trạng thái đơn, không thêm dòng lịch sử); chưa ghi nhận thì chưa tính doanh thu. Quy tắc chung ở `manualPaymentBlockReason` (`manual-payment.service.ts`); VNPay không ghi nhận tay.
 - Đánh giá: chỉ khi có đơn `DELIVERED` chứa sản phẩm; mỗi sản phẩm/người/đơn một lần; phải duyệt mới công khai. Duyệt đánh giá thuộc quyền `products:*`.
 - AI: không bao giờ bịa sản phẩm — trợ lý chỉ nhận ứng viên truy hồi từ DB và máy chủ tự đối chiếu trích dẫn; AI gợi ý cấu hình chọn theo mã, mã lạ bị bỏ, tương thích do luật mã hoá kiểm tra. Tắt AI ở Cài đặt → chat/build trả 503 kèm lý do, search lùi về từ khoá. Quota Gemini miễn phí có giới hạn.
 - OAuth: nhận diện theo mã tài khoản nhà cung cấp, không tự gộp theo email; Google email đã xác minh được liên kết/trao lại tài khoản; Facebook trùng email bị từ chối (chống chiếm trước tài khoản).
@@ -83,7 +83,6 @@ Mức kiểm chứng: **E2E** = có kịch bản Playwright đang đạt; **ch�
 3. Email tới khách thật cần xác minh tên miền trên Resend (`onboarding@resend.dev` chỉ gửi được tới chủ tài khoản Resend).
 4. Chưa có nút tự xoá tài khoản (chính sách hướng dẫn gửi email hỗ trợ); thời hạn đổi trả và thời gian giao chưa có con số; số serial/IMEI, biên bản kiểm tra máy mới là chỗ giữ "Sắp ra mắt".
 5. Cổng thanh toán thẻ quốc tế/trả góp; kiểm tra xung đột khi hai người cùng lưu Cài đặt (hiện người lưu sau thắng).
-6. **Ghi nhận đã thu tiền cho đơn COD**: giao diện quản trị chỉ có nút "Xác nhận đã nhận tiền" cho chuyển khoản/MoMo (`AdminOrderDetailView.tsx`), nên đơn COD giao xong vẫn "Chưa thanh toán" và không vào Đã thanh toán/Doanh thu thuần ở trang tổng quan. Chưa sửa — chờ người dùng chọn cách (nút xác nhận thu tiền COD hay tự đánh dấu khi giao xong).
 
 ## 7. Quyết định đã chốt
 
@@ -93,6 +92,7 @@ Mức kiểm chứng: **E2E** = có kịch bản Playwright đang đạt; **ch�
 - 30/09: **VNPay nhiều khả năng bỏ** — giữ mã, không chạy sandbox, ẩn khỏi trang đặt hàng; không đề xuất lại trừ khi người dùng nhắc.
 - 30/09: nơi triển khai là **VPS + Docker** (không dùng Railway/Vercel/Render).
 - 30/09: màu nhận diện **cam đậm, chữ trắng** (`#c2410c`); dải thương hiệu ở trang chủ dùng **logo thật của hãng** thay cho chữ.
+- 30/09: đơn COD ghi nhận đã thu tiền bằng **nút xác nhận tay** (không tự đánh dấu khi giao xong); ảnh banner tải lên lúc chạy **không commit** (`.gitignore`).
 - Quy trình: người dùng cho phép tự push lên GitHub (`khanhdat1/Do_An`) khi xong việc; commit theo đường dẫn cụ thể, quét bí mật trước khi push; không commit `.env` hay ảnh banner người dùng tải lên nếu chưa hỏi. Repo công khai: không đưa đường dẫn máy riêng, khoá, mật khẩu vào tài liệu.
 
 ## 8. Lịch sử 23/09 → 30/09
@@ -104,6 +104,7 @@ Mức kiểm chứng: **E2E** = có kịch bản Playwright đang đạt; **ch�
 - 30/09: bộ triển khai VPS + Docker (`9269ede`); trang chính sách, SEO, header bảo mật, kiểm tra chữ ký ảnh, sửa lỗi truy cập và hai link 404 ở trang chủ (`cc0f97a`); hồ sơ bảo vệ đồ án (`docs/bao-ve/`).
 - 30/09 (chiều): đổi màu nhận diện sang cam đậm + sửa mọi lỗi tương phản/nhãn ô nhập ở trang khách, tài khoản và quản trị (E2E 56/56, kiểm tra truy cập chặt ở mọi trang); logo hãng thật ở trang chủ; gỡ khối "cộng đồng" và các câu bịa ở mục bán chạy.
 - 30/09 (chiều, tiếp): báo cáo Word phần kỹ thuật `docs/bao-ve/bao-cao-do-an-pczone.docx` (Chương 3–5 + tài liệu tham khảo + phụ lục API/triển khai, 80 trang, 42 hình, ảnh chụp thật); sửa 2 sơ đồ lệch mã (máy trạng thái thêm Đang giao → Đã hoàn trả; trợ lý AI lấy 8 ứng viên, khung SSE `chunk`); `render-diagrams.cjs` nhận mã sơ đồ để vẽ lại riêng từng hình.
+- 30/09 (tối): nút "Xác nhận đã thu tiền COD" cho đơn COD đang giao/đã giao (quy tắc `manualPaymentBlockReason`, +11 kiểm thử đơn vị, E2E vòng đời đơn có bước thu tiền; doanh thu tổng quan đã tính đơn COD); ảnh banner tải lên lúc chạy vào `.gitignore`.
 - Trước khi tiếp tục: đọc `git status`/`git log` sau mốc `aed0d37`; có thể có một phiên chat khác làm song song trên cùng repo — kiểm tra trước khi commit.
 
 ## 9. Tài liệu nên đọc cùng

@@ -679,6 +679,8 @@ export interface AdminOrder extends Order {
   canReturn: boolean;
   /** Đã thu tiền và đơn đã huỷ/hoàn nhưng CHƯA đánh dấu hoàn tiền */
   canMarkRefunded: boolean;
+  /** Ghi nhận tay được tiền: chuyển khoản/MoMo còn chờ tiền, hoặc COD đang giao/đã giao */
+  canConfirmPayment: boolean;
 }
 
 /* -------------------------------------------------------------------------- */

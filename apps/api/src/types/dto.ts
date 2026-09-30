@@ -663,6 +663,8 @@ export interface AdminOrderDto extends OrderDto {
   canReturn: boolean;
   /** Đã thu tiền (PAID) và đơn đã huỷ/hoàn nhưng CHƯA đánh dấu hoàn tiền — đây là ghi nhận thủ công, không tự động chuyển tiền */
   canMarkRefunded: boolean;
+  /** Ghi nhận tay được tiền: chuyển khoản/MoMo còn chờ tiền, hoặc COD đang giao/đã giao (xem `manualPaymentBlockReason`) */
+  canConfirmPayment: boolean;
 }
 
 /* -------------------------------------------------------------------------- */

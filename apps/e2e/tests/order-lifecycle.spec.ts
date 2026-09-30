@@ -4,8 +4,9 @@ import { addToCart, loginAdmin, MOUSE, registerCustomerViaUi, TEST_ADDRESS } fro
 /**
  * Trọn vòng đời một đơn hàng, đúng như người dùng thật thao tác trên giao diện — hai trình duyệt tách biệt
  * (khách và quản trị, cookie riêng):
- * đăng ký → đặt hàng COD kèm mã giảm giá → quản trị xác nhận/đóng gói/giao (có mã vận đơn)/đã giao →
- * khách thấy tiến trình → khách đánh giá (chỉ được sau khi nhận hàng) → quản trị duyệt → đánh giá hiện công khai.
+ * đăng ký → đặt hàng COD kèm mã giảm giá → quản trị xác nhận/đóng gói/giao (có mã vận đơn)/đã giao → ghi nhận
+ * đã thu tiền COD → khách thấy tiến trình và "Đã thanh toán" → khách đánh giá (chỉ được sau khi nhận hàng) →
+ * quản trị duyệt → đánh giá hiện công khai.
  */
 test("vòng đời đơn hàng: đặt hàng → quản trị xử lý → giao hàng → đánh giá → duyệt", async ({ browser }) => {
   test.setTimeout(180_000);
@@ -81,10 +82,17 @@ test("vòng đời đơn hàng: đặt hàng → quản trị xử lý → giao 
     await expect(admin.getByRole("button", { name: "Đánh dấu đã giao thành công" })).toHaveCount(0);
   });
 
-  await test.step("khách thấy đơn đã giao kèm mã vận đơn, trang Tài khoản cập nhật số đơn", async () => {
+  await test.step("quản trị ghi nhận đã thu tiền COD (chỉ có nút khi đơn đang giao/đã giao)", async () => {
+    await admin.getByRole("button", { name: "Xác nhận đã thu tiền COD" }).click();
+    await expect(admin.getByText("Đã ghi nhận thu tiền COD")).toBeVisible();
+    await expect(admin.getByRole("button", { name: "Xác nhận đã thu tiền COD" })).toHaveCount(0);
+  });
+
+  await test.step("khách thấy đơn đã giao, đã thanh toán, kèm mã vận đơn; trang Tài khoản cập nhật số đơn", async () => {
     await customer.goto(`/don-hang/${encodeURIComponent(orderCode)}`);
     await expect(customer.getByRole("list", { name: "Tiến trình đơn hàng: Đã giao hàng" })).toBeVisible();
     await expect(customer.getByText(trackingNumber)).toBeVisible();
+    await expect(customer.getByText("Đã thanh toán").first()).toBeVisible();
 
     await customer.goto("/tai-khoan/don-hang");
     await customer.getByRole("tab", { name: /Đã giao/ }).click();
