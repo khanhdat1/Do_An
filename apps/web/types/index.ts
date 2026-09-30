@@ -136,11 +136,16 @@ export interface NavItem {
   icon?: string;
 }
 
+/** Một hãng ở dải "Thương hiệu có tại PCZone" trên trang chủ */
 export interface Brand {
   name: string;
-  /** Chữ viết tắt hiển thị trong ô logo khi chưa có file ảnh */
-  label: string;
-  color: string;
+  /** Logo chính thức của hãng (SVG trong public/images/brands — nguồn ghi ở README, mục "Ảnh sản phẩm") */
+  logo: string;
+  /** Kích thước gốc của logo: ảnh giữ đúng tỉ lệ và không làm nhảy bố cục lúc tải */
+  width: number;
+  height: number;
+  /** Từ khoá tìm sản phẩm của hãng khi bấm vào logo */
+  query: string;
 }
 
 /** Kết quả phân trang chung của API */

@@ -75,7 +75,7 @@ function RowContent({ row, terms }: { row: SuggestRow; terms: string[] }) {
           <span className="shrink-0 text-right">
             <span className="block text-sm font-bold text-sale-600">{formatPrice(product.price)}</span>
             {product.oldPrice ? (
-              <span className="block text-[11px] text-slate-400 line-through">{formatPrice(product.oldPrice)}</span>
+              <span className="block text-[11px] text-slate-500 line-through">{formatPrice(product.oldPrice)}</span>
             ) : null}
           </span>
         </>
@@ -116,7 +116,7 @@ function RowContent({ row, terms }: { row: SuggestRow; terms: string[] }) {
     case "recent":
       return (
         <>
-          <History className="size-4.5 shrink-0 text-slate-400" />
+          <History className="size-4.5 shrink-0 text-slate-500" />
           <span className="min-w-0 flex-1 truncate text-sm text-slate-700">{row.search}</span>
         </>
       );
@@ -159,7 +159,7 @@ export default function SuggestPanel({ id, rows, active, terms, stale, notice, o
           return (
             <div key={group.kind} role="group" aria-label={heading ?? "Xem tất cả kết quả"} className={cn(group.kind === "all" && "mt-1 border-t border-slate-100 pt-1")}>
               {heading ? (
-                <p aria-hidden="true" className="flex items-center gap-1.5 px-4 pb-1 pt-3 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                <p aria-hidden="true" className="flex items-center gap-1.5 px-4 pb-1 pt-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">
                   {group.kind === "popular" ? <TrendingUp className="size-3.5" /> : null}
                   {heading}
                 </p>

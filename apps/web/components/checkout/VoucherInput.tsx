@@ -72,7 +72,7 @@ export default function VoucherInput({ subtotal, applied, onApply, onRemove }: V
           value={code}
           onChange={(event) => setCode(event.target.value)}
           placeholder="Nhập mã giảm giá"
-          className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20"
+          className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-500 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20"
         />
         {error ? <p className="mt-1.5 text-xs font-medium text-sale-600">{error}</p> : null}
       </div>

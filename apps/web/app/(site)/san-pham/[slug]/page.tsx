@@ -27,10 +27,10 @@ import type { Tone } from "@/types";
 type PageProps = { params: Promise<{ slug: string }> };
 
 const tagTones: Record<Tone, string> = {
-  amber: "bg-gold-400/20 text-gold-600 ring-gold-400/40",
-  green: "bg-emerald-50 text-emerald-600 ring-emerald-200",
+  amber: "bg-gold-400/20 text-gold-800 ring-gold-400/40",
+  green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
   blue: "bg-blue-50 text-blue-600 ring-blue-200",
-  red: "bg-sale-500/10 text-sale-600 ring-sale-500/30",
+  red: "bg-sale-500/10 text-sale-700 ring-sale-500/30",
   slate: "bg-slate-100 text-slate-600 ring-slate-200",
 };
 
@@ -102,7 +102,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   {product.brand}
                 </span>
               ) : null}
-              {product.sku ? <span className="text-slate-400">Mã SP: {product.sku}</span> : null}
+              {product.sku ? <span className="text-slate-500">Mã SP: {product.sku}</span> : null}
               {product.tag ? (
                 <span
                   className={cn(
@@ -127,7 +127,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   ({product.reviewCount} đánh giá)
                 </span>
               ) : (
-                <span className="flex items-center gap-1.5 text-slate-400">
+                <span className="flex items-center gap-1.5 text-slate-500">
                   <Star className="size-4 text-slate-300" />
                   Chưa có đánh giá
                 </span>
@@ -144,7 +144,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   {product.stock.note}
                 </span>
               ) : (
-                <span className="flex items-center gap-1.5 font-semibold text-emerald-600">
+                <span className="flex items-center gap-1.5 font-semibold text-emerald-700">
                   <CircleCheck className="size-4" />
                   Còn hàng
                 </span>
@@ -159,7 +159,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 </span>
                 {product.oldPrice ? (
                   <>
-                    <span className="text-base text-slate-400 line-through">
+                    <span className="text-base text-slate-500 line-through">
                       {formatPrice(product.oldPrice)}
                     </span>
                     {discount > 0 ? (
@@ -171,7 +171,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 ) : null}
               </div>
               {saving > 0 ? (
-                <p className="mt-1.5 text-xs font-medium text-emerald-600">
+                <p className="mt-1.5 text-xs font-medium text-emerald-700">
                   Tiết kiệm {formatPrice(saving)} so với giá niêm yết
                 </p>
               ) : null}

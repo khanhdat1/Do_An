@@ -97,7 +97,7 @@ export default function ProductPurchasePanel({
       </div>
 
       {!canBuy ? (
-        <p className="mt-2 text-xs font-medium text-gold-600">
+        <p className="mt-2 text-xs font-medium text-gold-800">
           Bạn đã thêm tối đa số lượng cho phép của sản phẩm này vào giỏ hàng.
         </p>
       ) : null}

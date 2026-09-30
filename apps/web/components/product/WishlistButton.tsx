@@ -62,7 +62,7 @@ export default function WishlistButton({ productId, name, variant = "overlay", c
         aria-label={label}
         className={cn(
           "flex size-12 shrink-0 items-center justify-center rounded-xl border transition disabled:opacity-60",
-          saved ? "border-sale-200 bg-sale-500/10 text-sale-600" : "border-slate-200 bg-white text-slate-400 hover:text-sale-500",
+          saved ? "border-sale-200 bg-sale-500/10 text-sale-600" : "border-slate-200 bg-white text-slate-500 hover:text-sale-500",
           className,
         )}
       >
@@ -79,7 +79,7 @@ export default function WishlistButton({ productId, name, variant = "overlay", c
       aria-pressed={saved}
       aria-label={label}
       className={cn(
-        "absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-full bg-white/90 text-slate-400 shadow-sm ring-1 ring-slate-900/5 backdrop-blur transition hover:text-sale-500 disabled:opacity-60",
+        "absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-full bg-white/90 text-slate-500 shadow-sm ring-1 ring-slate-900/5 backdrop-blur transition hover:text-sale-500 disabled:opacity-60",
         saved && "text-sale-600",
         className,
       )}

@@ -69,7 +69,7 @@ function Notices({ result, query }: { result: SearchResult; query: SearchQuery }
   if (result.ignoredTerms.length > 0 && result.total > 0) {
     items.push(
       <li key="ignored" className="flex items-start gap-2 text-sm text-slate-600">
-        <Info className="mt-0.5 size-4 shrink-0 text-slate-400" />
+        <Info className="mt-0.5 size-4 shrink-0 text-slate-500" />
         <span>
           Không có sản phẩm nào chứa {result.ignoredTerms.map((term) => `“${term}”`).join(", ")}, nên đã bỏ qua {result.ignoredTerms.length > 1 ? "các từ" : "từ"} này.
         </span>
@@ -80,7 +80,7 @@ function Notices({ result, query }: { result: SearchResult; query: SearchQuery }
   if (result.relaxed && result.total > 0) {
     items.push(
       <li key="relaxed" className="flex items-start gap-2 text-sm text-slate-600">
-        <Info className="mt-0.5 size-4 shrink-0 text-slate-400" />
+        <Info className="mt-0.5 size-4 shrink-0 text-slate-500" />
         <span>Không có sản phẩm nào khớp đủ mọi từ khoá. Đây là các sản phẩm khớp nhiều từ khoá nhất.</span>
       </li>,
     );
@@ -198,7 +198,7 @@ function SearchUnavailable({ query }: { query: SearchQuery }) {
     <div className="container-page py-4">
       <Breadcrumb categories={[]} current="Tìm kiếm" />
       <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
-        <span className="grid size-16 place-items-center rounded-full bg-slate-100 text-slate-400">
+        <span className="grid size-16 place-items-center rounded-full bg-slate-100 text-slate-500">
           <WifiOff className="size-8" />
         </span>
         <h1 className="mt-4 text-lg font-bold text-slate-800">Chưa tìm kiếm được lúc này</h1>
@@ -332,7 +332,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
           </>
         ) : (
           <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
-            <span className="grid size-16 place-items-center rounded-full bg-slate-100 text-slate-400">
+            <span className="grid size-16 place-items-center rounded-full bg-slate-100 text-slate-500">
               <SearchX className="size-8" />
             </span>
             <h2 className="mt-4 text-lg font-bold text-slate-800">

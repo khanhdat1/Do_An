@@ -101,7 +101,7 @@ export default function UserMenu() {
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 rounded-lg px-3 py-2 font-medium transition hover:bg-slate-100"
             >
-              <UserRound className="size-4 text-slate-400" />
+              <UserRound className="size-4 text-slate-500" />
               Tài khoản của tôi
             </Link>
             <Link
@@ -109,7 +109,7 @@ export default function UserMenu() {
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 rounded-lg px-3 py-2 font-medium transition hover:bg-slate-100"
             >
-              <Package className="size-4 text-slate-400" />
+              <Package className="size-4 text-slate-500" />
               Đơn hàng của tôi
             </Link>
             <Link
@@ -117,7 +117,7 @@ export default function UserMenu() {
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 rounded-lg px-3 py-2 font-medium transition hover:bg-slate-100"
             >
-              <Wrench className="size-4 text-slate-400" />
+              <Wrench className="size-4 text-slate-500" />
               Cấu hình PC đã lưu
             </Link>
             <Link
@@ -125,7 +125,7 @@ export default function UserMenu() {
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 rounded-lg px-3 py-2 font-medium transition hover:bg-slate-100"
             >
-              <Heart className="size-4 text-slate-400" />
+              <Heart className="size-4 text-slate-500" />
               Sản phẩm yêu thích
               {productIds.size > 0 ? (
                 <span className="ml-auto rounded-full bg-sale-600 px-1.5 text-[10px] font-bold text-white">
@@ -138,7 +138,7 @@ export default function UserMenu() {
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 rounded-lg px-3 py-2 font-medium transition hover:bg-slate-100"
             >
-              <ShoppingCart className="size-4 text-slate-400" />
+              <ShoppingCart className="size-4 text-slate-500" />
               Giỏ hàng
               {cart.itemCount > 0 ? (
                 <span className="ml-auto rounded-full bg-sale-600 px-1.5 text-[10px] font-bold text-white">
@@ -155,7 +155,7 @@ export default function UserMenu() {
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-2.5 rounded-lg px-3 py-2 font-medium transition hover:bg-slate-100"
               >
-                <ShieldCheck className="size-4 text-slate-400" />
+                <ShieldCheck className="size-4 text-slate-500" />
                 Trang quản trị
               </Link>
             </div>

@@ -66,6 +66,7 @@ function AdjustmentForm({ product, onAdjusted }: { product: AdminProductDetail; 
             key={option.value}
             type="button"
             onClick={() => setType(option.value)}
+            aria-pressed={type === option.value}
             className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
               type === option.value ? "bg-brand-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
@@ -77,8 +78,9 @@ function AdjustmentForm({ product, onAdjusted }: { product: AdminProductDetail; 
 
       {type === "ADJUST" ? (
         <div>
-          <label className="mb-1 block text-xs font-semibold text-slate-600">Số lượng đếm được thực tế</label>
+          <label htmlFor="inventory-new-quantity" className="mb-1 block text-xs font-semibold text-slate-600">Số lượng đếm được thực tế</label>
           <input
+            id="inventory-new-quantity"
             type="number"
             min={0}
             required
@@ -86,15 +88,16 @@ function AdjustmentForm({ product, onAdjusted }: { product: AdminProductDetail; 
             onChange={(event) => setNewQuantity(event.target.value)}
             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
           />
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-slate-500">
             Tồn kho hiện ghi nhận: {product.inventoryQuantity}. Hệ thống tự tính chênh lệch, không cần tự trừ.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Số lượng</label>
+            <label htmlFor="inventory-quantity" className="mb-1 block text-xs font-semibold text-slate-600">Số lượng</label>
             <input
+              id="inventory-quantity"
               type="number"
               min={1}
               required
@@ -105,8 +108,9 @@ function AdjustmentForm({ product, onAdjusted }: { product: AdminProductDetail; 
           </div>
           {type === "IMPORT" ? (
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-600">Giá nhập / đơn vị (không bắt buộc)</label>
+              <label htmlFor="inventory-unit-cost" className="mb-1 block text-xs font-semibold text-slate-600">Giá nhập / đơn vị (không bắt buộc)</label>
               <input
+                id="inventory-unit-cost"
                 type="number"
                 min={0}
                 value={unitCost}
@@ -119,8 +123,9 @@ function AdjustmentForm({ product, onAdjusted }: { product: AdminProductDetail; 
       )}
 
       <div>
-        <label className="mb-1 block text-xs font-semibold text-slate-600">Ghi chú (không bắt buộc)</label>
+        <label htmlFor="inventory-note" className="mb-1 block text-xs font-semibold text-slate-600">Ghi chú (không bắt buộc)</label>
         <input
+          id="inventory-note"
           value={note}
           onChange={(event) => setNote(event.target.value)}
           placeholder="Vd. nhập từ nhà cung cấp X, kiểm kê định kỳ..."
@@ -184,7 +189,7 @@ export default function AdminProductInventoryPanel({
           <p className="text-xs text-slate-500">Còn bán được</p>
         </div>
       </div>
-      <p className="mt-2 text-xs text-slate-400">Ngưỡng cảnh báo sắp hết hàng: {product.lowStockThreshold} (sửa ở form thông tin sản phẩm phía trên)</p>
+      <p className="mt-2 text-xs text-slate-500">Ngưỡng cảnh báo sắp hết hàng: {product.lowStockThreshold} (sửa ở form thông tin sản phẩm phía trên)</p>
 
       {canWrite ? (
         <AdjustmentForm
@@ -204,7 +209,7 @@ export default function AdminProductInventoryPanel({
             Đang tải...
           </div>
         ) : history.items.length === 0 ? (
-          <p className="py-4 text-sm text-slate-400">Chưa có giao dịch kho nào.</p>
+          <p className="py-4 text-sm text-slate-500">Chưa có giao dịch kho nào.</p>
         ) : (
           <div className="space-y-2">
             {history.items.map((tx) => (
@@ -212,11 +217,11 @@ export default function AdminProductInventoryPanel({
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <AdminBadge tone={INVENTORY_TX_TONE[tx.type]}>{INVENTORY_TX_LABEL[tx.type]}</AdminBadge>
-                    <span className={`font-bold ${tx.quantityChange >= 0 ? "text-emerald-600" : "text-sale-600"}`}>
+                    <span className={`font-bold ${tx.quantityChange >= 0 ? "text-emerald-700" : "text-sale-600"}`}>
                       {tx.quantityChange >= 0 ? "+" : ""}
                       {tx.quantityChange}
                     </span>
-                    <span className="text-xs text-slate-400">→ còn {tx.quantityAfter}</span>
+                    <span className="text-xs text-slate-500">→ còn {tx.quantityAfter}</span>
                   </div>
                   {tx.note ? <p className="mt-1 text-xs text-slate-500">{tx.note}</p> : null}
                   {tx.orderCode ? (
@@ -225,7 +230,7 @@ export default function AdminProductInventoryPanel({
                     </Link>
                   ) : null}
                 </div>
-                <div className="shrink-0 text-right text-xs text-slate-400">
+                <div className="shrink-0 text-right text-xs text-slate-500">
                   <p>{formatDateTime(tx.createdAt)}</p>
                   {tx.createdByName ? <p>{tx.createdByName}</p> : null}
                 </div>
@@ -240,6 +245,7 @@ export default function AdminProductInventoryPanel({
               type="button"
               onClick={() => setPage((p) => p - 1)}
               disabled={page <= 1}
+              aria-label="Trang trước"
               className="grid size-8 place-items-center rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40"
             >
               <ChevronLeft className="size-4" />
@@ -251,6 +257,7 @@ export default function AdminProductInventoryPanel({
               type="button"
               onClick={() => setPage((p) => p + 1)}
               disabled={page >= history.totalPages}
+              aria-label="Trang sau"
               className="grid size-8 place-items-center rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40"
             >
               <ChevronRight className="size-4" />

@@ -5,8 +5,8 @@ import type { BuildCheck, BuildSeverity } from "@/types";
 const SEVERITY_STYLE: Record<BuildSeverity, { icon: typeof Info; className: string; iconClassName: string }> = {
   ERROR: { icon: CircleX, className: "bg-red-50 text-red-800", iconClassName: "text-red-600" },
   WARNING: { icon: TriangleAlert, className: "bg-amber-50 text-amber-900", iconClassName: "text-amber-600" },
-  INFO: { icon: Info, className: "bg-slate-50 text-slate-600", iconClassName: "text-slate-400" },
-  PASS: { icon: CircleCheck, className: "bg-emerald-50/70 text-emerald-900", iconClassName: "text-emerald-600" },
+  INFO: { icon: Info, className: "bg-slate-50 text-slate-600", iconClassName: "text-slate-500" },
+  PASS: { icon: CircleCheck, className: "bg-emerald-50/70 text-emerald-900", iconClassName: "text-emerald-700" },
 };
 
 interface BuildCheckListProps {

@@ -16,20 +16,25 @@
   --color-ink-600: #33425f;
   --color-ink-500: #4a5a79;
 
-  /* Cam thương hiệu (CTA chính: MUA NGAY, BUILD PC) */
+  /* Cam thương hiệu (CTA chính: MUA NGAY, BUILD PC). Từ 30/09/2026 dùng bản ĐẬM để chữ trắng trên nút và link cam
+     đạt tương phản WCAG AA (≥ 4,5:1): 500 #c2410c (5,2:1 với nền trắng), 600 #9a3412, 700 #7c2d12. Cam sáng cũ
+     (#f97316 / #ea580c) chữ trắng chỉ đạt 2,8–3,6:1. 400 giữ cam sáng cho chữ/biểu tượng đặt trên nền tối */
   --color-brand-50: #fff7ed;
   --color-brand-100: #ffedd5;
   --color-brand-200: #fed7aa;
+  --color-brand-300: #fdba74;
   --color-brand-400: #fb923c;
-  --color-brand-500: #f97316;
-  --color-brand-600: #ea580c;
-  --color-brand-700: #c2410c;
+  --color-brand-500: #c2410c;
+  --color-brand-600: #9a3412;
+  --color-brand-700: #7c2d12;
 
-  /* Vàng nhấn (logo ZONE, AI SEARCH, AI PC BUILDER) */
+  /* Vàng nhấn (logo ZONE, AI SEARCH, AI PC BUILDER). Chữ vàng trên nền sáng dùng 700/800 — 600 chỉ đạt ~2,7:1 */
   --color-gold-300: #fde047;
   --color-gold-400: #facc15;
   --color-gold-500: #eab308;
   --color-gold-600: #ca8a04;
+  --color-gold-700: #a16207;
+  --color-gold-800: #854d0e;
 
   /* Giá khuyến mãi / badge giảm giá */
   --color-sale-500: #ef4444;

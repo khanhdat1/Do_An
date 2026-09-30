@@ -92,12 +92,12 @@ export default function OrderProgress({ status, history, size = "md", className 
                 className={cn(
                   "mt-1.5 max-w-full truncate px-0.5 font-semibold",
                   small ? "text-[10px]" : "text-[11px] sm:text-xs",
-                  state === "todo" ? "text-slate-400" : state === "stopped" ? "text-sale-600" : state === "current" ? "text-brand-600" : "text-slate-700",
+                  state === "todo" ? "text-slate-500" : state === "stopped" ? "text-sale-600" : state === "current" ? "text-brand-600" : "text-slate-700",
                 )}
               >
                 {state === "stopped" ? ORDER_STATUS_LABEL[status] : (STEP_LABEL[step] ?? ORDER_STATUS_LABEL[step])}
               </span>
-              {time ? <span className="mt-0.5 text-[10px] text-slate-400">{formatStepTime(time)}</span> : null}
+              {time ? <span className="mt-0.5 text-[10px] text-slate-500">{formatStepTime(time)}</span> : null}
               <span className="sr-only">
                 {state === "done" ? "đã xong" : state === "current" ? "đang ở bước này" : state === "stopped" ? "đơn dừng ở đây" : "chưa tới"}
               </span>

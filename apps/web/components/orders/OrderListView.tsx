@@ -127,7 +127,7 @@ export default function OrderListView() {
             onClick={() => selectGroup(tab.group)}
             className={cn(
               "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold transition",
-              selected ? "bg-white text-brand-600 shadow-sm" : "text-slate-500 hover:text-slate-700",
+              selected ? "bg-white text-brand-600 shadow-sm" : "text-slate-600 hover:text-slate-800",
             )}
           >
             {tab.label}
@@ -155,7 +155,7 @@ export default function OrderListView() {
       <div className="space-y-3">
         {tabs}
         <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
-          <CloudOff className="size-8 text-slate-400" />
+          <CloudOff className="size-8 text-slate-500" />
           <p className="mt-3 text-sm text-slate-500">Không tải được danh sách đơn hàng. Vui lòng tải lại trang.</p>
         </div>
       </div>
@@ -169,7 +169,7 @@ export default function OrderListView() {
       <div className="space-y-3">
         {tabs}
         <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
-          <span className="grid size-16 place-items-center rounded-full bg-slate-100 text-slate-400">
+          <span className="grid size-16 place-items-center rounded-full bg-slate-100 text-slate-500">
             <PackageSearch className="size-8" />
           </span>
           <h2 className="mt-4 text-lg font-bold text-slate-800">{group ? "Không có đơn nào trong mục này" : "Bạn chưa có đơn hàng nào"}</h2>

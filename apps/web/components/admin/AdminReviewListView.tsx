@@ -195,7 +195,7 @@ export default function AdminReviewListView() {
 
       {state.status === "error" ? (
         <div className="admin-card flex flex-col items-center px-6 py-14 text-center">
-          <CloudOff className="size-8 text-slate-400" />
+          <CloudOff className="size-8 text-slate-500" />
           <p className="mt-3 text-sm text-slate-500">Không tải được danh sách đánh giá. Vui lòng tải lại trang.</p>
         </div>
       ) : null}
@@ -220,7 +220,7 @@ export default function AdminReviewListView() {
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <span className="text-sm font-semibold text-slate-700">{review.reviewerName}</span>
                     <RatingStars value={review.rating} size="sm" />
-                    <span className="text-xs text-slate-400">{formatDate(review.createdAt)}</span>
+                    <span className="text-xs text-slate-500">{formatDate(review.createdAt)}</span>
                     {review.isApproved ? (
                       <AdminBadge tone="green">Đã duyệt</AdminBadge>
                     ) : (

@@ -6,7 +6,7 @@ const features = [
     icon: Sparkles,
     title: "AI gợi ý cả bộ",
     description: "Nêu ngân sách và nhu cầu, AI chọn đủ linh kiện đang bán; hệ thống kiểm tra lại, sai thì cho AI sửa.",
-    tone: "bg-gold-400/15 text-gold-600",
+    tone: "bg-gold-400/15 text-gold-800",
   },
   {
     icon: ShieldCheck,
@@ -18,7 +18,7 @@ const features = [
     icon: Link2,
     title: "Lưu & chia sẻ",
     description: "Lưu cấu hình thành link ngắn để gửi bạn bè; thêm cả bộ vào giỏ hàng bằng một nút.",
-    tone: "bg-emerald-50 text-emerald-600",
+    tone: "bg-emerald-50 text-emerald-700",
   },
 ];
 
@@ -89,14 +89,14 @@ export default function AiBuildSection() {
           {/* Cột phải: hệ thống kiểm tra những gì */}
           <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
             <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-800">
-              <ListChecks className="size-4 text-emerald-600" />
+              <ListChecks className="size-4 text-emerald-700" />
               Hệ thống kiểm tra những gì?
             </h3>
 
             <ul className="mt-3 grid gap-2 rounded-lg bg-white p-3 ring-1 ring-slate-200 sm:grid-cols-2">
               {checks.map((item) => (
                 <li key={item} className="flex items-start gap-2 text-xs text-slate-700">
-                  <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-600" strokeWidth={3} />
+                  <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-700" strokeWidth={3} />
                   {item}
                 </li>
               ))}

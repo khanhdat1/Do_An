@@ -28,7 +28,7 @@ export default async function CategorySection() {
               <CategoryIcon name={category.icon} className="size-5.5 text-brand-500" strokeWidth={1.8} />
             </span>
             <span className="text-xs font-semibold text-slate-800">{category.name}</span>
-            <span className="text-[10px] text-slate-400">{category.caption}</span>
+            <span className="text-[10px] text-slate-500">{category.caption}</span>
           </Link>
         ))}
       </div>

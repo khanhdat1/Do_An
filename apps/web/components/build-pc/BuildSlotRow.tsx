@@ -25,9 +25,9 @@ export function SpecChips({ specs }: { specs: SpecRow[] }) {
   return (
     <ul className="mt-1.5 flex flex-wrap gap-1">
       {specs.map((spec) => (
-        <li key={spec.label} className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-500">
+        <li key={spec.label} className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">
           {spec.label}:{" "}
-          <span className={spec.value === NO_DATA ? "italic text-slate-400" : "font-semibold text-slate-700"}>{spec.value}</span>
+          <span className={spec.value === NO_DATA ? "italic text-slate-500" : "font-semibold text-slate-700"}>{spec.value}</span>
         </li>
       ))}
     </ul>
@@ -63,17 +63,17 @@ export default function BuildSlotRow({ slot, selected, product, severity, option
         {product ? (
           <ProductThumb name={product.name} image={product.image} categoryPath={product.categoryPath} className="ring-1 ring-slate-200" sizes="64px" />
         ) : (
-          <span className="grid aspect-4/3 w-full place-items-center rounded-lg bg-slate-100 text-slate-400">
+          <span className="grid aspect-4/3 w-full place-items-center rounded-lg bg-slate-100 text-slate-500">
             <Icon className="size-6" strokeWidth={1.5} aria-hidden />
           </span>
         )}
       </div>
 
       <div className="min-w-0 flex-1 basis-40">
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">
           {label}
           {optional ? (
-            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium normal-case tracking-normal text-slate-500">
+            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium normal-case tracking-normal text-slate-600">
               Không bắt buộc — CPU có đồ họa tích hợp
             </span>
           ) : null}
@@ -87,7 +87,7 @@ export default function BuildSlotRow({ slot, selected, product, severity, option
               className="mt-0.5 inline-flex items-start gap-1 text-sm font-semibold text-slate-800 transition hover:text-brand-600"
             >
               <span className="line-clamp-2">{product.name}</span>
-              <ExternalLink className="mt-0.5 size-3.5 shrink-0 text-slate-400" aria-label="(mở tab mới)" />
+              <ExternalLink className="mt-0.5 size-3.5 shrink-0 text-slate-500" aria-label="(mở tab mới)" />
             </Link>
             <SpecChips specs={product.keySpecs} />
             {product.specNotes.map((note) => (
@@ -110,7 +110,7 @@ export default function BuildSlotRow({ slot, selected, product, severity, option
                 {formatPrice(product.price)} × {quantity}
               </p>
             ) : null}
-            {product.inStock === false ? <p className="text-[11px] font-semibold text-slate-400">Hết hàng</p> : null}
+            {product.inStock === false ? <p className="text-[11px] font-semibold text-slate-500">Hết hàng</p> : null}
           </div>
         ) : null}
 
@@ -125,7 +125,7 @@ export default function BuildSlotRow({ slot, selected, product, severity, option
               type="button"
               onClick={onRemove}
               aria-label={`Bỏ ${label} đã chọn`}
-              className="grid size-8 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-red-600"
+              className="grid size-8 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-red-600"
             >
               <X className="size-4" />
             </button>

@@ -58,7 +58,7 @@ export default function Pagination({ page, totalPages, pathname, params }: Pagin
 
       {visiblePages(page, totalPages).map((item, index) =>
         item === "gap" ? (
-          <span key={`gap-${index}`} className="px-1 text-slate-400" aria-hidden="true">
+          <span key={`gap-${index}`} className="px-1 text-slate-500" aria-hidden="true">
             …
           </span>
         ) : (

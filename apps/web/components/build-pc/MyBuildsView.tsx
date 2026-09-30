@@ -75,7 +75,7 @@ export default function MyBuildsView() {
   if (state.status === "error") {
     return (
       <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
-        <CloudOff className="size-8 text-slate-400" aria-hidden />
+        <CloudOff className="size-8 text-slate-500" aria-hidden />
         <p className="mt-3 text-sm text-slate-500">Không tải được danh sách cấu hình. Vui lòng tải lại trang.</p>
       </div>
     );
@@ -84,7 +84,7 @@ export default function MyBuildsView() {
   if (state.items.length === 0) {
     return (
       <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
-        <span className="grid size-16 place-items-center rounded-full bg-slate-100 text-slate-400">
+        <span className="grid size-16 place-items-center rounded-full bg-slate-100 text-slate-500">
           <Wrench className="size-8" aria-hidden />
         </span>
         <h2 className="mt-4 text-lg font-bold text-slate-800">Chưa có cấu hình nào</h2>
@@ -112,7 +112,7 @@ export default function MyBuildsView() {
             <p className="truncate font-semibold text-slate-800">{build.name}</p>
             <p className="mt-0.5 text-xs text-slate-500">
               {formatDate(build.createdAt)} · {build.itemCount} linh kiện · lúc lưu {formatPrice(build.totalAtSave)} ·{" "}
-              <span className={build.isValidAtSave ? "text-emerald-600" : "text-slate-500"}>
+              <span className={build.isValidAtSave ? "text-emerald-700" : "text-slate-500"}>
                 {/* isValid = đủ linh kiện và không có lỗi (cảnh báo không tính) — không gọi là "tương thích" cho khỏi hiểu quá */}
                 {build.isValidAtSave ? "đủ linh kiện, không có lỗi" : "còn thiếu hoặc có lỗi"}
               </span>
@@ -138,7 +138,7 @@ export default function MyBuildsView() {
               onClick={() => remove(build)}
               disabled={deleting === build.code}
               aria-label={`Xoá cấu hình ${build.name}`}
-              className="grid size-9 place-items-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-red-300 hover:text-red-600 disabled:opacity-50"
+              className="grid size-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-red-300 hover:text-red-600 disabled:opacity-50"
             >
               <Trash2 className="size-4" />
             </button>

@@ -24,7 +24,7 @@ export default function SocialLogin({ next, verb }: SocialLoginProps) {
 
   return (
     <div>
-      <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+      <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
         <span className="h-px flex-1 bg-slate-200" />
         Hoặc tiếp tục với
         <span className="h-px flex-1 bg-slate-200" />

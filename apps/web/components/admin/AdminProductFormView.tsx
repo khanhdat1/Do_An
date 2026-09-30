@@ -216,7 +216,7 @@ export default function AdminProductFormView({ productId }: { productId?: string
 
       {state.status === "error" ? (
         <div className="admin-card flex flex-col items-center px-6 py-14 text-center">
-          <CloudOff className="size-8 text-slate-400" />
+          <CloudOff className="size-8 text-slate-500" />
           <p className="mt-3 text-sm text-slate-500">Không tải được dữ liệu. Vui lòng tải lại trang.</p>
         </div>
       ) : null}
@@ -238,8 +238,9 @@ export default function AdminProductFormView({ productId }: { productId?: string
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">Tên sản phẩm *</label>
+                  <label htmlFor="product-name" className="mb-1 block text-xs font-semibold text-slate-600">Tên sản phẩm *</label>
                   <input
+                    id="product-name"
                     required
                     value={form.name}
                     onChange={(event) => updateField("name", event.target.value)}
@@ -247,8 +248,9 @@ export default function AdminProductFormView({ productId }: { productId?: string
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">Mã SKU *</label>
+                  <label htmlFor="product-sku" className="mb-1 block text-xs font-semibold text-slate-600">Mã SKU *</label>
                   <input
+                    id="product-sku"
                     required
                     value={form.sku}
                     onChange={(event) => updateField("sku", event.target.value)}
@@ -256,8 +258,9 @@ export default function AdminProductFormView({ productId }: { productId?: string
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">Danh mục *</label>
+                  <label htmlFor="product-category-id" className="mb-1 block text-xs font-semibold text-slate-600">Danh mục *</label>
                   <select
+                    id="product-category-id"
                     required
                     value={form.categoryId}
                     onChange={(event) => updateField("categoryId", event.target.value)}
@@ -274,8 +277,9 @@ export default function AdminProductFormView({ productId }: { productId?: string
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">Hãng</label>
+                  <label htmlFor="product-brand-id" className="mb-1 block text-xs font-semibold text-slate-600">Hãng</label>
                   <select
+                    id="product-brand-id"
                     value={form.brandId ?? ""}
                     onChange={(event) => updateField("brandId", event.target.value || undefined)}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
@@ -289,8 +293,9 @@ export default function AdminProductFormView({ productId }: { productId?: string
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">Bảo hành (tháng)</label>
+                  <label htmlFor="product-warranty-months" className="mb-1 block text-xs font-semibold text-slate-600">Bảo hành (tháng)</label>
                   <input
+                    id="product-warranty-months"
                     type="number"
                     min={0}
                     value={form.warrantyMonths ?? ""}
@@ -300,8 +305,9 @@ export default function AdminProductFormView({ productId }: { productId?: string
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">Giá bán (đ) *</label>
+                  <label htmlFor="product-selling-price" className="mb-1 block text-xs font-semibold text-slate-600">Giá bán (đ) *</label>
                   <input
+                    id="product-selling-price"
                     type="number"
                     required
                     min={0}
@@ -311,8 +317,9 @@ export default function AdminProductFormView({ productId }: { productId?: string
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">Giá niêm yết (đ) — để gạch ngang</label>
+                  <label htmlFor="product-original-price" className="mb-1 block text-xs font-semibold text-slate-600">Giá niêm yết (đ) — để gạch ngang</label>
                   <input
+                    id="product-original-price"
                     type="number"
                     min={0}
                     value={form.originalPrice ?? ""}
@@ -321,8 +328,9 @@ export default function AdminProductFormView({ productId }: { productId?: string
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">Giá vốn (đ) — chỉ quản trị viên thấy</label>
+                  <label htmlFor="product-cost-price" className="mb-1 block text-xs font-semibold text-slate-600">Giá vốn (đ) — chỉ quản trị viên thấy</label>
                   <input
+                    id="product-cost-price"
                     type="number"
                     min={0}
                     value={form.costPrice ?? ""}
@@ -331,8 +339,9 @@ export default function AdminProductFormView({ productId }: { productId?: string
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">Ngưỡng cảnh báo sắp hết hàng</label>
+                  <label htmlFor="product-low-stock-threshold" className="mb-1 block text-xs font-semibold text-slate-600">Ngưỡng cảnh báo sắp hết hàng</label>
                   <input
+                    id="product-low-stock-threshold"
                     type="number"
                     min={0}
                     value={form.lowStockThreshold ?? ""}
@@ -342,16 +351,18 @@ export default function AdminProductFormView({ productId }: { productId?: string
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">Mô tả ngắn</label>
+                  <label htmlFor="product-short-description" className="mb-1 block text-xs font-semibold text-slate-600">Mô tả ngắn</label>
                   <input
+                    id="product-short-description"
                     value={form.shortDescription ?? ""}
                     onChange={(event) => updateField("shortDescription", event.target.value)}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">Mô tả chi tiết</label>
+                  <label htmlFor="product-description" className="mb-1 block text-xs font-semibold text-slate-600">Mô tả chi tiết</label>
                   <textarea
+                    id="product-description"
                     rows={6}
                     value={form.description ?? ""}
                     onChange={(event) => updateField("description", event.target.value)}
@@ -362,7 +373,7 @@ export default function AdminProductFormView({ productId }: { productId?: string
 
               <div className="border-t border-slate-100 pt-4">
                 <div className="mb-2 flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-600">Bảng thông số kỹ thuật</label>
+                  <p className="text-xs font-semibold text-slate-600">Bảng thông số kỹ thuật</p>
                   <button type="button" onClick={addSpec} className="flex items-center gap-1 text-xs font-bold text-brand-600 hover:underline">
                     <Plus className="size-3.5" />
                     Thêm dòng
@@ -375,20 +386,22 @@ export default function AdminProductFormView({ productId }: { productId?: string
                         value={row.label}
                         onChange={(event) => updateSpec(index, "label", event.target.value)}
                         placeholder="Tên thông số (vd. Chipset)"
+                        aria-label={`Tên thông số, dòng ${index + 1}`}
                         className="w-1/3 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm outline-none focus:border-brand-500"
                       />
                       <input
                         value={row.value}
                         onChange={(event) => updateSpec(index, "value", event.target.value)}
                         placeholder="Giá trị"
+                        aria-label={`Giá trị thông số, dòng ${index + 1}`}
                         className="flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm outline-none focus:border-brand-500"
                       />
-                      <button type="button" onClick={() => removeSpec(index)} className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-sale-500/10 hover:text-sale-600">
+                      <button type="button" onClick={() => removeSpec(index)} aria-label={`Xoá dòng thông số ${index + 1}`} className="shrink-0 rounded-lg p-1.5 text-slate-500 hover:bg-sale-500/10 hover:text-sale-600">
                         <Trash2 className="size-4" />
                       </button>
                     </div>
                   ))}
-                  {(form.specifications ?? []).length === 0 ? <p className="text-xs text-slate-400">Chưa có dòng thông số nào.</p> : null}
+                  {(form.specifications ?? []).length === 0 ? <p className="text-xs text-slate-500">Chưa có dòng thông số nào.</p> : null}
                 </div>
               </div>
 
@@ -402,7 +415,7 @@ export default function AdminProductFormView({ productId }: { productId?: string
                   {saving ? "Đang lưu..." : productId ? "Lưu thay đổi" : "Tạo sản phẩm"}
                 </button>
               ) : (
-                <p className="text-xs text-slate-400">Bạn chỉ có quyền xem, không có quyền sửa sản phẩm.</p>
+                <p className="text-xs text-slate-500">Bạn chỉ có quyền xem, không có quyền sửa sản phẩm.</p>
               )}
             </form>
 
@@ -417,12 +430,12 @@ export default function AdminProductFormView({ productId }: { productId?: string
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center py-8 text-center text-slate-400">
+                <div className="flex flex-col items-center py-8 text-center text-slate-500">
                   <ImageOff className="size-8" />
                   <p className="mt-2 text-sm">Chưa có ảnh nào</p>
                 </div>
               )}
-              <p className="mt-3 text-xs text-slate-400">
+              <p className="mt-3 text-xs text-slate-500">
                 Ảnh sản phẩm được quản lý qua công cụ tải ảnh riêng của dự án (thư mục ảnh + pipeline kiểm tra chất lượng),
                 chưa hỗ trợ tải ảnh trực tiếp từ trang này.
               </p>
@@ -437,7 +450,7 @@ export default function AdminProductFormView({ productId }: { productId?: string
                 onUpdated={(updated) => setState((current) => (current.status === "ready" ? { ...current, product: updated } : current))}
               />
             ) : (
-              <div className="admin-card p-4 text-sm text-slate-400 sm:p-5">Tạo sản phẩm xong mới quản lý được tồn kho.</div>
+              <div className="admin-card p-4 text-sm text-slate-500 sm:p-5">Tạo sản phẩm xong mới quản lý được tồn kho.</div>
             )}
           </div>
         </div>

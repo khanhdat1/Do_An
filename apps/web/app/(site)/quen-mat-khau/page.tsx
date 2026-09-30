@@ -16,7 +16,7 @@ export default function ForgotPasswordPage() {
             <KeyRound className="size-7 text-brand-500" strokeWidth={1.8} />
           </span>
           <h1 className="section-title mt-3 text-2xl sm:text-3xl">Quên mật khẩu</h1>
-          <p className="mt-1.5 text-sm text-slate-500">
+          <p className="mt-1.5 text-sm text-slate-600">
             Nhập email đã đăng ký, chúng tôi sẽ gửi link đặt lại mật khẩu.
           </p>
         </div>

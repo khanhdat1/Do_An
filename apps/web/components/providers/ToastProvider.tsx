@@ -117,7 +117,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               type="button"
               onClick={() => dismiss(toast.id)}
               aria-label="Đóng thông báo"
-              className="-m-1 rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              className="-m-1 rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-600"
             >
               <X className="size-4" />
             </button>

@@ -80,7 +80,7 @@ export default function AiAdvisorSection() {
               onChange={(event) => setQuestion(event.target.value)}
               placeholder='Ví dụ: "Tôi có 30 triệu cần case PC làm đồ họa Render 4K và chơi game..."'
               aria-label="Câu hỏi cho trợ lý AI"
-              className="min-w-0 flex-1 bg-transparent px-1 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+              className="min-w-0 flex-1 bg-transparent px-1 text-sm text-slate-800 outline-none placeholder:text-slate-500"
             />
             <button
               type="submit"

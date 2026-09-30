@@ -29,7 +29,7 @@ interface ProductThumbProps {
 }
 
 const ICON_CLASS =
-  "relative size-12 text-slate-400 transition duration-300 group-hover:scale-110 group-hover:text-brand-500";
+  "relative size-12 text-slate-500 transition duration-300 group-hover:scale-110 group-hover:text-brand-500";
 
 /**
  * Icon đại diện cho từng danh mục, dựng sẵn ở cấp module.

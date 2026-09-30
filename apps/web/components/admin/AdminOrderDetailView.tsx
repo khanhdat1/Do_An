@@ -367,7 +367,7 @@ export default function AdminOrderDetailView({ orderCode }: { orderCode: string 
 
       {state.status === "not_found" ? (
         <div className="admin-card flex flex-col items-center px-6 py-14 text-center">
-          <PackageX className="size-10 text-slate-400" />
+          <PackageX className="size-10 text-slate-500" />
           <h2 className="mt-4 text-lg font-bold text-slate-800">Không tìm thấy đơn hàng</h2>
           <p className="mt-1.5 text-sm text-slate-500">Kiểm tra lại mã đơn trên đường dẫn.</p>
         </div>
@@ -375,7 +375,7 @@ export default function AdminOrderDetailView({ orderCode }: { orderCode: string 
 
       {state.status === "error" ? (
         <div className="admin-card flex flex-col items-center px-6 py-14 text-center">
-          <CloudOff className="size-8 text-slate-400" />
+          <CloudOff className="size-8 text-slate-500" />
           <p className="mt-3 text-sm text-slate-500">Không tải được đơn hàng. Vui lòng tải lại trang.</p>
         </div>
       ) : null}
@@ -388,7 +388,7 @@ export default function AdminOrderDetailView({ orderCode }: { orderCode: string 
                 <div>
                   <p className="text-xs text-slate-500">Mã đơn hàng</p>
                   <p className="font-display text-lg font-bold text-slate-900">{state.order.orderCode}</p>
-                  <p className="mt-0.5 text-xs text-slate-400">Đặt lúc {formatDateTime(state.order.createdAt)}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">Đặt lúc {formatDateTime(state.order.createdAt)}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <AdminBadge tone={ORDER_STATUS_TONE[state.order.status]}>{ORDER_STATUS_LABEL[state.order.status]}</AdminBadge>
@@ -466,7 +466,7 @@ export default function AdminOrderDetailView({ orderCode }: { orderCode: string 
 
             <section className="admin-card p-4 sm:p-5">
               <h2 className="mb-3 flex items-center gap-2 text-base font-bold text-slate-900">
-                <Package className="size-4.5 text-slate-400" />
+                <Package className="size-4.5 text-slate-500" />
                 Sản phẩm ({state.order.items.length})
               </h2>
               <ul className="space-y-3">
@@ -494,13 +494,13 @@ export default function AdminOrderDetailView({ orderCode }: { orderCode: string 
                 <div className="flex items-center justify-between">
                   <dt className="text-slate-500">Phí vận chuyển</dt>
                   <dd className="font-semibold text-slate-800">
-                    {state.order.shippingFee === 0 ? <span className="text-emerald-600">Miễn phí</span> : formatPrice(state.order.shippingFee)}
+                    {state.order.shippingFee === 0 ? <span className="text-emerald-700">Miễn phí</span> : formatPrice(state.order.shippingFee)}
                   </dd>
                 </div>
                 {state.order.discountAmount > 0 ? (
                   <div className="flex items-center justify-between">
                     <dt className="text-slate-500">Giảm giá{state.order.voucherCode ? ` (${state.order.voucherCode})` : ""}</dt>
-                    <dd className="font-semibold text-emerald-600">-{formatPrice(state.order.discountAmount)}</dd>
+                    <dd className="font-semibold text-emerald-700">-{formatPrice(state.order.discountAmount)}</dd>
                   </div>
                 ) : null}
                 <div className="flex items-center justify-between border-t border-slate-100 pt-2">
@@ -518,7 +518,7 @@ export default function AdminOrderDetailView({ orderCode }: { orderCode: string 
             {state.order.customerNote ? (
               <section className="admin-card p-4 sm:p-5">
                 <h2 className="mb-2 flex items-center gap-2 text-base font-bold text-slate-900">
-                  <MessageSquareText className="size-4.5 text-slate-400" />
+                  <MessageSquareText className="size-4.5 text-slate-500" />
                   Ghi chú của khách
                 </h2>
                 <p className="text-sm text-slate-600">{state.order.customerNote}</p>
@@ -529,7 +529,7 @@ export default function AdminOrderDetailView({ orderCode }: { orderCode: string 
           <div className="space-y-4 lg:col-span-4">
             <section className="admin-card p-4 sm:p-5">
               <h2 className="mb-2 flex items-center gap-2 text-base font-bold text-slate-900">
-                <MapPin className="size-4.5 text-slate-400" />
+                <MapPin className="size-4.5 text-slate-500" />
                 Giao hàng tới
               </h2>
               <p className="text-sm font-semibold text-slate-800">{state.order.shippingAddress.recipientName}</p>
@@ -551,7 +551,7 @@ export default function AdminOrderDetailView({ orderCode }: { orderCode: string 
                     <li key={payment.id} className="flex items-center justify-between gap-2 border-b border-slate-50 pb-2 last:border-0 last:pb-0">
                       <div>
                         <p className="font-medium text-slate-700">{formatPrice(payment.amount)}</p>
-                        <p className="text-xs text-slate-400">{formatDateTime(payment.createdAt)}</p>
+                        <p className="text-xs text-slate-500">{formatDateTime(payment.createdAt)}</p>
                       </div>
                       <span className="text-xs font-semibold text-slate-500">{PAYMENT_STATUS_LABEL[payment.status]}</span>
                     </li>

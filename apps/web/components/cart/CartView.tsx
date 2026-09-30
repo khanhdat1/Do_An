@@ -43,7 +43,7 @@ function Message({
 }) {
   return (
     <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
-      <span className="grid size-20 place-items-center rounded-full bg-slate-100 text-slate-400">{icon}</span>
+      <span className="grid size-20 place-items-center rounded-full bg-slate-100 text-slate-500">{icon}</span>
       <h2 className="mt-5 text-lg font-bold text-slate-800">{title}</h2>
       <p className="mt-1.5 max-w-sm text-sm text-slate-500">{text}</p>
       <div className="mt-6">{children}</div>
@@ -113,7 +113,7 @@ export default function CartView() {
         <div className="mb-3 flex items-center justify-between gap-3">
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition hover:text-brand-600"
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 transition hover:text-brand-600"
           >
             <ArrowLeft className="size-3.5" />
             Tiếp tục mua sắm
@@ -121,12 +121,12 @@ export default function CartView() {
 
           {confirmingClear ? (
             <span className="flex items-center gap-2 text-xs">
-              <span className="text-slate-500">Xóa hết sản phẩm?</span>
+              <span className="text-slate-600">Xóa hết sản phẩm?</span>
               <button
                 type="button"
                 onClick={handleClear}
                 disabled={clearing}
-                className="font-bold text-sale-600 hover:underline disabled:opacity-60"
+                className="font-bold text-sale-700 hover:underline disabled:opacity-60"
               >
                 {clearing ? "Đang xóa..." : "Xóa"}
               </button>
@@ -134,7 +134,7 @@ export default function CartView() {
                 type="button"
                 onClick={() => setConfirmingClear(false)}
                 disabled={clearing}
-                className="font-semibold text-slate-500 hover:underline"
+                className="font-semibold text-slate-600 hover:underline"
               >
                 Hủy
               </button>
@@ -143,7 +143,7 @@ export default function CartView() {
             <button
               type="button"
               onClick={() => setConfirmingClear(true)}
-              className="text-xs font-semibold text-slate-500 transition hover:text-sale-600"
+              className="text-xs font-semibold text-slate-600 transition hover:text-sale-700"
             >
               Xóa tất cả
             </button>

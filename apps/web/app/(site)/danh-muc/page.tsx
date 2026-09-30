@@ -25,7 +25,7 @@ export default async function CategoriesPage() {
       <Breadcrumb categories={[]} current="Danh mục sản phẩm" />
 
       <h1 className="section-title text-2xl sm:text-3xl">Danh mục sản phẩm</h1>
-      <p className="mt-1.5 text-sm text-slate-500">
+      <p className="mt-1.5 text-sm text-slate-600">
         Chọn nhóm sản phẩm bạn quan tâm — mỗi danh mục đều có bộ lọc theo hãng, khoảng giá và tình trạng hàng.
       </p>
 
@@ -56,9 +56,9 @@ export default async function CategoriesPage() {
                       href={`/danh-muc/${child.slug}`}
                       className="flex items-center gap-2.5 px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50 hover:text-brand-600"
                     >
-                      <CategoryIcon name={child.icon} className="size-4 shrink-0 text-slate-400" />
+                      <CategoryIcon name={child.icon} className="size-4 shrink-0 text-slate-500" />
                       <span className="min-w-0 flex-1 truncate">{child.name}</span>
-                      <span className="text-xs text-slate-400">{child.productCount ?? 0}</span>
+                      <span className="text-xs text-slate-500">{child.productCount ?? 0}</span>
                     </Link>
                   </li>
                 ))}

@@ -72,7 +72,7 @@ function PowerBreakdown({ result }: { result: BuildCheckResult }) {
         <PowerRow label="Tổng ước tính" value={power.estimatedW === null ? "Chưa đủ dữ liệu" : `${power.estimatedW} W`} strong />
         <PowerRow label="Nên dùng nguồn từ" value={power.recommendedPsuW === null ? "—" : `${power.recommendedPsuW} W`} strong />
       </dl>
-      <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+      <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
         CPU tính theo mức tối đa hãng công bố (nếu có), không thì theo TDP; {power.baseW} W là ước tính chung cho phần còn
         lại. Nguồn nên dư 30% so với tổng ước tính.
       </p>

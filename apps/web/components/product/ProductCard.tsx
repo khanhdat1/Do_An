@@ -24,10 +24,10 @@ interface ProductCardProps {
 }
 
 const tagTones: Record<Tone, string> = {
-  amber: "bg-gold-400/20 text-gold-600 ring-gold-400/40",
-  green: "bg-emerald-50 text-emerald-600 ring-emerald-200",
+  amber: "bg-gold-400/20 text-gold-800 ring-gold-400/40",
+  green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
   blue: "bg-blue-50 text-blue-600 ring-blue-200",
-  red: "bg-sale-500/10 text-sale-600 ring-sale-500/30",
+  red: "bg-sale-500/10 text-sale-700 ring-sale-500/30",
   slate: "bg-slate-100 text-slate-600 ring-slate-200",
 };
 
@@ -141,7 +141,7 @@ export default function ProductCard({
           ) : (
             <>
               <Star className="size-3.5 text-slate-300" />
-              <span className="text-slate-400">Chưa có đánh giá</span>
+              <span className="text-slate-500">Chưa có đánh giá</span>
             </>
           )}
         </div>
@@ -149,7 +149,7 @@ export default function ProductCard({
         {/* Giá */}
         <div className="mt-2">
           {product.oldPrice ? (
-            <p className="text-[11px] text-slate-400 line-through">
+            <p className="text-[11px] text-slate-500 line-through">
               {formatPrice(product.oldPrice)}
             </p>
           ) : null}
@@ -168,7 +168,7 @@ export default function ProductCard({
               <span
                 className={cn(
                   "font-semibold",
-                  product.stock.urgent ? "text-sale-600" : "text-emerald-600",
+                  product.stock.urgent ? "text-sale-600" : "text-emerald-700",
                 )}
               >
                 {product.stock.note}

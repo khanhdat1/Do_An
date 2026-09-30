@@ -62,7 +62,7 @@ function PriceInputs({
     onSubmit(readMoney(minText), readMoney(maxText));
   };
 
-  const field = "w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100";
+  const field = "w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-800 outline-none transition placeholder:text-slate-500 focus:border-brand-400 focus:ring-2 focus:ring-brand-100";
 
   return (
     <form onSubmit={submit} className="mt-3">
@@ -75,7 +75,7 @@ function PriceInputs({
           aria-label="Giá thấp nhất"
           className={field}
         />
-        <span className="text-slate-400">–</span>
+        <span className="text-slate-500">–</span>
         <input
           value={maxText}
           onChange={(event) => setMaxText(event.target.value)}
@@ -166,7 +166,7 @@ export default function FilterPanel({
                     )}
                   >
                     <span className="flex-1">{category.name}</span>
-                    <span className={cn("text-xs", active ? "text-brand-600" : "text-slate-400")}>{category.count}</span>
+                    <span className={cn("text-xs", active ? "text-brand-600" : "text-slate-500")}>{category.count}</span>
                   </button>
                 </li>
               );
@@ -209,7 +209,7 @@ export default function FilterPanel({
                     className="size-4 accent-brand-500"
                   />
                   <span className="flex-1">{brand.name}</span>
-                  <span className="text-xs text-slate-400">{brand.count}</span>
+                  <span className="text-xs text-slate-500">{brand.count}</span>
                 </label>
               </li>
             ))}

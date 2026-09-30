@@ -90,7 +90,7 @@ export default function AdminOrderPrintView({ orderCode }: { orderCode: string }
   if (state.status === "not_found") {
     return (
       <div className="flex flex-col items-center px-6 py-16 text-center">
-        <PackageX className="size-8 text-slate-400" />
+        <PackageX className="size-8 text-slate-500" />
         <p className="mt-3 text-sm text-slate-500">Không tìm thấy đơn hàng.</p>
       </div>
     );
@@ -99,7 +99,7 @@ export default function AdminOrderPrintView({ orderCode }: { orderCode: string }
   if (state.status === "error") {
     return (
       <div className="flex flex-col items-center px-6 py-16 text-center">
-        <CloudOff className="size-8 text-slate-400" />
+        <CloudOff className="size-8 text-slate-500" />
         <p className="mt-3 text-sm text-slate-500">Không tải được đơn hàng.</p>
       </div>
     );
@@ -210,7 +210,7 @@ export default function AdminOrderPrintView({ orderCode }: { orderCode: string }
         </div>
       ) : null}
 
-      <div className="mt-10 space-y-0.5 text-center text-xs text-slate-400">
+      <div className="mt-10 space-y-0.5 text-center text-xs text-slate-500">
         <p>
           Cảm ơn quý khách đã mua hàng tại PCZone. Hotline hỗ trợ: {store.hotline} · Email: {store.supportEmail}
         </p>

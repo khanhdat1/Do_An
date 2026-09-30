@@ -122,7 +122,7 @@ function OrderHistoryPanel({ customerId }: { customerId: string }) {
           Đang tải...
         </div>
       ) : history.items.length === 0 ? (
-        <p className="py-4 text-sm text-slate-400">Khách hàng chưa đặt đơn nào.</p>
+        <p className="py-4 text-sm text-slate-500">Khách hàng chưa đặt đơn nào.</p>
       ) : (
         <div className="mt-3 space-y-2">
           {history.items.map((order) => (
@@ -133,7 +133,7 @@ function OrderHistoryPanel({ customerId }: { customerId: string }) {
             >
               <div>
                 <p className="font-bold text-slate-800">{order.orderCode}</p>
-                <p className="text-xs text-slate-400">{formatDateTime(order.createdAt)}</p>
+                <p className="text-xs text-slate-500">{formatDateTime(order.createdAt)}</p>
               </div>
               <div className="flex items-center gap-1.5">
                 <AdminBadge tone={ORDER_STATUS_TONE[order.status]}>{ORDER_STATUS_LABEL[order.status]}</AdminBadge>
@@ -241,7 +241,7 @@ export default function AdminCustomerDetailView({ customerId }: { customerId: st
   if (state.status === "error") {
     return (
       <div className="admin-card flex flex-col items-center px-6 py-14 text-center">
-        <CloudOff className="size-8 text-slate-400" />
+        <CloudOff className="size-8 text-slate-500" />
         <p className="mt-3 text-sm text-slate-500">Không tải được thông tin khách hàng. Vui lòng tải lại trang.</p>
       </div>
     );
@@ -268,7 +268,7 @@ export default function AdminCustomerDetailView({ customerId }: { customerId: st
                 <span className="flex items-center gap-1">
                   <Mail className="size-3.5" />
                   {customer.email}
-                  {!customer.emailVerifiedAt ? <span className="text-xs text-slate-400">(chưa xác minh)</span> : null}
+                  {!customer.emailVerifiedAt ? <span className="text-xs text-slate-500">(chưa xác minh)</span> : null}
                 </span>
                 {customer.phone ? (
                   <span className="flex items-center gap-1">

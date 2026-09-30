@@ -72,7 +72,7 @@ export default function CompareView() {
   if (slugs.length === 0) {
     return (
       <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
-        <span className="grid size-16 place-items-center rounded-full bg-slate-100 text-slate-400">
+        <span className="grid size-16 place-items-center rounded-full bg-slate-100 text-slate-500">
           <Scale className="size-8" />
         </span>
         <h2 className="mt-4 text-lg font-bold text-slate-800">Chưa có sản phẩm nào để so sánh</h2>
@@ -109,7 +109,7 @@ export default function CompareView() {
   if (state.status === "error") {
     return (
       <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
-        <CloudOff className="size-8 text-slate-400" />
+        <CloudOff className="size-8 text-slate-500" />
         <p className="mt-3 text-sm text-slate-500">Không tải được sản phẩm để so sánh. Vui lòng tải lại trang.</p>
       </div>
     );
@@ -131,7 +131,7 @@ export default function CompareView() {
         <table className="w-full min-w-[640px] border-collapse text-sm">
           <thead>
             <tr>
-              <th className="w-40 border-b border-slate-100 p-3 text-left text-xs font-semibold text-slate-400">Sản phẩm</th>
+              <th className="w-40 border-b border-slate-100 p-3 text-left text-xs font-semibold text-slate-500">Sản phẩm</th>
               {products.map((product) => (
                 <th key={product.id} className="border-b border-slate-100 p-3 text-left align-top">
                   <div className="relative w-40">
@@ -139,7 +139,7 @@ export default function CompareView() {
                       type="button"
                       onClick={() => remove(product.slug)}
                       aria-label={`Bỏ ${product.name} khỏi so sánh`}
-                      className="absolute -right-1 -top-1 grid size-6 place-items-center rounded-full bg-white text-slate-400 shadow ring-1 ring-slate-200 hover:text-sale-600"
+                      className="absolute -right-1 -top-1 grid size-6 place-items-center rounded-full bg-white text-slate-500 shadow ring-1 ring-slate-200 hover:text-sale-600"
                     >
                       <X className="size-3.5" />
                     </button>

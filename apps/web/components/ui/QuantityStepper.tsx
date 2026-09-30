@@ -92,7 +92,7 @@ export default function QuantityStepper({
             commit();
           }
         }}
-        className="h-9 w-11 border-x border-slate-200 bg-transparent text-center text-sm font-semibold text-slate-800 outline-none focus:bg-brand-50 disabled:text-slate-400"
+        className="h-9 w-11 border-x border-slate-200 bg-transparent text-center text-sm font-semibold text-slate-800 outline-none focus:bg-brand-50 disabled:text-slate-500"
       />
 
       <button

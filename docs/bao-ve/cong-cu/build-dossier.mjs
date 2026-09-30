@@ -185,9 +185,9 @@ figcaption { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baselin
     <div class="fact"><b>48</b><span>trang web: 26 khách, 22 quản trị</span></div>
     <div class="fact"><b>31</b><span>bảng CSDL · 13 enum · 12 migration</span></div>
     <div class="fact"><b>~436</b><span>sản phẩm demo, ảnh thật của hãng</span></div>
-    <div class="fact"><b>294</b><span>kiểm thử đơn vị (API)</span></div>
-    <div class="fact"><b>47</b><span>kịch bản kiểm thử đầu-cuối</span></div>
-    <div class="fact"><b>130</b><span>component React</span></div>
+    <div class="fact"><b>454</b><span>kiểm thử đơn vị (API, 15 bộ)</span></div>
+    <div class="fact"><b>56</b><span>kịch bản kiểm thử đầu-cuối</span></div>
+    <div class="fact"><b>129</b><span>component React</span></div>
     <div class="fact"><b>~47k</b><span>dòng TypeScript (không tính test)</span></div>
   </div>
 </section>
@@ -272,9 +272,9 @@ figcaption { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baselin
   <div class="table-wrap"><table>
     <thead><tr><th>Loại</th><th>Phạm vi</th><th>Lệnh</th></tr></thead>
     <tbody>
-      <tr><td>Kiểm thử đơn vị — 294</td><td>Bộ tìm kiếm, ký/xác minh VNPay, mã giảm giá, đánh giá, đọc thông số + 9 luật tương thích, tự điều chỉnh ngân sách, trích dẫn AI, cài đặt hệ thống, chữ ký file ảnh</td><td><code>npm test -w @pczone/api</code></td></tr>
-      <tr><td>Đầu-cuối — 47</td><td>Trọn vòng đời đơn với 2 trình duyệt (khách + quản trị), cửa hàng, cài đặt, Build PC, phân quyền, SEO/header</td><td><code>npm run test:e2e</code></td></tr>
-      <tr><td>Khả năng truy cập</td><td>axe-core, WCAG 2.1 AA trên 16 trang: không lỗi cấu trúc; không tràn ngang ở màn 375px</td><td>nằm trong <code>test:e2e</code></td></tr>
+      <tr><td>Kiểm thử đơn vị — 454</td><td>Bộ tìm kiếm, ký/xác minh VNPay, mã giảm giá, đánh giá, đọc thông số + 9 luật tương thích, tự điều chỉnh ngân sách, trích dẫn AI, cài đặt hệ thống, chữ ký file ảnh</td><td><code>npm test -w @pczone/api</code></td></tr>
+      <tr><td>Đầu-cuối — 56</td><td>17 kịch bản chức năng: trọn vòng đời đơn với 2 trình duyệt (khách + quản trị), cửa hàng, cài đặt, Build PC, phân quyền, SEO/header; cộng 39 lượt kiểm tra truy cập bên dưới</td><td><code>npm run test:e2e</code></td></tr>
+      <tr><td>Khả năng truy cập</td><td>axe-core, WCAG 2.1 AA gồm cả độ tương phản màu: 19 trang khách, 7 trang tài khoản, toàn bộ khu quản trị (cả trang sửa/chi tiết) — không lỗi nghiêm trọng nào; không tràn ngang ở màn 375px</td><td>nằm trong <code>test:e2e</code></td></tr>
     </tbody>
   </table></div>
   <h3>Các lớp bảo vệ</h3>
@@ -306,7 +306,7 @@ figcaption { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baselin
     <li><span class="time">2 phút</span><h3>Mua hàng</h3><p>Thêm vào giỏ, thanh toán với sổ địa chỉ, mã giảm giá WELCOME10, chọn COD hoặc chuyển khoản (hiện mã QR), đặt hàng.</p><p class="point"><b>Điểm nhấn:</b> transaction trừ kho an toàn (Hình 10); phí ship theo Cài đặt.</p></li>
     <li><span class="time">3 phút</span><h3>Quản trị xử lý đơn</h3><p>Tab quản trị: xác nhận, đóng gói, giao kèm mã vận đơn, đã giao. Quay lại tab khách: tiến trình cập nhật; khách viết đánh giá, quản trị duyệt, đánh giá hiện công khai.</p><p class="point"><b>Điểm nhấn:</b> máy trạng thái (Hình 9); chỉ khách đã nhận hàng mới đánh giá được.</p></li>
     <li><span class="time">1 phút</span><h3>Phân quyền và báo cáo</h3><p>Đăng nhập tài khoản nhân viên đơn hàng để thấy menu chỉ còn đơn hàng; xem dashboard doanh thu, xuất Excel; đổi phí ship ở Cài đặt rồi xem giỏ hàng áp dụng ngay.</p><p class="point"><b>Điểm nhấn:</b> quyền kiểm ở máy chủ (Hình 3), xác thực 2 bước, nhật ký thao tác.</p></li>
-    <li><span class="time">1 phút</span><h3>Chất lượng và triển khai</h3><p>Mở báo cáo 47 kịch bản đầu-cuối; nói về kiểm thử đơn vị, axe-core và bộ triển khai Docker + HTTPS.</p><p class="point"><b>Điểm nhấn:</b> test chạy trên DB riêng, không đụng dữ liệu thật.</p></li>
+    <li><span class="time">1 phút</span><h3>Chất lượng và triển khai</h3><p>Mở báo cáo 56 kịch bản đầu-cuối; nói về kiểm thử đơn vị, axe-core và bộ triển khai Docker + HTTPS.</p><p class="point"><b>Điểm nhấn:</b> test chạy trên DB riêng, không đụng dữ liệu thật.</p></li>
   </ol>
 </section>
 
@@ -319,7 +319,7 @@ figcaption { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baselin
     <div><b>Bảo mật đăng nhập ra sao?</b><p>bcrypt, JWT ngắn hạn + refresh token xoay vòng lưu dạng băm, cookie httpOnly; giới hạn đăng nhập sai; quản trị có phiên riêng và xác thực 2 bước.</p></div>
     <div><b>Đăng nhập Google/Facebook có bị chiếm tài khoản không?</b><p>Không gộp theo email. Facebook không bảo đảm email đã xác minh nên trùng email bị từ chối; người dùng đăng nhập cách cũ rồi tự liên kết.</p></div>
     <div><b>Thanh toán trực tuyến?</b><p>VNPay có đủ mã ký/xác minh và kiểm thử bằng khoá giả, nhưng chưa đăng ký tài khoản sandbox nên đang tắt. Đang dùng COD và chuyển khoản/MoMo qua mã QR, nhân viên xác nhận khi nhận tiền.</p></div>
-    <div><b>Kiểm thử thế nào?</b><p>294 kiểm thử đơn vị cho logic thuần; 47 kịch bản đầu-cuối bằng Playwright chạy trình duyệt thật trên API, web và DB riêng, gồm cả kiểm tra khả năng truy cập bằng axe-core.</p></div>
+    <div><b>Kiểm thử thế nào?</b><p>454 kiểm thử đơn vị cho logic thuần; 56 kịch bản đầu-cuối bằng Playwright chạy trình duyệt thật trên API, web và DB riêng, gồm cả kiểm tra khả năng truy cập bằng axe-core.</p></div>
   </div>
 </section>
 
@@ -347,14 +347,13 @@ figcaption { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baselin
     <div>
       <h3><span class="pill no">Chưa làm / hạn chế</span></h3>
       <ul>
-        <li>Độ tương phản màu ở các trang cũ (nút cam chữ trắng, chữ xám nhạt) chưa đạt 4.5:1</li>
         <li>Chưa có nút tự xoá tài khoản (xử lý qua email hỗ trợ)</li>
         <li>Thời hạn đổi trả, thời gian giao chưa chốt con số</li>
         <li>Số serial/IMEI và biên bản kiểm tra máy mới giữ chỗ “Sắp ra mắt”</li>
       </ul>
     </div>
   </div>
-  <p class="note">Hướng phát triển: cổng thanh toán thật, đơn vị vận chuyển có API tra cứu, đổi màu nhận diện đạt chuẩn tương phản, thông báo email theo trạng thái đơn.</p>
+  <p class="note">Hướng phát triển: cổng thanh toán thật, đơn vị vận chuyển có API tra cứu, thông báo email theo trạng thái đơn.</p>
 </section>
 </main>
 </div>
