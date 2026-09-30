@@ -17,6 +17,9 @@ npm-debug.log*
 # Ảnh sản phẩm tải về từ crawler – không commit vào git
 apps/web/public/images/products/
 
+# Ảnh banner quản trị tải lên lúc chạy (trên máy chủ nằm ở deploy/data/banners) — không commit vào git
+apps/web/public/images/banners/
+
 # Tệp cache của trình biên dịch TypeScript
 *.tsbuildinfo
 

@@ -11,6 +11,7 @@ import {
 import { ConflictError, NotFoundError } from "../middleware/errors.js";
 import type { AdminOrderDto, AdminOrderSummaryDto, Paginated } from "../types/dto.js";
 import { logAdminAction } from "./audit-log.service.js";
+import { manualPaymentBlockReason } from "./manual-payment.service.js";
 
 /** Ai đang thực hiện thao tác — khớp thẳng `req.auth` của phiên đăng nhập quản trị */
 export interface AdminActor {
@@ -67,18 +68,20 @@ export async function listAllOrdersForAdmin(filters: AdminOrderFilters): Promise
 }
 
 /**
- * Nhân viên xác nhận tay đã nhận được tiền (chuyển khoản ngân hàng / MoMo — không có callback tự động
- * như VNPay). Cùng logic với `applyVnpayCallback` khi thành công: đơn còn PENDING thì lên CONFIRMED,
- * đơn đã đổi trạng thái khác (vd khách vừa tự huỷ) thì vẫn ghi nhận đã có tiền nhưng KHÔNG hồi sinh đơn —
- * để lại dấu vết cho việc đối soát.
+ * Nhân viên xác nhận tay đã nhận được tiền: chuyển khoản ngân hàng / MoMo (không có callback tự động như VNPay)
+ * và COD (nhân viên giao hàng thu tiền lúc giao). Điều kiện từng phương thức ở `manualPaymentBlockReason`.
+ *
+ * Chuyển khoản/MoMo cùng logic với `applyVnpayCallback` khi thành công: đơn còn PENDING thì lên CONFIRMED, đơn đã
+ * đổi trạng thái khác (vd khách vừa tự huỷ) thì vẫn ghi nhận đã có tiền nhưng KHÔNG hồi sinh đơn — để lại dấu vết
+ * cho việc đối soát. COD không đổi trạng thái đơn nên không ghi thêm dòng lịch sử trạng thái (giống
+ * `markOrderRefunded`): dấu vết nằm ở lượt thanh toán (`paidAt`) và nhật ký quản trị.
  */
 export async function confirmOrderPayment(orderCode: string, admin: AdminActor): Promise<AdminOrderDto> {
   await prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({ where: { orderCode } });
     if (!order) throw new NotFoundError("Không tìm thấy đơn hàng");
-    if (order.paymentStatus !== "PENDING") {
-      throw new ConflictError("Đơn hàng này đã được xử lý thanh toán rồi");
-    }
+    const blocked = manualPaymentBlockReason(order);
+    if (blocked) throw new ConflictError(blocked);
 
     const payment = await tx.payment.findFirst({
       where: { orderId: order.id, status: "PENDING" },
@@ -86,33 +89,38 @@ export async function confirmOrderPayment(orderCode: string, admin: AdminActor):
     });
     if (!payment) throw new ConflictError("Không tìm thấy lượt thanh toán đang chờ của đơn này");
 
-    await tx.payment.update({ where: { id: payment.id }, data: { status: "PAID", paidAt: new Date() } });
+    const now = new Date();
+    await tx.payment.update({ where: { id: payment.id }, data: { status: "PAID", paidAt: now } });
 
-    const stillPending = order.status === "PENDING";
-    const toStatus: OrderStatus = stillPending ? "CONFIRMED" : order.status;
+    if (order.paymentMethod === "COD") {
+      await tx.order.update({ where: { id: order.id }, data: { paymentStatus: "PAID" } });
+    } else {
+      const stillPending = order.status === "PENDING";
+      const toStatus: OrderStatus = stillPending ? "CONFIRMED" : order.status;
 
-    await tx.order.update({
-      where: { id: order.id },
-      data: { paymentStatus: "PAID", ...(stillPending ? { status: "CONFIRMED", confirmedAt: new Date() } : {}) },
-    });
-    await tx.orderStatusHistory.create({
-      data: {
-        orderId: order.id,
-        fromStatus: order.status,
-        toStatus,
-        changedBy: admin.userId,
-        note: stillPending
-          ? "Nhân viên xác nhận đã nhận được tiền chuyển khoản"
-          : "Xác nhận đã nhận được tiền sau khi đơn đã đổi trạng thái khác — cần đối soát thêm",
-      },
-    });
+      await tx.order.update({
+        where: { id: order.id },
+        data: { paymentStatus: "PAID", ...(stillPending ? { status: "CONFIRMED", confirmedAt: now } : {}) },
+      });
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: order.id,
+          fromStatus: order.status,
+          toStatus,
+          changedBy: admin.userId,
+          note: stillPending
+            ? "Nhân viên xác nhận đã nhận được tiền chuyển khoản"
+            : "Xác nhận đã nhận được tiền sau khi đơn đã đổi trạng thái khác — cần đối soát thêm",
+        },
+      });
+    }
     await logAdminAction(tx, {
       actorId: admin.userId,
       actorRole: admin.role,
       action: "order.payment_confirmed",
       targetType: "Order",
       targetId: order.orderCode,
-      metadata: { amount: Number(payment.amount) },
+      metadata: { amount: Number(payment.amount), method: order.paymentMethod },
     });
   });
 

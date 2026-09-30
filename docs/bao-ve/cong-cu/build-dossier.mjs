@@ -185,7 +185,7 @@ figcaption { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baselin
     <div class="fact"><b>48</b><span>trang web: 26 khách, 22 quản trị</span></div>
     <div class="fact"><b>31</b><span>bảng CSDL · 13 enum · 12 migration</span></div>
     <div class="fact"><b>~436</b><span>sản phẩm demo, ảnh thật của hãng</span></div>
-    <div class="fact"><b>454</b><span>kiểm thử đơn vị (API, 15 bộ)</span></div>
+    <div class="fact"><b>465</b><span>kiểm thử đơn vị (API, 15 bộ)</span></div>
     <div class="fact"><b>56</b><span>kịch bản kiểm thử đầu-cuối</span></div>
     <div class="fact"><b>129</b><span>component React</span></div>
     <div class="fact"><b>~47k</b><span>dòng TypeScript (không tính test)</span></div>
@@ -272,7 +272,7 @@ figcaption { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baselin
   <div class="table-wrap"><table>
     <thead><tr><th>Loại</th><th>Phạm vi</th><th>Lệnh</th></tr></thead>
     <tbody>
-      <tr><td>Kiểm thử đơn vị — 454</td><td>Bộ tìm kiếm, ký/xác minh VNPay, mã giảm giá, đánh giá, đọc thông số + 9 luật tương thích, tự điều chỉnh ngân sách, trích dẫn AI, cài đặt hệ thống, chữ ký file ảnh</td><td><code>npm test -w @pczone/api</code></td></tr>
+      <tr><td>Kiểm thử đơn vị — 465</td><td>Bộ tìm kiếm, ký/xác minh VNPay, mã giảm giá, đánh giá, đọc thông số + 9 luật tương thích, tự điều chỉnh ngân sách, trích dẫn AI, cài đặt hệ thống, chữ ký file ảnh</td><td><code>npm test -w @pczone/api</code></td></tr>
       <tr><td>Đầu-cuối — 56</td><td>17 kịch bản chức năng: trọn vòng đời đơn với 2 trình duyệt (khách + quản trị), cửa hàng, cài đặt, Build PC, phân quyền, SEO/header; cộng 39 lượt kiểm tra truy cập bên dưới</td><td><code>npm run test:e2e</code></td></tr>
       <tr><td>Khả năng truy cập</td><td>axe-core, WCAG 2.1 AA gồm cả độ tương phản màu: 19 trang khách, 7 trang tài khoản, toàn bộ khu quản trị (cả trang sửa/chi tiết) — không lỗi nghiêm trọng nào; không tràn ngang ở màn 375px</td><td>nằm trong <code>test:e2e</code></td></tr>
     </tbody>
@@ -319,7 +319,7 @@ figcaption { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baselin
     <div><b>Bảo mật đăng nhập ra sao?</b><p>bcrypt, JWT ngắn hạn + refresh token xoay vòng lưu dạng băm, cookie httpOnly; giới hạn đăng nhập sai; quản trị có phiên riêng và xác thực 2 bước.</p></div>
     <div><b>Đăng nhập Google/Facebook có bị chiếm tài khoản không?</b><p>Không gộp theo email. Facebook không bảo đảm email đã xác minh nên trùng email bị từ chối; người dùng đăng nhập cách cũ rồi tự liên kết.</p></div>
     <div><b>Thanh toán trực tuyến?</b><p>VNPay có đủ mã ký/xác minh và kiểm thử bằng khoá giả, nhưng chưa đăng ký tài khoản sandbox nên đang tắt. Đang dùng COD và chuyển khoản/MoMo qua mã QR, nhân viên xác nhận khi nhận tiền.</p></div>
-    <div><b>Kiểm thử thế nào?</b><p>454 kiểm thử đơn vị cho logic thuần; 56 kịch bản đầu-cuối bằng Playwright chạy trình duyệt thật trên API, web và DB riêng, gồm cả kiểm tra khả năng truy cập bằng axe-core.</p></div>
+    <div><b>Kiểm thử thế nào?</b><p>465 kiểm thử đơn vị cho logic thuần; 56 kịch bản đầu-cuối bằng Playwright chạy trình duyệt thật trên API, web và DB riêng, gồm cả kiểm tra khả năng truy cập bằng axe-core.</p></div>
   </div>
 </section>
 

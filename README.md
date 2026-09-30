@@ -314,7 +314,7 @@ Hai tầng kiểm thử:
 | Kịch bản (`apps/e2e/tests/`) | Kiểm tra |
 | ---------------------------- | -------- |
 | `storefront.spec.ts` | Trang chủ lấy sản phẩm và hotline thật từ API; tìm kiếm từ khoá; trang danh mục; giỏ hàng khách vãng lai (tạm tính, miễn phí vận chuyển theo ngưỡng, bắt đăng nhập khi đặt); so sánh gộp nhãn thông số trùng nghĩa về một dòng |
-| `order-lifecycle.spec.ts` | Hai trình duyệt tách biệt (khách + quản trị): đăng ký → đặt hàng COD kèm mã WELCOME10 (giảm đúng mức trần 300.000đ) → quản trị xác nhận, đóng gói, giao hàng kèm mã vận đơn, đã giao → khách thấy tiến trình, mã vận đơn, tab "Đã giao" → đánh giá chỉ mở sau khi nhận hàng, chưa hiện khi chưa duyệt → quản trị duyệt → hiện công khai |
+| `order-lifecycle.spec.ts` | Hai trình duyệt tách biệt (khách + quản trị): đăng ký → đặt hàng COD kèm mã WELCOME10 (giảm đúng mức trần 300.000đ) → quản trị xác nhận, đóng gói, giao hàng kèm mã vận đơn, đã giao, ghi nhận đã thu tiền COD → khách thấy tiến trình, "Đã thanh toán", mã vận đơn, tab "Đã giao" → đánh giá chỉ mở sau khi nhận hàng, chưa hiện khi chưa duyệt → quản trị duyệt → hiện công khai |
 | `admin-settings.spec.ts` | Đổi phí vận chuyển và ngưỡng miễn phí ở `/admin/settings` → giỏ hàng của khách áp dụng ngay; máy chủ không cho tắt phương thức thanh toán cuối cùng còn dùng được (hotline ở đầu/chân trang không kiểm ở đây vì có bộ nhớ đệm ~1 phút, như trang Cài đặt đã ghi) |
 | `build-pc.spec.ts` | Không có khoá AI thì báo "AI gợi ý cấu hình đang tạm tắt"; tự chọn linh kiện vẫn chạy, tổng tiền đúng |
 | `security.spec.ts` | Trang `/admin/*` đòi đăng nhập quản trị; API quản trị từ chối cả khách vãng lai lẫn phiên đăng nhập của khách hàng; khách không xem được đơn của người khác; tải lên file không phải ảnh (dù tự khai `image/png`) bị từ chối |
@@ -399,7 +399,7 @@ Hai tầng kiểm thử:
 | GET | `/api/admin/orders?status=&paymentStatus=&paymentMethod=&page=` | Danh sách đơn cho quản trị — cần quyền `orders:read` |
 | GET | `/api/admin/orders/export?status=&paymentStatus=&paymentMethod=` | File `.xlsx` TẤT CẢ đơn khớp bộ lọc (không phân trang, đúng số liệu danh sách trên) — cần quyền `orders:read` |
 | GET | `/api/admin/orders/:orderCode` | Chi tiết đầy đủ một đơn: mã vận đơn, ghi chú nội bộ, mọi lượt thanh toán, lịch sử kèm tên người đổi trạng thái — cần quyền `orders:read` |
-| POST | `/api/admin/orders/:orderCode/confirm-payment` | Đánh dấu đã nhận được tiền chuyển khoản/MoMo — không có cổng nào tự báo như VNPay — cần quyền `orders:write` |
+| POST | `/api/admin/orders/:orderCode/confirm-payment` | Ghi nhận tay đã nhận tiền: chuyển khoản/MoMo còn chờ tiền, hoặc COD khi đơn đang giao/đã giao (không đổi trạng thái đơn); VNPay bị từ chối vì cổng tự báo — cần quyền `orders:write` |
 | PATCH | `/api/admin/orders/:orderCode/status` | `{ status, note? }` — chuyển tiến ĐÚNG MỘT bước theo vòng đời (PENDING→CONFIRMED→PACKING→SHIPPING→DELIVERED); CANCELLED/RETURNED có endpoint riêng — cần quyền `orders:write` |
 | POST | `/api/admin/orders/:orderCode/cancel` | `{ reason? }` — nhân viên huỷ đơn (rộng hơn khách tự huỷ: tới trước khi giao xong, không đòi hỏi chưa thanh toán), hoàn kho + mã giảm giá — cần quyền `orders:write` |
 | POST | `/api/admin/orders/:orderCode/return` | `{ reason? }` — khách trả hàng đã nhận (hoặc giao không thành công), chỉ khi đơn đã ở trạng thái đang giao/đã giao, hoàn kho kiểu `RETURN` — cần quyền `orders:write` |
@@ -882,6 +882,14 @@ cho tới khi được xác nhận (mã hoá trong `OrderDto.bankTransfer`/`momo
 `/admin/orders` (cần quyền `orders:read`/`orders:write` — mục 11) liệt kê các đơn chờ xác nhận, bấm
 "Xác nhận đã nhận tiền" chuyển `Payment.status → PAID` và `Order.status → CONFIRMED` (logic dùng chung
 với nhánh thành công của `applyVnpayCallback`, chỉ khác là do người bấm thay vì VNPay gọi về).
+
+**Đơn COD** cũng được ghi nhận tay: nhân viên giao hàng thu tiền lúc giao, nên khi đơn **đang giao hoặc đã giao**
+trang chi tiết đơn có nút "Xác nhận đã thu tiền COD" — chỉ chuyển `Payment`/`Order.paymentStatus → PAID` (ghi
+`paidAt`), không đổi trạng thái đơn và không thêm dòng lịch sử trạng thái; dấu vết nằm ở lượt thanh toán và nhật ký
+quản trị. Chưa ghi nhận thì đơn COD vẫn "Chưa thanh toán" và **chưa được tính** vào Đã thanh toán/Doanh thu thuần ở
+trang tổng quan. Điều kiện từng phương thức nằm ở một hàm thuần có kiểm thử, `manualPaymentBlockReason`
+(`manual-payment.service.ts`), dùng chung cho API (chặn, báo đúng lý do) và cờ `canConfirmPayment` hiện nút; đơn
+VNPay không bao giờ ghi nhận tay (cổng tự báo qua IPN).
 
 ### Mã giảm giá và sản phẩm yêu thích
 
