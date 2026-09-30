@@ -26,3 +26,6 @@ apps/e2e/playwright-report/
 
 # Dữ liệu đóng gói để triển khai (bản sao DB + ảnh) — chứa dữ liệu thật, không commit
 deploy/data/
+
+# Tệp khoá tạm của Microsoft Office khi đang mở tài liệu (vd. báo cáo Word trong docs/)
+~$*

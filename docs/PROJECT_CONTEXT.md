@@ -1,6 +1,6 @@
 # PCZone — Ngữ cảnh dự án cho các phiên làm việc tiếp theo
 
-Cập nhật: 30/09/2026 (Asia/Bangkok), lần 2 — sau đợt đổi màu nhận diện, logo hãng và kiểm thử truy cập toàn bộ trang (commit kế sau `e289409`). Lần 1 cùng ngày tại `cc0f97a`; bản trước nữa: 23/09/2026 tại `471d1b0`.
+Cập nhật: 30/09/2026 (Asia/Bangkok), lần 2 — sau đợt đổi màu nhận diện, logo hãng, kiểm thử truy cập toàn bộ trang (`aed0d37`) và báo cáo Word phần kỹ thuật (commit kế sau `aed0d37`). Lần 1 cùng ngày tại `cc0f97a`; bản trước nữa: 23/09/2026 tại `471d1b0`.
 
 ## 1. Mục đích và phạm vi ghi nhận
 
@@ -26,7 +26,7 @@ Monorepo npm workspaces, Node.js >= 20:
 
 - Lệnh thường dùng: `npm run setup`, `npm run db:up`, `npm run db:migrate`, `npm run dev:api`, `npm run dev:web`, `npm run build`.
 - Kiểm thử: `npm test -w @pczone/api` (logic thuần, không cần DB), `npm run test:e2e` (trình duyệt Edge có sẵn; `E2E_BROWSER_CHANNEL` để đổi), `npm run report -w @pczone/e2e`.
-- DB kiểm thử đầu-cuối chuẩn bị **không phá dữ liệu**: `prisma migrate deploy` + seed chạy lại được; từ chối mọi DB không có đuôi `_e2e`; Cài đặt hệ thống đưa về mặc định qua API trước khi chạy. Không thêm bước reset/drop khi chưa có đồng ý rõ ràng của người dùng.
+- DB kiểm thử đầu-cuối chuẩn bị **không phá dữ liệu**: `prisma migrate deploy` + seed chạy lại được; từ chối mọi DB không có đuôi `_e2e`; Cài đặt hệ thống đưa về mặc định qua API trước khi chạy. Không thêm bước reset/drop khi chưa có đồng ý rõ ràng của người dùng. Ngày 30/09 đã chép thêm 53 bản ghi `ProductImage` (chỉ đọc từ DB dev) cho 14 sản phẩm mẫu vào `pczone_e2e` để ảnh chụp báo cáo có ảnh thật — không ảnh hưởng kịch bản nào.
 - Triển khai: `bash deploy/export-data.sh` (máy dev: bản sao DB + ảnh) → `bash deploy/deploy.sh pczone-data.tar.gz` (máy chủ). Hướng dẫn đầy đủ ở README mục 14.
 - Biến môi trường chính: `DATABASE_URL`, `JWT_SECRET` (>= 32 ký tự, bắt buộc); `API_URL` (server) / `NEXT_PUBLIC_API_URL` (trình duyệt, để rỗng = gọi `/api/*` cùng tên miền qua proxy của Next); `API_PUBLIC_URL`, `WEB_URL`, `CORS_ORIGIN`; `TRUST_PROXY` (số tầng proxy, mặc định tắt); `SITE_URL` (web: sitemap/robots/Open Graph); khoá tuỳ chọn Google/Facebook, VNPay, ngân hàng/MoMo, Resend, `OPENAI_API_KEY` + `OPENAI_BASE_URL` (đang dùng Gemini qua API tương thích OpenAI).
 
@@ -58,7 +58,7 @@ Mức kiểm chứng: **E2E** = có kịch bản Playwright đang đạt; **ch�
 - Sản phẩm công khai: `Product.status=ACTIVE`. DTO qua `src/mappers`; hợp đồng ở `apps/api/src/types/dto.ts`, kiểu web riêng ở `apps/web/types/index.ts` — đổi API thì đối chiếu cả hai.
 - Web: `lib/api.ts` cache ISR 60 giây, có dữ liệu dự phòng khi API tắt (trang hiện được không chứng minh backend chạy). TopBar/Footer đọc cài đặt phía server nên hotline đổi có hiệu lực trong ~1 phút; phí ship ở giỏ hàng thì client hỏi lại API nên đúng ngay.
 - Cài đặt hệ thống: bảng `Setting` (một dòng JSON mỗi nhóm), mặc định trong `apps/api/src/settings/system-settings.ts` (phí 30.000đ, miễn phí từ 500.000đ), API cache 30 giây, xoá cache khi lưu; chỉ OWNER (và ADMIN/STAFF cũ) có `settings:write`. Phương thức dùng được = đang bật **và** đã cấu hình `.env`; không cho lưu khi không còn phương thức nào dùng được.
-- Đơn hàng: mã `PCZYYYYMMDD-NNNN`; phí ship tính trên tạm tính **trước** giảm giá. Vòng đời: PENDING → CONFIRMED → PACKING → SHIPPING → DELIVERED, nhân viên tiến đúng một bước mỗi lần. Khách tự huỷ khi PENDING/CONFIRMED và chưa thanh toán; nhân viên huỷ tới trước khi giao xong; hoàn trả chỉ từ DELIVERED. Huỷ/hoàn trả hoàn kho + trả lượt mã giảm giá; đơn đã trả tiền → hoàn tiền thủ công (PAID → REFUNDED). Xác nhận tiền chuyển khoản tự đưa đơn PENDING lên CONFIRMED.
+- Đơn hàng: mã `PCZYYYYMMDD-NNNN`; phí ship tính trên tạm tính **trước** giảm giá. Vòng đời: PENDING → CONFIRMED → PACKING → SHIPPING → DELIVERED, nhân viên tiến đúng một bước mỗi lần. Khách tự huỷ khi PENDING/CONFIRMED và chưa thanh toán; nhân viên huỷ tới trước khi giao xong; hoàn trả từ SHIPPING (giao không thành công) hoặc DELIVERED. Huỷ/hoàn trả hoàn kho + trả lượt mã giảm giá; đơn đã trả tiền → hoàn tiền thủ công (PAID → REFUNDED). Xác nhận tiền chuyển khoản tự đưa đơn PENDING lên CONFIRMED.
 - Đánh giá: chỉ khi có đơn `DELIVERED` chứa sản phẩm; mỗi sản phẩm/người/đơn một lần; phải duyệt mới công khai. Duyệt đánh giá thuộc quyền `products:*`.
 - AI: không bao giờ bịa sản phẩm — trợ lý chỉ nhận ứng viên truy hồi từ DB và máy chủ tự đối chiếu trích dẫn; AI gợi ý cấu hình chọn theo mã, mã lạ bị bỏ, tương thích do luật mã hoá kiểm tra. Tắt AI ở Cài đặt → chat/build trả 503 kèm lý do, search lùi về từ khoá. Quota Gemini miễn phí có giới hạn.
 - OAuth: nhận diện theo mã tài khoản nhà cung cấp, không tự gộp theo email; Google email đã xác minh được liên kết/trao lại tài khoản; Facebook trùng email bị từ chối (chống chiếm trước tài khoản).
@@ -83,6 +83,7 @@ Mức kiểm chứng: **E2E** = có kịch bản Playwright đang đạt; **ch�
 3. Email tới khách thật cần xác minh tên miền trên Resend (`onboarding@resend.dev` chỉ gửi được tới chủ tài khoản Resend).
 4. Chưa có nút tự xoá tài khoản (chính sách hướng dẫn gửi email hỗ trợ); thời hạn đổi trả và thời gian giao chưa có con số; số serial/IMEI, biên bản kiểm tra máy mới là chỗ giữ "Sắp ra mắt".
 5. Cổng thanh toán thẻ quốc tế/trả góp; kiểm tra xung đột khi hai người cùng lưu Cài đặt (hiện người lưu sau thắng).
+6. **Ghi nhận đã thu tiền cho đơn COD**: giao diện quản trị chỉ có nút "Xác nhận đã nhận tiền" cho chuyển khoản/MoMo (`AdminOrderDetailView.tsx`), nên đơn COD giao xong vẫn "Chưa thanh toán" và không vào Đã thanh toán/Doanh thu thuần ở trang tổng quan. Chưa sửa — chờ người dùng chọn cách (nút xác nhận thu tiền COD hay tự đánh dấu khi giao xong).
 
 ## 7. Quyết định đã chốt
 
@@ -102,10 +103,12 @@ Mức kiểm chứng: **E2E** = có kịch bản Playwright đang đạt; **ch�
 - 28–29/09: gỡ quảng cáo bịa, bỏ PCPoints, đánh giá sau khi nhận hàng; trang Cài đặt; gộp nhãn so sánh; trang Tài khoản dạng bảng điều khiển; kiểm thử đầu-cuối Playwright.
 - 30/09: bộ triển khai VPS + Docker (`9269ede`); trang chính sách, SEO, header bảo mật, kiểm tra chữ ký ảnh, sửa lỗi truy cập và hai link 404 ở trang chủ (`cc0f97a`); hồ sơ bảo vệ đồ án (`docs/bao-ve/`).
 - 30/09 (chiều): đổi màu nhận diện sang cam đậm + sửa mọi lỗi tương phản/nhãn ô nhập ở trang khách, tài khoản và quản trị (E2E 56/56, kiểm tra truy cập chặt ở mọi trang); logo hãng thật ở trang chủ; gỡ khối "cộng đồng" và các câu bịa ở mục bán chạy.
-- Trước khi tiếp tục: đọc `git status`/`git log` sau mốc `e289409`; có thể có một phiên chat khác làm song song trên cùng repo — kiểm tra trước khi commit.
+- 30/09 (chiều, tiếp): báo cáo Word phần kỹ thuật `docs/bao-ve/bao-cao-do-an-pczone.docx` (Chương 3–5 + tài liệu tham khảo + phụ lục API/triển khai, 80 trang, 42 hình, ảnh chụp thật); sửa 2 sơ đồ lệch mã (máy trạng thái thêm Đang giao → Đã hoàn trả; trợ lý AI lấy 8 ứng viên, khung SSE `chunk`); `render-diagrams.cjs` nhận mã sơ đồ để vẽ lại riêng từng hình.
+- Trước khi tiếp tục: đọc `git status`/`git log` sau mốc `aed0d37`; có thể có một phiên chat khác làm song song trên cùng repo — kiểm tra trước khi commit.
 
 ## 9. Tài liệu nên đọc cùng
 
 - `README.md`: cách chạy, API, kiểm thử (mục 4), triển khai (mục 14), checklist (mục 13).
 - `docs/bao-ve/ho-so-bao-ve-pczone.html` + `docs/bao-ve/so-do/`: 13 sơ đồ (kiến trúc, use case, ERD sinh từ schema, máy trạng thái, tuần tự) dạng `.mmd` / `.svg` / `.png`, kịch bản demo, câu hỏi hội đồng. Sinh lại sau khi đổi mã: `node docs/bao-ve/cong-cu/gen-diagrams.mjs`, `node docs/bao-ve/cong-cu/render-diagrams.cjs` (cần mạng để tải Mermaid, dùng Edge qua Playwright), `node docs/bao-ve/cong-cu/build-dossier.mjs docs/bao-ve/ho-so-bao-ve-pczone.html`. Bản đã đăng (riêng tư): https://claude.ai/artifact/WHidRgJwT9TXwk8655rXxJ
+- `docs/bao-ve/bao-cao-do-an-pczone.docx`: bản nháp báo cáo Word Chương 3–5 (phân tích thiết kế, cài đặt, kiểm thử), trang bìa để trống thông tin trường/sinh viên cho người dùng điền; mục lục, danh mục hình/bảng là trường Word (Update Field). Dựng một lần bằng docx-js từ script tạm ngoài repo — từ nay sửa thẳng trong Word, không dựng lại đè lên bản người dùng đã chỉnh.
 - `packages/db/prisma/schema.prisma`; `apps/api/src/app.ts`, `routes`, `services`, `middleware/permissions.ts`; `apps/web/app`, `components`, `lib/api.ts`, `lib/api-client.ts`; `apps/e2e/tests`; `deploy/`.
