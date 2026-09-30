@@ -103,7 +103,7 @@ export default function AiChatView({ initialQuestion }: AiChatViewProps) {
     return (
       <div className="container-page py-4">
         <div className="surface-card mx-auto flex max-w-2xl flex-col items-center px-6 py-14 text-center">
-          <span className="grid size-14 place-items-center rounded-full bg-slate-100 text-slate-400">
+          <span className="grid size-14 place-items-center rounded-full bg-slate-100 text-slate-500">
             <BotOff className="size-7" />
           </span>
           <h1 className="mt-4 font-display text-lg font-bold text-slate-900">Trợ lý AI đang tạm tắt</h1>

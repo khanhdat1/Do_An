@@ -242,7 +242,7 @@ export default function AdminSettingsView() {
   if (state.status === "error" || !form) {
     return (
       <div className="admin-card flex flex-col items-center px-6 py-14 text-center">
-        <CloudOff className="size-8 text-slate-400" />
+        <CloudOff className="size-8 text-slate-500" />
         <p className="mt-3 text-sm text-slate-500">Không tải được cài đặt hệ thống. Vui lòng tải lại trang.</p>
       </div>
     );
@@ -333,7 +333,7 @@ export default function AdminSettingsView() {
         </div>
         <div>
           <label htmlFor="settings-address" className="mb-1 block text-xs font-semibold text-slate-600">
-            Địa chỉ showroom <span className="font-normal text-slate-400">(không bắt buộc)</span>
+            Địa chỉ showroom <span className="font-normal text-slate-500">(không bắt buộc)</span>
           </label>
           <textarea
             id="settings-address"
@@ -344,7 +344,7 @@ export default function AdminSettingsView() {
             placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
             className={inputClass}
           />
-          <p className="mt-1 text-xs text-slate-400">Để trống thì chân trang và phiếu in tự ẩn dòng địa chỉ.</p>
+          <p className="mt-1 text-xs text-slate-500">Để trống thì chân trang và phiếu in tự ẩn dòng địa chỉ.</p>
           <FieldError message={fieldErrors["store.showroomAddress"]} />
         </div>
       </SettingsCard>
@@ -411,7 +411,7 @@ export default function AdminSettingsView() {
             badge={availability(current.payments[row.key], data.configured.payments[row.key], "Bật nhưng chưa cấu hình .env")}
           />
         ))}
-        <p className="text-xs text-slate-400">Phải còn ít nhất một phương thức khách dùng được, nếu không máy chủ sẽ không cho lưu.</p>
+        <p className="text-xs text-slate-500">Phải còn ít nhất một phương thức khách dùng được, nếu không máy chủ sẽ không cho lưu.</p>
       </SettingsCard>
 
       <SettingsCard

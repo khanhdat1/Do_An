@@ -70,7 +70,7 @@ export default function AiSuggestionCard({ suggestion, selection, result, onDism
           type="button"
           onClick={onDismiss}
           aria-label="Ẩn gợi ý của AI"
-          className="grid size-8 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+          className="grid size-8 shrink-0 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-600"
         >
           <X className="size-4" />
         </button>
@@ -145,7 +145,7 @@ export default function AiSuggestionCard({ suggestion, selection, result, onDism
         <p className="mt-2 text-xs text-slate-500">AI đưa ra {suggestion.droppedCount} mã không có trong kho — hệ thống đã loại bỏ.</p>
       ) : null}
 
-      <p className="mt-3 text-[11px] leading-relaxed text-slate-400">
+      <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
         Phần giải thích do AI viết và có thể chưa chính xác. Tổng tiền và kiểm tra tương thích do hệ thống tính bằng luật cố định.
       </p>
 

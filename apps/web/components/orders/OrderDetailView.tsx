@@ -32,7 +32,7 @@ export default function OrderDetailView({ order, interactive = false, onOrderCha
             <div>
               <p className="text-xs text-slate-500">Mã đơn hàng</p>
               <p className="font-display text-lg font-bold text-slate-900">{order.orderCode}</p>
-              <p className="mt-0.5 text-xs text-slate-400">Đặt lúc {formatDate(order.createdAt)}</p>
+              <p className="mt-0.5 text-xs text-slate-500">Đặt lúc {formatDate(order.createdAt)}</p>
             </div>
             <OrderStatusBadge status={order.status} />
           </div>
@@ -53,14 +53,15 @@ export default function OrderDetailView({ order, interactive = false, onOrderCha
 
         <section className="surface-card p-4 sm:p-5">
           <h2 className="mb-3 flex items-center gap-2 text-base font-bold text-slate-900">
-            <Package className="size-4.5 text-slate-400" />
+            <Package className="size-4.5 text-slate-500" />
             Sản phẩm ({order.items.length})
           </h2>
           <ul className="space-y-3">
             {order.items.map((item) => (
               <li key={item.id} className="flex items-center gap-3">
+                {/* Ảnh trùng đích với link tên sản phẩm bên cạnh: ẩn khỏi trình đọc màn hình và phím Tab */}
                 {item.productSlug ? (
-                  <Link href={`/san-pham/${item.productSlug}`} className="w-16 shrink-0">
+                  <Link href={`/san-pham/${item.productSlug}`} aria-hidden="true" tabIndex={-1} className="w-16 shrink-0">
                     <ProductThumb name={item.name} image={item.image} sizes="64px" />
                   </Link>
                 ) : (
@@ -93,13 +94,13 @@ export default function OrderDetailView({ order, interactive = false, onOrderCha
             <div className="flex items-center justify-between">
               <dt className="text-slate-500">Phí vận chuyển</dt>
               <dd className="font-semibold text-slate-800">
-                {order.shippingFee === 0 ? <span className="text-emerald-600">Miễn phí</span> : formatPrice(order.shippingFee)}
+                {order.shippingFee === 0 ? <span className="text-emerald-700">Miễn phí</span> : formatPrice(order.shippingFee)}
               </dd>
             </div>
             {order.discountAmount > 0 ? (
               <div className="flex items-center justify-between">
                 <dt className="text-slate-500">Giảm giá{order.voucherCode ? ` (${order.voucherCode})` : ""}</dt>
-                <dd className="font-semibold text-emerald-600">-{formatPrice(order.discountAmount)}</dd>
+                <dd className="font-semibold text-emerald-700">-{formatPrice(order.discountAmount)}</dd>
               </div>
             ) : null}
             <div className="flex items-center justify-between border-t border-slate-100 pt-2">
@@ -112,7 +113,7 @@ export default function OrderDetailView({ order, interactive = false, onOrderCha
         {order.customerNote ? (
           <section className="surface-card p-4 sm:p-5">
             <h2 className="mb-2 flex items-center gap-2 text-base font-bold text-slate-900">
-              <MessageSquareText className="size-4.5 text-slate-400" />
+              <MessageSquareText className="size-4.5 text-slate-500" />
               Ghi chú của bạn
             </h2>
             <p className="text-sm text-slate-600">{order.customerNote}</p>
@@ -123,7 +124,7 @@ export default function OrderDetailView({ order, interactive = false, onOrderCha
       <div className="space-y-5 lg:col-span-4">
         <section className="surface-card p-4 sm:p-5">
           <h2 className="mb-2 flex items-center gap-2 text-base font-bold text-slate-900">
-            <MapPin className="size-4.5 text-slate-400" />
+            <MapPin className="size-4.5 text-slate-500" />
             Giao hàng tới
           </h2>
           <p className="text-sm font-semibold text-slate-800">{order.shippingAddress.recipientName}</p>
@@ -134,7 +135,7 @@ export default function OrderDetailView({ order, interactive = false, onOrderCha
           </p>
           {order.trackingNumber ? (
             <p className="mt-3 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
-              <Truck className="size-4 shrink-0 text-slate-400" aria-hidden />
+              <Truck className="size-4 shrink-0 text-slate-500" aria-hidden />
               Mã vận đơn: <span className="font-semibold text-slate-800">{order.trackingNumber}</span>
             </p>
           ) : null}
@@ -169,7 +170,7 @@ export default function OrderDetailView({ order, interactive = false, onOrderCha
                   <FileClock className="size-4 shrink-0 text-slate-300" aria-hidden />
                   {item}
                 </span>
-                <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">Sắp ra mắt</span>
+                <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">Sắp ra mắt</span>
               </li>
             ))}
           </ul>

@@ -50,18 +50,18 @@ export default function CartSummary({ cart }: { cart: Cart }) {
         {savings > 0 ? (
           <div className="flex items-center justify-between gap-3">
             <dt className="text-slate-500">Bạn tiết kiệm</dt>
-            <dd className="font-semibold text-emerald-600">-{formatPrice(savings)}</dd>
+            <dd className="font-semibold text-emerald-700">-{formatPrice(savings)}</dd>
           </div>
         ) : null}
 
         <div className="flex items-center justify-between gap-3">
           <dt className="text-slate-500">Phí vận chuyển</dt>
           <dd className="font-semibold text-slate-800">
-            {shippingFee === 0 ? <span className="text-emerald-600">Miễn phí</span> : formatPrice(shippingFee)}
+            {shippingFee === 0 ? <span className="text-emerald-700">Miễn phí</span> : formatPrice(shippingFee)}
           </dd>
         </div>
         {shippingFee > 0 ? (
-          <p className="text-right text-xs text-slate-400">Miễn phí vận chuyển cho đơn từ {formatPrice(shipping.freeThreshold)}</p>
+          <p className="text-right text-xs text-slate-500">Miễn phí vận chuyển cho đơn từ {formatPrice(shipping.freeThreshold)}</p>
         ) : null}
       </dl>
 
@@ -77,7 +77,7 @@ export default function CartSummary({ cart }: { cart: Cart }) {
               Tiến hành đặt hàng
             </button>
             <p className="mt-2.5 flex items-start gap-1.5 text-xs text-slate-500">
-              <TriangleAlert className="mt-px size-3.5 shrink-0 text-gold-600" />
+              <TriangleAlert className="mt-px size-3.5 shrink-0 text-gold-800" />
               Vui lòng xử lý các sản phẩm đang có cảnh báo trong giỏ trước khi đặt hàng.
             </p>
           </>

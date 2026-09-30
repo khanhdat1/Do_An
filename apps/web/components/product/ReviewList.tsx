@@ -23,7 +23,7 @@ function ReviewCard({ review }: { review: Review }) {
   return (
     <div className="border-b border-slate-100 py-4 last:border-0">
       <div className="flex items-start gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-400">
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-500">
           <CircleUserRound className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
@@ -37,7 +37,7 @@ function ReviewCard({ review }: { review: Review }) {
           </div>
           <div className="mt-1 flex items-center gap-2">
             <RatingStars value={review.rating} size="sm" />
-            <span className="text-xs text-slate-400">{formatDate(review.createdAt)}</span>
+            <span className="text-xs text-slate-500">{formatDate(review.createdAt)}</span>
           </div>
           {review.title ? <p className="mt-2 text-sm font-semibold text-slate-800">{review.title}</p> : null}
           {review.content ? <p className="mt-1 text-sm leading-relaxed text-slate-600">{review.content}</p> : null}
@@ -143,7 +143,7 @@ export default function ReviewList({ productSlug }: { productSlug: string }) {
 
         {listState.status === "error" ? (
           <div className="flex flex-col items-center py-8 text-center">
-            <CloudOff className="size-8 text-slate-400" />
+            <CloudOff className="size-8 text-slate-500" />
             <p className="mt-2 text-sm text-slate-500">Không tải được đánh giá. Vui lòng tải lại trang.</p>
           </div>
         ) : null}

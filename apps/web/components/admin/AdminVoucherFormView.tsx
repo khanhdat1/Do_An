@@ -69,7 +69,7 @@ function DeleteControl({ voucher, onDeleted }: { voucher: AdminVoucher; onDelete
   const [busy, setBusy] = useState(false);
 
   if (voucher.usageCount > 0) {
-    return <p className="text-xs text-slate-400">Mã đã được dùng {voucher.usageCount} lần — chỉ có thể tắt, không thể xoá (giữ lịch sử đối soát).</p>;
+    return <p className="text-xs text-slate-500">Mã đã được dùng {voucher.usageCount} lần — chỉ có thể tắt, không thể xoá (giữ lịch sử đối soát).</p>;
   }
 
   async function submit() {
@@ -231,7 +231,7 @@ export default function AdminVoucherFormView({ voucherId }: { voucherId?: string
   if (state.status === "error") {
     return (
       <div className="admin-card flex flex-col items-center px-6 py-14 text-center">
-        <CloudOff className="size-8 text-slate-400" />
+        <CloudOff className="size-8 text-slate-500" />
         <p className="mt-3 text-sm text-slate-500">Không tải được mã giảm giá. Vui lòng tải lại trang.</p>
       </div>
     );
@@ -253,8 +253,9 @@ export default function AdminVoucherFormView({ voucherId }: { voucherId?: string
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Mã (tự viết hoa)</label>
+            <label htmlFor="voucher-code" className="mb-1 block text-xs font-semibold text-slate-600">Mã (tự viết hoa)</label>
             <input
+              id="voucher-code"
               value={form.code}
               onChange={(event) => updateField("code", event.target.value)}
               disabled={readOnly}
@@ -265,27 +266,28 @@ export default function AdminVoucherFormView({ voucherId }: { voucherId?: string
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Tên hiển thị</label>
-            <input value={form.name} onChange={(event) => updateField("name", event.target.value)} disabled={readOnly} required maxLength={200} className={inputClass} />
+            <label htmlFor="voucher-name" className="mb-1 block text-xs font-semibold text-slate-600">Tên hiển thị</label>
+            <input id="voucher-name" value={form.name} onChange={(event) => updateField("name", event.target.value)} disabled={readOnly} required maxLength={200} className={inputClass} />
           </div>
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-semibold text-slate-600">Mô tả (không bắt buộc, hiện ở trang khuyến mãi công khai)</label>
-          <textarea value={form.description} onChange={(event) => updateField("description", event.target.value)} disabled={readOnly} rows={2} maxLength={500} className={inputClass} />
+          <label htmlFor="voucher-description" className="mb-1 block text-xs font-semibold text-slate-600">Mô tả (không bắt buộc, hiện ở trang khuyến mãi công khai)</label>
+          <textarea id="voucher-description" value={form.description} onChange={(event) => updateField("description", event.target.value)} disabled={readOnly} rows={2} maxLength={500} className={inputClass} />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Kiểu giảm</label>
-            <select value={form.discountType} onChange={(event) => updateField("discountType", event.target.value as DiscountType)} disabled={readOnly} className={inputClass}>
+            <label htmlFor="voucher-discount-type" className="mb-1 block text-xs font-semibold text-slate-600">Kiểu giảm</label>
+            <select id="voucher-discount-type" value={form.discountType} onChange={(event) => updateField("discountType", event.target.value as DiscountType)} disabled={readOnly} className={inputClass}>
               <option value="PERCENT">Theo phần trăm (%)</option>
               <option value="FIXED">Số tiền cố định (đ)</option>
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Mức giảm ({form.discountType === "PERCENT" ? "%, 1-100" : "đ"})</label>
+            <label htmlFor="voucher-discount-value" className="mb-1 block text-xs font-semibold text-slate-600">Mức giảm ({form.discountType === "PERCENT" ? "%, 1-100" : "đ"})</label>
             <input
+              id="voucher-discount-value"
               type="number"
               min={0}
               max={form.discountType === "PERCENT" ? 100 : undefined}
@@ -298,35 +300,35 @@ export default function AdminVoucherFormView({ voucherId }: { voucherId?: string
           </div>
           {form.discountType === "PERCENT" ? (
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-600">Giảm tối đa (đ, để trống = không giới hạn)</label>
-              <input type="number" min={0} value={form.maxDiscount} onChange={(event) => updateField("maxDiscount", event.target.value)} disabled={readOnly} className={inputClass} />
+              <label htmlFor="voucher-max-discount" className="mb-1 block text-xs font-semibold text-slate-600">Giảm tối đa (đ, để trống = không giới hạn)</label>
+              <input id="voucher-max-discount" type="number" min={0} value={form.maxDiscount} onChange={(event) => updateField("maxDiscount", event.target.value)} disabled={readOnly} className={inputClass} />
             </div>
           ) : null}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Đơn tối thiểu (đ, để trống = không yêu cầu)</label>
-            <input type="number" min={0} value={form.minOrderAmount} onChange={(event) => updateField("minOrderAmount", event.target.value)} disabled={readOnly} className={inputClass} />
+            <label htmlFor="voucher-min-order-amount" className="mb-1 block text-xs font-semibold text-slate-600">Đơn tối thiểu (đ, để trống = không yêu cầu)</label>
+            <input id="voucher-min-order-amount" type="number" min={0} value={form.minOrderAmount} onChange={(event) => updateField("minOrderAmount", event.target.value)} disabled={readOnly} className={inputClass} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Tổng lượt dùng (để trống = không giới hạn)</label>
-            <input type="number" min={1} value={form.usageLimit} onChange={(event) => updateField("usageLimit", event.target.value)} disabled={readOnly} className={inputClass} />
+            <label htmlFor="voucher-usage-limit" className="mb-1 block text-xs font-semibold text-slate-600">Tổng lượt dùng (để trống = không giới hạn)</label>
+            <input id="voucher-usage-limit" type="number" min={1} value={form.usageLimit} onChange={(event) => updateField("usageLimit", event.target.value)} disabled={readOnly} className={inputClass} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Lượt dùng / một khách</label>
-            <input type="number" min={1} value={form.perUserLimit} onChange={(event) => updateField("perUserLimit", event.target.value)} disabled={readOnly} required className={inputClass} />
+            <label htmlFor="voucher-per-user-limit" className="mb-1 block text-xs font-semibold text-slate-600">Lượt dùng / một khách</label>
+            <input id="voucher-per-user-limit" type="number" min={1} value={form.perUserLimit} onChange={(event) => updateField("perUserLimit", event.target.value)} disabled={readOnly} required className={inputClass} />
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Bắt đầu</label>
-            <input type="date" value={form.startsAt} onChange={(event) => updateField("startsAt", event.target.value)} disabled={readOnly} required className={inputClass} />
+            <label htmlFor="voucher-starts-at" className="mb-1 block text-xs font-semibold text-slate-600">Bắt đầu</label>
+            <input id="voucher-starts-at" type="date" value={form.startsAt} onChange={(event) => updateField("startsAt", event.target.value)} disabled={readOnly} required className={inputClass} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Kết thúc (áp dụng tới hết ngày này)</label>
-            <input type="date" value={form.endsAt} onChange={(event) => updateField("endsAt", event.target.value)} disabled={readOnly} required className={inputClass} />
+            <label htmlFor="voucher-ends-at" className="mb-1 block text-xs font-semibold text-slate-600">Kết thúc (áp dụng tới hết ngày này)</label>
+            <input id="voucher-ends-at" type="date" value={form.endsAt} onChange={(event) => updateField("endsAt", event.target.value)} disabled={readOnly} required className={inputClass} />
           </div>
         </div>
 

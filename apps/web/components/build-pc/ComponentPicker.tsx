@@ -38,7 +38,7 @@ function CandidateRow({ candidate, selected, onSelect }: { candidate: BuildCandi
           className="inline-flex items-start gap-1 text-sm font-semibold text-slate-800 transition hover:text-brand-600"
         >
           <span className="line-clamp-2">{product.name}</span>
-          <ExternalLink className="mt-0.5 size-3.5 shrink-0 text-slate-400" aria-label="(mở tab mới)" />
+          <ExternalLink className="mt-0.5 size-3.5 shrink-0 text-slate-500" aria-label="(mở tab mới)" />
         </Link>
         <SpecChips specs={product.keySpecs} />
         {fit ? (
@@ -59,8 +59,8 @@ function CandidateRow({ candidate, selected, onSelect }: { candidate: BuildCandi
 
       <div className="flex shrink-0 flex-col items-end gap-1">
         <p className="text-sm font-bold text-sale-600">{formatPrice(product.price)}</p>
-        {product.oldPrice ? <p className="text-[11px] text-slate-400 line-through">{formatPrice(product.oldPrice)}</p> : null}
-        <p className={cn("text-[11px] font-semibold", product.inStock === false ? "text-slate-400" : "text-emerald-600")}>
+        {product.oldPrice ? <p className="text-[11px] text-slate-500 line-through">{formatPrice(product.oldPrice)}</p> : null}
+        <p className={cn("text-[11px] font-semibold", product.inStock === false ? "text-slate-500" : "text-emerald-700")}>
           {product.inStock === false ? "Hết hàng" : "Còn hàng"}
         </p>
         <button
@@ -182,7 +182,7 @@ export default function ComponentPicker({ slot, selection, onSelect, onClose }: 
         <div className="space-y-2.5 border-b border-slate-200 px-4 py-3 sm:px-5">
           <label className="relative block">
             <span className="sr-only">Tìm {label} theo tên</span>
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" aria-hidden />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" aria-hidden />
             <input
               ref={searchRef}
               type="search"

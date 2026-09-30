@@ -62,7 +62,7 @@ export default function OrderPageView({ orderCode, paymentResult, paymentReason 
   if (state.status === "not_found") {
     return (
       <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
-        <PackageX className="size-10 text-slate-400" />
+        <PackageX className="size-10 text-slate-500" />
         <h1 className="mt-4 text-lg font-bold text-slate-800">Không tìm thấy đơn hàng</h1>
         <p className="mt-1.5 text-sm text-slate-500">Đơn hàng không tồn tại hoặc không thuộc tài khoản này.</p>
         <Link
@@ -78,7 +78,7 @@ export default function OrderPageView({ orderCode, paymentResult, paymentReason 
   if (state.status === "error") {
     return (
       <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
-        <CloudOff className="size-10 text-slate-400" />
+        <CloudOff className="size-10 text-slate-500" />
         <p className="mt-3 text-sm text-slate-500">Không tải được đơn hàng. Vui lòng tải lại trang.</p>
       </div>
     );
@@ -86,7 +86,7 @@ export default function OrderPageView({ orderCode, paymentResult, paymentReason 
 
   return (
     <div className="space-y-5">
-      <Link href="/tai-khoan/don-hang" className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition hover:text-brand-600">
+      <Link href="/tai-khoan/don-hang" className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 transition hover:text-brand-600">
         <ArrowLeft className="size-3.5" />
         Đơn hàng của tôi
       </Link>

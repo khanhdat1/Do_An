@@ -265,7 +265,7 @@ export default function AdminAccountFormView({ accountId }: { accountId?: string
   if (state.status === "error") {
     return (
       <div className="admin-card flex flex-col items-center px-6 py-14 text-center">
-        <CloudOff className="size-8 text-slate-400" />
+        <CloudOff className="size-8 text-slate-500" />
         <p className="mt-3 text-sm text-slate-500">Không tải được tài khoản. Vui lòng tải lại trang.</p>
       </div>
     );
@@ -287,7 +287,7 @@ export default function AdminAccountFormView({ accountId }: { accountId?: string
           {state.account ? (state.account.isActive ? <AdminBadge tone="green">Đang hoạt động</AdminBadge> : <AdminBadge tone="red">Đã khoá</AdminBadge>) : null}
         </div>
 
-        {isSelf ? <p className="text-xs text-slate-400">Đây là tài khoản bạn đang đăng nhập — không tự đổi vai trò hay tự khoá được.</p> : null}
+        {isSelf ? <p className="text-xs text-slate-500">Đây là tài khoản bạn đang đăng nhập — không tự đổi vai trò hay tự khoá được.</p> : null}
         {state.account && isLegacyRole(state.account.role) ? (
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
             Tài khoản này đang ở vai trò cũ ({ROLE_LABEL[state.account.role]}) — chọn một vai trò ở dưới rồi lưu để chuyển sang hệ thống phân quyền hiện tại.
@@ -296,19 +296,20 @@ export default function AdminAccountFormView({ accountId }: { accountId?: string
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Email đăng nhập</label>
-            <input type="email" value={form.email} onChange={(event) => updateField("email", event.target.value)} required maxLength={255} className={inputClass} />
+            <label htmlFor="account-email" className="mb-1 block text-xs font-semibold text-slate-600">Email đăng nhập</label>
+            <input id="account-email" type="email" value={form.email} onChange={(event) => updateField("email", event.target.value)} required maxLength={255} className={inputClass} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Họ tên</label>
-            <input value={form.fullName} onChange={(event) => updateField("fullName", event.target.value)} required maxLength={150} className={inputClass} />
+            <label htmlFor="account-full-name" className="mb-1 block text-xs font-semibold text-slate-600">Họ tên</label>
+            <input id="account-full-name" value={form.fullName} onChange={(event) => updateField("fullName", event.target.value)} required maxLength={150} className={inputClass} />
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Vai trò</label>
+            <label htmlFor="account-role" className="mb-1 block text-xs font-semibold text-slate-600">Vai trò</label>
             <select
+              id="account-role"
               value={form.role}
               onChange={(event) => updateField("role", event.target.value as AdminAssignableRole)}
               disabled={isSelf}
@@ -328,8 +329,9 @@ export default function AdminAccountFormView({ accountId }: { accountId?: string
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">{accountId ? "Đặt lại mật khẩu (để trống = giữ nguyên)" : "Mật khẩu"}</label>
+            <label htmlFor="account-password" className="mb-1 block text-xs font-semibold text-slate-600">{accountId ? "Đặt lại mật khẩu (để trống = giữ nguyên)" : "Mật khẩu"}</label>
             <input
+              id="account-password"
               type="password"
               value={form.password}
               onChange={(event) => updateField("password", event.target.value)}

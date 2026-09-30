@@ -69,7 +69,7 @@ export default function AdminTopbar() {
             <span className="block text-sm font-semibold text-slate-800">{user.fullName}</span>
             <span className="block text-xs text-slate-500">{ROLE_LABEL[user.role]}</span>
           </span>
-          <ChevronDown className={`size-4 shrink-0 text-slate-400 transition ${open ? "rotate-180" : ""}`} />
+          <ChevronDown className={`size-4 shrink-0 text-slate-500 transition ${open ? "rotate-180" : ""}`} />
         </button>
 
         {open ? (

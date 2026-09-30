@@ -46,7 +46,7 @@ export default function WishlistView() {
   if (state.status === "error") {
     return (
       <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
-        <CloudOff className="size-10 text-slate-400" />
+        <CloudOff className="size-10 text-slate-500" />
         <p className="mt-3 text-sm text-slate-500">Không tải được danh sách yêu thích. Vui lòng tải lại trang.</p>
       </div>
     );
@@ -62,7 +62,7 @@ export default function WishlistView() {
   if (items.length === 0) {
     return (
       <div className="surface-card flex flex-col items-center px-6 py-14 text-center">
-        <span className="grid size-16 place-items-center rounded-full bg-slate-100 text-slate-400">
+        <span className="grid size-16 place-items-center rounded-full bg-slate-100 text-slate-500">
           <Heart className="size-8" />
         </span>
         <h2 className="mt-4 text-lg font-bold text-slate-800">Chưa có sản phẩm yêu thích nào</h2>

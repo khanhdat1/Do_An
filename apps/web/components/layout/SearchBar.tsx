@@ -211,9 +211,9 @@ export default function SearchBar({ className }: SearchBarProps) {
         className="flex h-12 w-full items-center rounded-xl bg-white p-1.5 shadow-lg shadow-black/20 ring-1 ring-white/10 focus-within:ring-2 focus-within:ring-gold-400"
       >
         {loading ? (
-          <LoaderCircle className="ml-2.5 size-4.5 shrink-0 animate-spin text-slate-400" />
+          <LoaderCircle className="ml-2.5 size-4.5 shrink-0 animate-spin text-slate-500" />
         ) : (
-          <Search className="ml-2.5 size-4.5 shrink-0 text-slate-400" />
+          <Search className="ml-2.5 size-4.5 shrink-0 text-slate-500" />
         )}
         <input
           ref={inputRef}
@@ -248,7 +248,7 @@ export default function SearchBar({ className }: SearchBarProps) {
           autoCorrect="off"
           spellCheck={false}
           enterKeyHint="search"
-          className="min-w-0 flex-1 bg-transparent px-3 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+          className="min-w-0 flex-1 bg-transparent px-3 text-sm text-slate-800 outline-none placeholder:text-slate-500"
         />
         {keyword ? (
           <button
@@ -259,7 +259,7 @@ export default function SearchBar({ className }: SearchBarProps) {
               setActive(-1);
               inputRef.current?.focus();
             }}
-            className="mr-1 grid size-8 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            className="mr-1 grid size-8 shrink-0 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-600"
           >
             <X className="size-4" />
           </button>

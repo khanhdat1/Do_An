@@ -61,7 +61,7 @@ export default function PaymentMethodPicker({ value, onChange, methods }: Paymen
               {selected ? <span className="size-2 rounded-full bg-brand-500" /> : null}
             </span>
 
-            <Icon className="mt-0.5 size-5 shrink-0 text-slate-400" />
+            <Icon className="mt-0.5 size-5 shrink-0 text-slate-500" />
 
             <span className="min-w-0 flex-1">
               <span className="block font-semibold text-slate-800">{option.label}</span>

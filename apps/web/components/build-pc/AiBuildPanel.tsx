@@ -33,7 +33,7 @@ export default function AiBuildPanel({ onSuggested }: { onSuggested: (suggestion
       <section id="ai-goi-y" className="surface-card scroll-mt-48 p-4 sm:p-5" aria-labelledby="ai-build-title">
         <h2 id="ai-build-title" className="flex items-center gap-2 font-display text-base font-bold text-slate-900">
           <span className="grid size-8 place-items-center rounded-lg bg-slate-100">
-            <BotOff className="size-4.5 text-slate-400" aria-hidden />
+            <BotOff className="size-4.5 text-slate-500" aria-hidden />
           </span>
           AI gợi ý cấu hình đang tạm tắt
         </h2>
@@ -110,7 +110,7 @@ export default function AiBuildPanel({ onSuggested }: { onSuggested: (suggestion
         </div>
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <span className="text-[11px] text-slate-400">
+          <span className="text-[11px] text-slate-500">
             {prompt.length}/{MAX_LENGTH}
           </span>
           <button

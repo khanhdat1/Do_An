@@ -37,10 +37,10 @@ export default function AuthTabs({ mode, next }: AuthTabsProps) {
               "flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-2 py-2 text-[13px] font-semibold transition",
               active
                 ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200"
-                : "text-slate-500 hover:text-slate-800",
+                : "text-slate-600 hover:text-slate-800",
             )}
           >
-            <Icon className={cn("size-4 shrink-0", active ? "text-brand-500" : "text-slate-400")} />
+            <Icon className={cn("size-4 shrink-0", active ? "text-brand-500" : "text-slate-500")} />
             {key === "login" ? (
               "Đăng nhập"
             ) : (

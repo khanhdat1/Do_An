@@ -31,7 +31,7 @@ export default function AuthFrame({
   return (
     <div className="container-page py-5 sm:py-8">
       <nav aria-label="Đường dẫn" className="mx-auto mb-4 max-w-6xl">
-        <ol className="flex items-center gap-1.5 text-xs text-slate-500">
+        <ol className="flex items-center gap-1.5 text-xs text-slate-600">
           <li>
             <Link href="/" className="transition hover:text-brand-600">
               Trang chủ

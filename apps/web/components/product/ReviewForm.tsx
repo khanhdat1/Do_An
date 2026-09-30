@@ -59,7 +59,7 @@ export default function ReviewForm({ productSlug, onSubmitted }: ReviewFormProps
         onChange={(event) => setTitle(event.target.value.slice(0, MAX_TITLE))}
         placeholder="Tiêu đề (không bắt buộc)"
         maxLength={MAX_TITLE}
-        className="mt-4 w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20"
+        className="mt-4 w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-500 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20"
       />
       <textarea
         value={content}
@@ -67,7 +67,7 @@ export default function ReviewForm({ productSlug, onSubmitted }: ReviewFormProps
         placeholder="Chia sẻ cảm nhận của bạn về sản phẩm (không bắt buộc)"
         rows={4}
         maxLength={MAX_CONTENT}
-        className="mt-2.5 w-full resize-none rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20"
+        className="mt-2.5 w-full resize-none rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-500 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20"
       />
 
       {error ? <div className="mt-2.5"><FormError message={error} /></div> : null}

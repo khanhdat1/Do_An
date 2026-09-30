@@ -223,7 +223,7 @@ export default function AdminBannerFormView({ bannerId }: { bannerId?: string })
   if (state.status === "error") {
     return (
       <div className="admin-card flex flex-col items-center px-6 py-14 text-center">
-        <CloudOff className="size-8 text-slate-400" />
+        <CloudOff className="size-8 text-slate-500" />
         <p className="mt-3 text-sm text-slate-500">Không tải được banner. Vui lòng tải lại trang.</p>
       </div>
     );
@@ -244,7 +244,7 @@ export default function AdminBannerFormView({ bannerId }: { bannerId?: string })
         <h1 className="text-lg font-bold text-slate-900">{bannerId ? "Sửa banner" : "Thêm banner"}</h1>
 
         <div>
-          <label className="mb-1 block text-xs font-semibold text-slate-600">Ảnh banner</label>
+          <p className="mb-1 text-xs font-semibold text-slate-600">Ảnh banner</p>
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex h-24 w-44 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-100 ring-1 ring-slate-200">
               {form.imageUrl ? (
@@ -257,7 +257,7 @@ export default function AdminBannerFormView({ bannerId }: { bannerId?: string })
                   unoptimized={isRuntimeUpload(form.imageUrl)}
                 />
               ) : (
-                <ImageOff className="size-6 text-slate-400" />
+                <ImageOff className="size-6 text-slate-500" />
               )}
               {uploading ? (
                 <div className="absolute inset-0 grid place-items-center bg-white/70">
@@ -277,7 +277,7 @@ export default function AdminBannerFormView({ bannerId }: { bannerId?: string })
                   <Upload className="size-3.5" />
                   {form.imageUrl ? "Đổi ảnh" : "Tải ảnh lên"}
                 </button>
-                <p className="mt-1 text-xs text-slate-400">JPEG/PNG/WEBP/GIF, tối đa 5MB</p>
+                <p className="mt-1 text-xs text-slate-500">JPEG/PNG/WEBP/GIF, tối đa 5MB</p>
               </div>
             ) : null}
           </div>
@@ -285,18 +285,19 @@ export default function AdminBannerFormView({ bannerId }: { bannerId?: string })
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Tiêu đề (không bắt buộc)</label>
-            <input value={form.title} onChange={(event) => updateField("title", event.target.value)} disabled={readOnly} maxLength={200} className={inputClass} />
+            <label htmlFor="banner-title" className="mb-1 block text-xs font-semibold text-slate-600">Tiêu đề (không bắt buộc)</label>
+            <input id="banner-title" value={form.title} onChange={(event) => updateField("title", event.target.value)} disabled={readOnly} maxLength={200} className={inputClass} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Phụ đề (không bắt buộc)</label>
-            <input value={form.subtitle} onChange={(event) => updateField("subtitle", event.target.value)} disabled={readOnly} maxLength={300} className={inputClass} />
+            <label htmlFor="banner-subtitle" className="mb-1 block text-xs font-semibold text-slate-600">Phụ đề (không bắt buộc)</label>
+            <input id="banner-subtitle" value={form.subtitle} onChange={(event) => updateField("subtitle", event.target.value)} disabled={readOnly} maxLength={300} className={inputClass} />
           </div>
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-semibold text-slate-600">Liên kết khi bấm vào (không bắt buộc)</label>
+          <label htmlFor="banner-link-url" className="mb-1 block text-xs font-semibold text-slate-600">Liên kết khi bấm vào (không bắt buộc)</label>
           <input
+            id="banner-link-url"
             value={form.linkUrl}
             onChange={(event) => updateField("linkUrl", event.target.value)}
             disabled={readOnly}
@@ -308,12 +309,12 @@ export default function AdminBannerFormView({ bannerId }: { bannerId?: string })
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Thứ tự hiển thị (số nhỏ hơn hiện trước)</label>
-            <input type="number" value={form.displayOrder} onChange={(event) => updateField("displayOrder", event.target.value)} disabled={readOnly} className={inputClass} />
+            <label htmlFor="banner-display-order" className="mb-1 block text-xs font-semibold text-slate-600">Thứ tự hiển thị (số nhỏ hơn hiện trước)</label>
+            <input id="banner-display-order" type="number" value={form.displayOrder} onChange={(event) => updateField("displayOrder", event.target.value)} disabled={readOnly} className={inputClass} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Trạng thái</label>
-            <select value={form.status} onChange={(event) => updateField("status", event.target.value as BannerStatus)} disabled={readOnly} className={inputClass}>
+            <label htmlFor="banner-status" className="mb-1 block text-xs font-semibold text-slate-600">Trạng thái</label>
+            <select id="banner-status" value={form.status} onChange={(event) => updateField("status", event.target.value as BannerStatus)} disabled={readOnly} className={inputClass}>
               <option value="DRAFT">Nháp (chưa hiện)</option>
               <option value="PUBLISHED">Đã đăng</option>
             </select>
@@ -322,15 +323,15 @@ export default function AdminBannerFormView({ bannerId }: { bannerId?: string })
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Bắt đầu hiện (để trống = hiện ngay)</label>
-            <input type="date" value={form.startsAt} onChange={(event) => updateField("startsAt", event.target.value)} disabled={readOnly} className={inputClass} />
+            <label htmlFor="banner-starts-at" className="mb-1 block text-xs font-semibold text-slate-600">Bắt đầu hiện (để trống = hiện ngay)</label>
+            <input id="banner-starts-at" type="date" value={form.startsAt} onChange={(event) => updateField("startsAt", event.target.value)} disabled={readOnly} className={inputClass} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Ngừng hiện (để trống = không giới hạn)</label>
-            <input type="date" value={form.endsAt} onChange={(event) => updateField("endsAt", event.target.value)} disabled={readOnly} className={inputClass} />
+            <label htmlFor="banner-ends-at" className="mb-1 block text-xs font-semibold text-slate-600">Ngừng hiện (để trống = không giới hạn)</label>
+            <input id="banner-ends-at" type="date" value={form.endsAt} onChange={(event) => updateField("endsAt", event.target.value)} disabled={readOnly} className={inputClass} />
           </div>
         </div>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500">
           Banner chỉ hiện thật trên trang chủ khi vừa ở trạng thái &quot;Đã đăng&quot;, vừa trong khoảng ngày ở trên (nếu có đặt).
         </p>
 

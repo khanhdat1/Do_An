@@ -57,18 +57,18 @@ export default function CheckoutSummary({ cart, discountAmount = 0 }: CheckoutSu
         <div className="flex items-center justify-between gap-3">
           <dt className="text-slate-500">Phí vận chuyển</dt>
           <dd className="font-semibold text-slate-800">
-            {shippingFee === 0 ? <span className="text-emerald-600">Miễn phí</span> : formatPrice(shippingFee)}
+            {shippingFee === 0 ? <span className="text-emerald-700">Miễn phí</span> : formatPrice(shippingFee)}
           </dd>
         </div>
         {shippingFee > 0 ? (
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             Miễn phí vận chuyển cho đơn từ {formatPrice(shipping.freeThreshold)}
           </p>
         ) : null}
         {discountAmount > 0 ? (
           <div className="flex items-center justify-between gap-3">
             <dt className="text-slate-500">Giảm giá</dt>
-            <dd className="font-semibold text-emerald-600">-{formatPrice(discountAmount)}</dd>
+            <dd className="font-semibold text-emerald-700">-{formatPrice(discountAmount)}</dd>
           </div>
         ) : null}
       </dl>

@@ -17,8 +17,8 @@ interface SectionHeadingProps {
 }
 
 const badgeTones = {
-  amber: "bg-gold-400/15 text-gold-600 ring-gold-400/40",
-  green: "bg-emerald-50 text-emerald-600 ring-emerald-200",
+  amber: "bg-gold-400/15 text-gold-800 ring-gold-400/40",
+  green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
 };
 
 /** Tiêu đề chuẩn dùng lại cho mọi section của trang chủ. */
@@ -54,7 +54,7 @@ export default function SectionHeading({
           ) : null}
         </div>
         {subtitle ? (
-          <p className="mt-1.5 text-xs text-slate-500 sm:text-sm">{subtitle}</p>
+          <p className="mt-1.5 text-xs text-slate-600 sm:text-sm">{subtitle}</p>
         ) : null}
       </div>
 

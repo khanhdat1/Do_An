@@ -30,7 +30,7 @@ function Note({
       className={cn(
         "mt-2 flex items-start gap-1.5 rounded-md px-2 py-1.5 text-[11px] font-medium leading-snug",
         tone === "red" && "bg-sale-500/10 text-sale-700",
-        tone === "amber" && "bg-gold-400/15 text-gold-600",
+        tone === "amber" && "bg-gold-400/15 text-gold-800",
         tone === "blue" && "bg-blue-50 text-blue-700",
       )}
     >
@@ -65,8 +65,11 @@ export default function CartItemRow({ item }: CartItemRowProps) {
       className={cn("surface-card p-3 transition-opacity sm:p-4", busy && "opacity-70")}
     >
       <div className="flex gap-3 sm:gap-4">
+        {/* Trùng đích với link tên sản phẩm bên cạnh: ẩn khỏi trình đọc màn hình và phím Tab, chuột vẫn bấm được */}
         <Link
           href={`/san-pham/${item.slug}`}
+          aria-hidden="true"
+          tabIndex={-1}
           className={cn("block w-20 shrink-0 sm:w-24", cannotBuy && "opacity-60 grayscale")}
         >
           <ProductThumb
@@ -95,7 +98,7 @@ export default function CartItemRow({ item }: CartItemRowProps) {
               onClick={() => run(() => removeItem(item.id))}
               disabled={busy}
               aria-label={`Xóa ${item.name} khỏi giỏ hàng`}
-              className="-m-1.5 shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-sale-500/10 hover:text-sale-600 disabled:opacity-50"
+              className="-m-1.5 shrink-0 rounded-lg p-1.5 text-slate-500 transition hover:bg-sale-500/10 hover:text-sale-600 disabled:opacity-50"
             >
               {busy ? <LoaderCircle className="size-4.5 animate-spin" /> : <Trash2 className="size-4.5" />}
             </button>
@@ -107,7 +110,7 @@ export default function CartItemRow({ item }: CartItemRowProps) {
             </span>
             {item.oldPrice ? (
               <>
-                <span className="text-xs text-slate-400 line-through">{formatPrice(item.oldPrice)}</span>
+                <span className="text-xs text-slate-500 line-through">{formatPrice(item.oldPrice)}</span>
                 {discount > 0 ? (
                   <span className="rounded bg-sale-700 px-1.5 py-0.5 text-[10px] font-bold text-white">
                     -{discount}%
@@ -159,7 +162,7 @@ export default function CartItemRow({ item }: CartItemRowProps) {
             <p
               className={cn(
                 "font-display text-lg font-bold",
-                cannotBuy ? "text-slate-400 line-through" : "text-slate-900",
+                cannotBuy ? "text-slate-500 line-through" : "text-slate-900",
               )}
             >
               {formatPrice(item.lineTotal)}

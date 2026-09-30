@@ -57,7 +57,7 @@ function StatCard({
 }) {
   const toneClass: Record<string, string> = {
     brand: "bg-brand-500/10 text-brand-600",
-    green: "bg-emerald-50 text-emerald-600",
+    green: "bg-emerald-50 text-emerald-700",
     amber: "bg-amber-50 text-amber-600",
     blue: "bg-blue-50 text-blue-600",
     slate: "bg-slate-100 text-slate-500",
@@ -74,7 +74,7 @@ function StatCard({
           <p className="truncate text-xl font-bold text-slate-900">{value}</p>
         </div>
       </div>
-      {hint ? <p className="mt-2 text-xs text-slate-400">{hint}</p> : null}
+      {hint ? <p className="mt-2 text-xs text-slate-500">{hint}</p> : null}
     </div>
   );
 }
@@ -224,7 +224,7 @@ export default function AdminDashboardView() {
 
       {state.status === "error" ? (
         <div className="admin-card flex flex-col items-center px-6 py-14 text-center">
-          <CloudOff className="size-8 text-slate-400" />
+          <CloudOff className="size-8 text-slate-500" />
           <p className="mt-3 text-sm text-slate-500">Không tải được số liệu tổng quan. Vui lòng tải lại trang.</p>
         </div>
       ) : null}
@@ -253,21 +253,21 @@ export default function AdminDashboardView() {
               </div>
               <div className="rounded-xl bg-slate-50 p-3">
                 <p className="text-xs text-slate-500">Đã thanh toán</p>
-                <p className="text-lg font-bold text-emerald-600">{formatPrice(state.data.revenue.paidAmount)}</p>
+                <p className="text-lg font-bold text-emerald-700">{formatPrice(state.data.revenue.paidAmount)}</p>
               </div>
               <div className="rounded-xl bg-slate-50 p-3">
                 <p className="text-xs text-slate-500">Đã hoàn</p>
                 <p className="text-lg font-bold text-sale-600">{formatPrice(state.data.revenue.refundedAmount)}</p>
               </div>
               <div className="rounded-xl bg-brand-500/10 p-3">
-                <p className="text-xs text-slate-500">Doanh thu thuần</p>
+                <p className="text-xs text-slate-600">Doanh thu thuần</p>
                 <p className="text-lg font-bold text-brand-600">{formatPrice(state.data.revenue.netRevenue)}</p>
               </div>
             </div>
 
             <div className="mt-4 h-64 w-full">
               {state.data.chart.every((point) => point.netRevenue === 0) ? (
-                <div className="flex h-full items-center justify-center text-sm text-slate-400">Chưa có doanh thu nào trong kỳ này.</div>
+                <div className="flex h-full items-center justify-center text-sm text-slate-500">Chưa có doanh thu nào trong kỳ này.</div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={state.data.chart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -295,7 +295,7 @@ export default function AdminDashboardView() {
             <section className="admin-card p-4 sm:p-5">
               <h2 className="mb-3 text-base font-bold text-slate-900">Sản phẩm bán chạy (trong kỳ)</h2>
               {state.data.bestSellers.length === 0 ? (
-                <p className="py-6 text-center text-sm text-slate-400">Chưa có đơn nào bán ra trong kỳ này.</p>
+                <p className="py-6 text-center text-sm text-slate-500">Chưa có đơn nào bán ra trong kỳ này.</p>
               ) : (
                 <ul className="space-y-3">
                   {state.data.bestSellers.map((product) => (
@@ -318,7 +318,7 @@ export default function AdminDashboardView() {
             <section className="admin-card p-4 sm:p-5">
               <h2 className="mb-3 text-base font-bold text-slate-900">Sắp hết hàng</h2>
               {state.data.lowStock.length === 0 ? (
-                <p className="py-6 text-center text-sm text-slate-400">Không có sản phẩm nào sắp hết hàng.</p>
+                <p className="py-6 text-center text-sm text-slate-500">Không có sản phẩm nào sắp hết hàng.</p>
               ) : (
                 <ul className="space-y-3">
                   {state.data.lowStock.map((product) => (
@@ -328,9 +328,9 @@ export default function AdminDashboardView() {
                       </div>
                       <Link href={`/admin/products/${product.productId}`} className="min-w-0 flex-1">
                         <p className="line-clamp-1 text-sm font-semibold text-slate-800 hover:text-brand-600">{product.name}</p>
-                        <p className="text-xs text-slate-400">Ngưỡng cảnh báo: {product.lowStockThreshold}</p>
+                        <p className="text-xs text-slate-500">Ngưỡng cảnh báo: {product.lowStockThreshold}</p>
                       </Link>
-                      <span className="flex shrink-0 items-center gap-1 rounded-full bg-sale-500/10 px-2.5 py-1 text-xs font-bold text-sale-600">
+                      <span className="flex shrink-0 items-center gap-1 rounded-full bg-sale-500/10 px-2.5 py-1 text-xs font-bold text-sale-700">
                         <TriangleAlert className="size-3.5" />
                         Còn {product.inventoryQuantity}
                       </span>
@@ -344,7 +344,7 @@ export default function AdminDashboardView() {
           <section className="admin-card overflow-x-auto">
             <h2 className="px-4 pt-4 text-base font-bold text-slate-900 sm:px-5 sm:pt-5">Đơn hàng gần đây</h2>
             {state.data.recentOrders.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-slate-400 sm:px-5">Chưa có đơn hàng nào.</p>
+              <p className="px-4 py-8 text-center text-sm text-slate-500 sm:px-5">Chưa có đơn hàng nào.</p>
             ) : (
               <table className="mt-3 w-full min-w-[640px] text-sm">
                 <thead>

@@ -71,7 +71,7 @@ export default function AdminTwoFactorSettings() {
       <div className="flex items-center gap-3">
         <span
           className={`grid size-11 shrink-0 place-items-center rounded-xl ${
-            user.totpEnabled ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"
+            user.totpEnabled ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"
           }`}
         >
           {user.totpEnabled ? <ShieldCheck className="size-5.5" /> : <ShieldOff className="size-5.5" />}

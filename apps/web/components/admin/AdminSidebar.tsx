@@ -75,7 +75,7 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
       <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-2">
         {groups.map((group) => (
           <div key={group.label}>
-            <p className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">{group.label}</p>
+            <p className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">{group.label}</p>
             <div className="space-y-1">
               {group.items.map((item) => {
                 const active = item.exactMatch ? pathname === item.href : pathname === item.href || pathname?.startsWith(`${item.href}/`);

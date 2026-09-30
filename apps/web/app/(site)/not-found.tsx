@@ -5,7 +5,7 @@ export default function NotFound() {
   return (
     <div className="container-page py-16">
       <div className="surface-card mx-auto flex max-w-lg flex-col items-center px-6 py-14 text-center">
-        <span className="grid size-20 place-items-center rounded-full bg-slate-100 text-slate-400">
+        <span className="grid size-20 place-items-center rounded-full bg-slate-100 text-slate-500">
           <Compass className="size-9" />
         </span>
         <p className="mt-5 font-display text-5xl font-extrabold text-brand-500">404</p>

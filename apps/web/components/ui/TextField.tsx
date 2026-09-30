@@ -50,13 +50,13 @@ export default function TextField({
         </label>
         {labelAside ??
           (optional ? (
-            <span className="text-[11px] font-normal text-slate-400">Không bắt buộc</span>
+            <span className="text-[11px] font-normal text-slate-500">Không bắt buộc</span>
           ) : null)}
       </div>
 
       <div className="relative">
         {icon ? (
-          <span className="pointer-events-none absolute inset-y-0 left-3.5 grid place-items-center text-slate-400">
+          <span className="pointer-events-none absolute inset-y-0 left-3.5 grid place-items-center text-slate-500">
             {icon}
           </span>
         ) : null}
@@ -68,7 +68,7 @@ export default function TextField({
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
           className={cn(
-            "h-11 w-full rounded-lg border bg-slate-50 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:bg-white focus:ring-2 disabled:bg-slate-100 disabled:text-slate-500",
+            "h-11 w-full rounded-lg border bg-slate-50 text-sm text-slate-900 outline-none transition placeholder:text-slate-500 focus:bg-white focus:ring-2 disabled:bg-slate-100 disabled:text-slate-500",
             icon ? "pl-10.5" : "pl-3.5",
             trailing ? "pr-11" : "pr-3.5",
             error

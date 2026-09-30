@@ -40,12 +40,15 @@ export const featuredCategories: Category[] = [
   },
 ];
 
-/** Logo hãng ở section "Thương hiệu đồng hành chính hãng" */
+/**
+ * Hãng có sản phẩm đang bán tại PCZone (tìm theo từ khoá đều ra kết quả). Logo lấy từ Wikimedia Commons — public domain,
+ * riêng NVIDIA theo Apache-2.0; tên và logo là nhãn hiệu thuộc sở hữu của từng hãng.
+ */
 export const partnerBrands: Brand[] = [
-  { name: "ASUS ROG", label: "ROG", color: "#e01e37" },
-  { name: "MSI", label: "MSI", color: "#c8102e" },
-  { name: "GIGABYTE", label: "GIGABYTE", color: "#111827" },
-  { name: "Intel", label: "intel", color: "#0068b5" },
-  { name: "AMD", label: "AMD", color: "#111827" },
-  { name: "NVIDIA", label: "NVIDIA", color: "#76b900" },
+  { name: "ASUS ROG", logo: "/images/brands/rog.svg", width: 500, height: 500, query: "ROG" },
+  { name: "MSI", logo: "/images/brands/msi.svg", width: 800, height: 232, query: "MSI" },
+  { name: "GIGABYTE", logo: "/images/brands/gigabyte.svg", width: 626, height: 135, query: "GIGABYTE" },
+  { name: "Intel", logo: "/images/brands/intel.svg", width: 395, height: 156, query: "Intel" },
+  { name: "AMD", logo: "/images/brands/amd.svg", width: 800, height: 191, query: "AMD" },
+  { name: "NVIDIA", logo: "/images/brands/nvidia.svg", width: 656, height: 120, query: "NVIDIA" },
 ];

@@ -20,7 +20,7 @@ export default function PasswordField(props: PasswordFieldProps) {
           onClick={() => setVisible((current) => !current)}
           aria-label={visible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
           aria-pressed={visible}
-          className="grid size-8 place-items-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+          className="grid size-8 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-600"
         >
           {visible ? <EyeOff className="size-4.5" /> : <Eye className="size-4.5" />}
         </button>

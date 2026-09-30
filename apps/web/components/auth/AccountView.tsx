@@ -218,7 +218,7 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-wider text-brand-500">Tài khoản của tôi</p>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">Tài khoản của tôi</p>
         <h1 className="section-title mt-1 text-2xl">Xin chào, {user.fullName}</h1>
       </div>
 
@@ -303,7 +303,7 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
             ) : (
               <dl className="mt-6 divide-y divide-slate-100 text-sm">
                 <div className="flex items-center gap-3 py-3">
-                  <Mail className="size-4.5 shrink-0 text-slate-400" />
+                  <Mail className="size-4.5 shrink-0 text-slate-500" />
                   <dt className="w-28 shrink-0 text-slate-500">Email</dt>
                   <dd className="flex min-w-0 items-center gap-2 font-medium text-slate-800">
                     <span className="truncate">{user.email}</span>
@@ -316,12 +316,12 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
                   </dd>
                 </div>
                 <div className="flex items-center gap-3 py-3">
-                  <Phone className="size-4.5 shrink-0 text-slate-400" />
+                  <Phone className="size-4.5 shrink-0 text-slate-500" />
                   <dt className="w-28 shrink-0 text-slate-500">Số điện thoại</dt>
                   <dd className="font-medium text-slate-800">{user.phone ?? "Chưa cập nhật"}</dd>
                 </div>
                 <div className="flex items-center gap-3 py-3">
-                  <Shield className="size-4.5 shrink-0 text-slate-400" />
+                  <Shield className="size-4.5 shrink-0 text-slate-500" />
                   <dt className="w-28 shrink-0 text-slate-500">Loại tài khoản</dt>
                   <dd className="font-medium text-slate-800">{ROLE_LABEL[user.role]}</dd>
                 </div>
@@ -435,7 +435,7 @@ export default function AccountView({ notice: initialNotice = null }: AccountVie
                           <button
                             type="button"
                             onClick={() => setUnlinkPending(key)}
-                            className="inline-flex size-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-sale-500/10 hover:text-sale-600"
+                            className="inline-flex size-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-sale-500/10 hover:text-sale-600"
                             aria-label={`Huỷ liên kết ${label}`}
                           >
                             <Unlink className="size-3.5" />

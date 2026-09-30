@@ -30,7 +30,7 @@ export default function VoucherCard({ voucher }: { voucher: Voucher }) {
   return (
     <div className="surface-card flex flex-col gap-3 p-4">
       <div className="flex items-start justify-between gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gold-400/15 text-gold-600">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gold-400/15 text-gold-800">
           <Ticket className="size-5" />
         </span>
         <button

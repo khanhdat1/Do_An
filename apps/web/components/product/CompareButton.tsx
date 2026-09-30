@@ -37,7 +37,7 @@ export default function CompareButton({ slug, name, variant = "overlay", classNa
         aria-label={label}
         className={cn(
           "flex size-12 shrink-0 items-center justify-center rounded-xl border transition",
-          active ? "border-brand-300 bg-brand-500/10 text-brand-600" : "border-slate-200 bg-white text-slate-400 hover:text-brand-500",
+          active ? "border-brand-300 bg-brand-500/10 text-brand-600" : "border-slate-200 bg-white text-slate-500 hover:text-brand-500",
           className,
         )}
       >
@@ -53,7 +53,7 @@ export default function CompareButton({ slug, name, variant = "overlay", classNa
       aria-pressed={active}
       aria-label={label}
       className={cn(
-        "absolute right-2 top-11 z-10 grid size-8 place-items-center rounded-full bg-white/90 text-slate-400 shadow-sm ring-1 ring-slate-900/5 backdrop-blur transition hover:text-brand-500",
+        "absolute right-2 top-11 z-10 grid size-8 place-items-center rounded-full bg-white/90 text-slate-500 shadow-sm ring-1 ring-slate-900/5 backdrop-blur transition hover:text-brand-500",
         active && "text-brand-600",
         className,
       )}

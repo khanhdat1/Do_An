@@ -198,6 +198,11 @@ internet, khoảng 1 phút; lần chạy sau tự bỏ qua sản phẩm đã có
 > Bản quyền ảnh thuộc về các hãng; dự án dùng cho mục đích học tập / demo. Bán hàng thật thì
 > phải thay bằng ảnh có giấy phép của nhà phân phối. Ảnh Unsplash dùng theo giấy phép Unsplash.
 
+> Logo hãng ở dải "Thương hiệu có tại PCZone" trên trang chủ (`apps/web/public/images/brands/`, SVG) lấy từ
+> Wikimedia Commons: ROG, MSI, GIGABYTE, Intel, AMD thuộc phạm vi công cộng, NVIDIA theo giấy phép Apache-2.0. Tên và
+> logo là nhãn hiệu của từng hãng, chỉ dùng để nhận diện hàng đang bán; trang không ghi "đối tác" hay "ủy quyền" vì
+> PCZone không có hợp đồng nào với các hãng này.
+
 ### Dữ liệu demo (~420 sản phẩm)
 
 Để trang danh mục có nhiều thứ để lọc, sắp xếp và phân trang, dự án kèm ~420 sản phẩm thật ở 18 danh mục
@@ -313,7 +318,7 @@ Hai tầng kiểm thử:
 | `admin-settings.spec.ts` | Đổi phí vận chuyển và ngưỡng miễn phí ở `/admin/settings` → giỏ hàng của khách áp dụng ngay; máy chủ không cho tắt phương thức thanh toán cuối cùng còn dùng được (hotline ở đầu/chân trang không kiểm ở đây vì có bộ nhớ đệm ~1 phút, như trang Cài đặt đã ghi) |
 | `build-pc.spec.ts` | Không có khoá AI thì báo "AI gợi ý cấu hình đang tạm tắt"; tự chọn linh kiện vẫn chạy, tổng tiền đúng |
 | `security.spec.ts` | Trang `/admin/*` đòi đăng nhập quản trị; API quản trị từ chối cả khách vãng lai lẫn phiên đăng nhập của khách hàng; khách không xem được đơn của người khác; tải lên file không phải ảnh (dù tự khai `image/png`) bị từ chối |
-| `accessibility.spec.ts` | axe-core theo WCAG 2.1 A/AA trên 12 trang chính + 4 trang chính sách: không lỗi cấu trúc (nhãn, chữ thay thế ảnh, ARIA, tên nút...); trang chính sách đạt cả độ tương phản; số lỗi tương phản màu còn lại ở các trang khác được ghi vào báo cáo (xem mục 13); không trang nào tràn ngang ở màn hình 375px |
+| `accessibility.spec.ts` | axe-core theo WCAG 2.1 A/AA, **gồm cả độ tương phản màu 4.5:1**, không được có lỗi mức nghiêm trọng nào: 19 trang khách vãng lai (cửa hàng, tìm kiếm, AI, 4 trang chính sách, đăng nhập quản trị); 7 trang của khách đã đăng nhập (tài khoản, đơn hàng, cấu hình đã lưu, yêu thích, giỏ hàng, thanh toán, chi tiết đơn vừa đặt); toàn bộ khu quản trị (danh sách, biểu mẫu thêm mới, trang sửa/chi tiết sản phẩm – khách hàng – mã giảm giá – tài khoản, chi tiết đơn và phiếu in, cài đặt, 2FA); không trang nào tràn ngang ở màn hình 375px |
 | `seo-headers.spec.ts` | `robots.txt` chặn trang quản trị/trang riêng và trỏ tới sitemap; `sitemap.xml` liệt kê sản phẩm, danh mục, trang chính sách bằng địa chỉ tuyệt đối; header chống clickjacking/đoán kiểu nội dung, không lộ `X-Powered-By`; thẻ Open Graph của trang sản phẩm |
 
 ## 5. Danh sách API hiện có
@@ -1210,7 +1215,7 @@ quảng cáo "PCPoints" ở trang đăng nhập cũng đã gỡ.
 - [x] **Đóng gói triển khai** (mục 14): Docker Compose trên một máy chủ (MySQL + API + web + Caddy tự cấp HTTPS), script chuyển dữ liệu từ máy dev, đã chạy thử trọn quy trình trên máy dev
 - [x] **Trang chính sách** (`/chinh-sach-bao-mat` — có mục `#xoa-du-lieu` dùng làm "hướng dẫn xoá dữ liệu" khi khai app Facebook, `/dieu-khoan-su-dung`, `/chinh-sach-doi-tra-bao-hanh`, `/chinh-sach-van-chuyen-thanh-toan`): mô tả đúng những gì hệ thống đang làm (dữ liệu thu thập, dịch vụ bên ngoài, cookie, cách huỷ/hoàn đơn); phí vận chuyển, hotline, email, phương thức thanh toán lấy thẳng từ Cài đặt hệ thống. Thời hạn đổi trả và thời gian giao là quyết định kinh doanh chưa chốt nên chưa ghi con số
 - [x] **Rà soát trước khi lên mạng**: `robots.txt` + `sitemap.xml` + Open Graph cho trang sản phẩm, header bảo mật cho web (chống clickjacking, nosniff, Referrer-Policy, Permissions-Policy, bỏ `X-Powered-By`) và HSTS ở Caddy, kiểm tra chữ ký file ảnh tải lên (không tin kiểu MIME tự khai), kiểm thử khả năng truy cập bằng axe-core. Phân quyền API, chống chuyển hướng mở, không lộ chi tiết lỗi ở production đã có từ trước và được rà lại
-- [ ] **Độ tương phản màu** (WCAG AA 4.5:1) ở các trang cũ: nút cam chữ trắng (2.8:1), link cam (3.6:1) và chữ xám nhạt (2.6:1) — sửa triệt để là đổi màu nhận diện (cam đậm hơn hoặc chữ tối trên nút), chờ quyết định; số lỗi còn lại từng trang có trong báo cáo `accessibility.spec.ts`
+- [x] **Độ tương phản màu** (WCAG AA 4.5:1) trên mọi trang: đổi màu nhận diện sang cam đậm chữ trắng (`--color-brand-500` `#c2410c`, nút 5.2:1), chữ xám trên nền sáng đậm hơn một bậc, thêm nhãn cho ô nhập ở biểu mẫu quản trị; `accessibility.spec.ts` chặn mọi lỗi tương phản/cấu trúc ở trang khách, trang tài khoản và toàn bộ khu quản trị
 - [ ] Đưa lên VPS thật — cần máy chủ và tên miền (mục 14)
 - [x] Chuyển khoản ngân hàng (QR VietQR tự điền số tiền/nội dung) và ví MoMo (số điện thoại) làm thủ công, không qua cổng — xác nhận tay ở `/admin/orders` (mục 9, 11)
 - [ ] Cổng thanh toán thật cho thẻ quốc tế / trả góp (MoMo Business API, OnePay...) — mỗi cổng cần tự đăng ký tài khoản sandbox riêng như VNPay; thẻ ATM/Visa/Master nội địa đã dùng được ngay qua VNPay (mục 9)

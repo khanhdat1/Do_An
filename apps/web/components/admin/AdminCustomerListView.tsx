@@ -124,6 +124,7 @@ export default function AdminCustomerListView() {
 
         <select
           value={lockFilter}
+          aria-label="Lọc theo trạng thái tài khoản"
           onChange={(event) => changeLockFilter(event.target.value as LockFilter)}
           className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-sm font-medium text-slate-700 outline-none focus:border-brand-500 focus:bg-white"
         >
@@ -152,14 +153,14 @@ export default function AdminCustomerListView() {
 
       {state.status === "error" ? (
         <div className="admin-card flex flex-col items-center px-6 py-14 text-center">
-          <CloudOff className="size-8 text-slate-400" />
+          <CloudOff className="size-8 text-slate-500" />
           <p className="mt-3 text-sm text-slate-500">Không tải được danh sách khách hàng. Vui lòng tải lại trang.</p>
         </div>
       ) : null}
 
       {state.status === "ready" && state.data.items.length === 0 ? (
         <div className="admin-card flex flex-col items-center px-6 py-14 text-center">
-          <span className="grid size-16 place-items-center rounded-full bg-slate-100 text-slate-400">
+          <span className="grid size-16 place-items-center rounded-full bg-slate-100 text-slate-500">
             <Users className="size-8" />
           </span>
           <h2 className="mt-4 text-lg font-bold text-slate-800">Không tìm thấy khách hàng nào</h2>

@@ -39,7 +39,7 @@ export default function ChatComposer({ disabled, onSend }: ChatComposerProps) {
           rows={1}
           placeholder="Nhập câu hỏi cho trợ lý AI..."
           aria-label="Câu hỏi cho trợ lý AI"
-          className="min-h-10 max-h-40 min-w-0 flex-1 resize-none bg-transparent px-2 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 disabled:opacity-60"
+          className="min-h-10 max-h-40 min-w-0 flex-1 resize-none bg-transparent px-2 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-500 disabled:opacity-60"
         />
         <button
           type="button"
@@ -51,7 +51,7 @@ export default function ChatComposer({ disabled, onSend }: ChatComposerProps) {
           <Send className="size-3.5" />
         </button>
       </div>
-      <p className="mt-1.5 text-right text-[11px] text-slate-400">
+      <p className="mt-1.5 text-right text-[11px] text-slate-500">
         {value.length}/{MAX_LENGTH}
       </p>
     </div>

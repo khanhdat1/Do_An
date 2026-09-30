@@ -7,7 +7,6 @@ import FeaturedProducts from "@/components/home/FeaturedProducts";
 import BestSellers from "@/components/home/BestSellers";
 import AiAdvisorSection from "@/components/home/AiAdvisorSection";
 import AiBuildSection from "@/components/home/AiBuildSection";
-import CommunityBar from "@/components/home/CommunityBar";
 import BrandStrip from "@/components/home/BrandStrip";
 
 /**
@@ -26,7 +25,6 @@ export default function HomePage() {
       <BestSellers />
       <AiAdvisorSection />
       <AiBuildSection />
-      <CommunityBar />
       <BrandStrip />
     </>
   );

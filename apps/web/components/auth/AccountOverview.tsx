@@ -99,7 +99,7 @@ export default function AccountOverview({ userId, cartCount }: { userId: string;
           </div>
         ) : (
           <p className="surface-card flex items-center gap-2 p-4 text-sm text-slate-500">
-            <CloudOff className="size-4.5 shrink-0 text-slate-400" aria-hidden />
+            <CloudOff className="size-4.5 shrink-0 text-slate-500" aria-hidden />
             Không tải được số liệu tài khoản. Vui lòng tải lại trang.
           </p>
         )}
@@ -170,7 +170,7 @@ export default function AccountOverview({ userId, cartCount }: { userId: string;
             <Icon className="size-4.5 shrink-0 text-brand-500" aria-hidden />
             <span className="min-w-0 truncate">
               {label}
-              {href === "/gio-hang" && cartCount > 0 ? <span className="ml-1 text-xs text-slate-400">({cartCount})</span> : null}
+              {href === "/gio-hang" && cartCount > 0 ? <span className="ml-1 text-xs text-slate-500">({cartCount})</span> : null}
             </span>
           </Link>
         ))}
