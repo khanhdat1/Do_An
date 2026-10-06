@@ -1,6 +1,6 @@
 # PCZone — Ngữ cảnh dự án cho các phiên làm việc tiếp theo
 
-Cập nhật: 30/09/2026 (Asia/Bangkok), lần 2 — sau đợt đổi màu nhận diện, logo hãng, kiểm thử truy cập toàn bộ trang (`aed0d37`) và báo cáo Word phần kỹ thuật (commit kế sau `aed0d37`). Lần 1 cùng ngày tại `cc0f97a`; bản trước nữa: 23/09/2026 tại `471d1b0`.
+Cập nhật: 06/10/2026 (Asia/Bangkok), lần 3 — sau báo cáo Word đầy đủ (`a5faa56`): rà soát lỗ hổng thư viện, nâng Next.js lên 16.3.8, sửa một dòng README sai về VNPay. Lần 2: 30/09/2026 (đổi màu nhận diện, logo hãng, kiểm thử truy cập toàn bộ trang `aed0d37`, nút thu tiền COD `5d3fc76`, báo cáo Word); lần 1 cùng ngày tại `cc0f97a`; bản trước nữa: 23/09/2026 tại `471d1b0`.
 
 ## 1. Mục đích và phạm vi ghi nhận
 
@@ -83,6 +83,7 @@ Mức kiểm chứng: **E2E** = có kịch bản Playwright đang đạt; **ch�
 3. Email tới khách thật cần xác minh tên miền trên Resend (`onboarding@resend.dev` chỉ gửi được tới chủ tài khoản Resend).
 4. Chưa có nút tự xoá tài khoản (chính sách hướng dẫn gửi email hỗ trợ); thời hạn đổi trả và thời gian giao chưa có con số; số serial/IMEI, biên bản kiểm tra máy mới là chỗ giữ "Sắp ra mắt".
 5. Cổng thanh toán thẻ quốc tế/trả góp; kiểm tra xung đột khi hai người cùng lưu Cài đặt (hiện người lưu sau thắng).
+6. `npm audit --omit=dev` còn 5 cảnh báo ở thư viện chạy thật chưa có bản vá không phá vỡ: chuỗi `prisma` → `@prisma/config` → `deepmerge-ts` (chỉ chạy trong Prisma CLI) và `exceljs` → `uuid` (chỉ gọi `v4()` không truyền bộ đệm). Đã đối chiếu mã, không chạm đường bị lỗi (README mục 13). Cách "sửa" `npm audit` gợi ý (hạ `prisma`/`exceljs`/`eslint-config-next` về bản cũ) là vô nghĩa — không làm theo. Chạy lại `npm audit --omit=dev` trước khi lên VPS thật.
 
 ## 7. Quyết định đã chốt
 
@@ -95,7 +96,7 @@ Mức kiểm chứng: **E2E** = có kịch bản Playwright đang đạt; **ch�
 - 30/09: đơn COD ghi nhận đã thu tiền bằng **nút xác nhận tay** (không tự đánh dấu khi giao xong); ảnh banner tải lên lúc chạy **không commit** (`.gitignore`).
 - Quy trình: người dùng cho phép tự push lên GitHub (`khanhdat1/Do_An`) khi xong việc; commit theo đường dẫn cụ thể, quét bí mật trước khi push; không commit `.env` hay ảnh banner người dùng tải lên nếu chưa hỏi. Repo công khai: không đưa đường dẫn máy riêng, khoá, mật khẩu vào tài liệu.
 
-## 8. Lịch sử 23/09 → 30/09
+## 8. Lịch sử 23/09 → 06/10
 
 - 23–24/09: Admin Dashboard 6 đợt (đăng nhập/RBAC/2FA/nhật ký, vòng đời đơn, sản phẩm + kho, dashboard doanh thu, khách hàng, mã giảm giá, banner), xuất Excel 4 danh sách, tài khoản quản trị khác; tài khoản khách: quên mật khẩu, sửa hồ sơ, huỷ liên kết, xác minh email.
 - 24–25/09: AI Search thật, AI Chat stream + trích dẫn thật (Gemini, `gemini-3.1-flash-lite`).
@@ -105,7 +106,8 @@ Mức kiểm chứng: **E2E** = có kịch bản Playwright đang đạt; **ch�
 - 30/09 (chiều): đổi màu nhận diện sang cam đậm + sửa mọi lỗi tương phản/nhãn ô nhập ở trang khách, tài khoản và quản trị (E2E 56/56, kiểm tra truy cập chặt ở mọi trang); logo hãng thật ở trang chủ; gỡ khối "cộng đồng" và các câu bịa ở mục bán chạy.
 - 30/09 (chiều, tiếp): báo cáo Word phần kỹ thuật `docs/bao-ve/bao-cao-do-an-pczone.docx` (Chương 3–5 + tài liệu tham khảo + phụ lục API/triển khai, 80 trang, 42 hình, ảnh chụp thật); sửa 2 sơ đồ lệch mã (máy trạng thái thêm Đang giao → Đã hoàn trả; trợ lý AI lấy 8 ứng viên, khung SSE `chunk`); `render-diagrams.cjs` nhận mã sơ đồ để vẽ lại riêng từng hình.
 - 30/09 (tối): nút "Xác nhận đã thu tiền COD" cho đơn COD đang giao/đã giao (quy tắc `manualPaymentBlockReason`, +11 kiểm thử đơn vị, E2E vòng đời đơn có bước thu tiền; doanh thu tổng quan đã tính đơn COD); ảnh banner tải lên lúc chạy vào `.gitignore`. Báo cáo Word thêm Chương 1–2 và Kết luận, cập nhật theo phần COD và chụp lại ảnh quản trị (trang tổng quan có doanh thu từ đơn COD đã ghi nhận).
-- Trước khi tiếp tục: đọc `git status`/`git log` sau mốc `aed0d37`; có thể có một phiên chat khác làm song song trên cùng repo — kiểm tra trước khi commit.
+- 06/10: rà soát `npm audit` — nâng Next.js 16.3.5 → 16.3.8 (vá lỗi thực thi mã từ xa ở `ImageResponse` của `next/og`; dự án không dùng `next/og`) và `source-map-js` 1.2.2, kiểm thử lại đủ (lint, kiểm tra kiểu, 465 đơn vị, 56 đầu-cuối). Sửa dòng README nói VNPay "đã dùng được" (sai: VNPay chưa chạy thật, đang tắt).
+- Trước khi tiếp tục: đọc `git status`/`git log` sau mốc `a5faa56`; có thể có một phiên chat khác làm song song trên cùng repo — kiểm tra trước khi commit.
 
 ## 9. Tài liệu nên đọc cùng
 
