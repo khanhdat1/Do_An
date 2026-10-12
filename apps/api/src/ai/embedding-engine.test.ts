@@ -44,5 +44,29 @@ console.log("\n[2] rankBySimilarity");
   check("limit vẫn giữ đúng 2 kết quả tốt nhất", limited.map((r) => r.productId), ["giong-het", "gan-giong"]);
 }
 
+console.log("\n[3] Lọc theo tập cho phép (vd đúng khoảng giá) TRƯỚC khi lấy top-k");
+{
+  // Hai sản phẩm gần nghĩa nhất đều ngoài khoảng giá, sản phẩm đúng giá chỉ xếp thứ ba
+  const docs = [
+    { productId: "dat-1", vector: [1, 0, 0] },
+    { productId: "dat-2", vector: [0.95, 0.05, 0] },
+    { productId: "vua-gia", vector: [0.8, 0.2, 0] },
+    { productId: "vua-gia-xa-nghia", vector: [0, 1, 0] },
+  ];
+  const inRange = new Set(["vua-gia", "vua-gia-xa-nghia"]);
+  check(
+    "lọc SAU top-2 -> mất trắng sản phẩm đúng giá",
+    rankBySimilarity([1, 0, 0], docs, 2).filter((r) => inRange.has(r.productId)),
+    [],
+  );
+  check(
+    "lọc TRƯỚC top-2 -> giữ được sản phẩm đúng giá, vẫn xếp theo độ giống",
+    rankBySimilarity([1, 0, 0], docs, 2, inRange).map((r) => r.productId),
+    ["vua-gia", "vua-gia-xa-nghia"],
+  );
+  check("không truyền tập cho phép -> giữ nguyên cách xếp cũ", rankBySimilarity([1, 0, 0], docs, 2).map((r) => r.productId), ["dat-1", "dat-2"]);
+  check("tập cho phép rỗng -> không có kết quả", rankBySimilarity([1, 0, 0], docs, 2, new Set()), []);
+}
+
 console.log(`\n===== ${passed} pass / ${failed} fail =====`);
 if (failed > 0) process.exit(1);

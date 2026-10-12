@@ -14,6 +14,11 @@ import { fold } from "./text.js";
 export interface PriceIntent {
   min?: number;
   max?: number;
+  /**
+   * Đúng con số khách nêu khi câu chỉ có một mức ("khoảng 15 triệu", "15tr"): bộ lọc tìm kiếm nới ±20% quanh mức này
+   * (min/max ở trên), còn ngân sách để kiểm tra cấu hình PC thì lấy đúng mức này (ai/build-suggestion.ts)
+   */
+  target?: number;
   /** Nhãn hiện cho người dùng: "Dưới 30 triệu", "Từ 10 triệu đến 20 triệu" */
   label: string;
   /** Phần câu tìm kiếm còn lại sau khi cắt cụm giá (giữ nguyên dấu, đã gọn khoảng trắng) */
@@ -53,7 +58,7 @@ export function formatMoneyLabel(value: number): string {
 /** Làm tròn đến nghìn: khoảng quanh 15 triệu → 12.000.000 – 18.000.000, không lẻ tới từng đồng */
 const roundThousand = (value: number) => Math.round(value / 1_000) * 1_000;
 
-type Built = { min?: number; max?: number; label: string } | null;
+type Built = { min?: number; max?: number; target?: number; label: string } | null;
 
 interface Rule {
   pattern: RegExp;
@@ -110,7 +115,7 @@ const RULES: Rule[] = [
     build: (m) => {
       const centre = amount(m[1], m[2]);
       if (centre === null) return null;
-      return { min: roundThousand(centre * 0.8), max: roundThousand(centre * 1.2), label: `Khoảng ${formatMoneyLabel(centre)}` };
+      return { min: roundThousand(centre * 0.8), max: roundThousand(centre * 1.2), target: centre, label: `Khoảng ${formatMoneyLabel(centre)}` };
     },
   },
   // "15 triệu", "15tr" đứng một mình: ngân sách quanh mức đó. Chỉ triệu/tr, không nhận "k" vì "4k" là độ phân giải
@@ -119,7 +124,7 @@ const RULES: Rule[] = [
     build: (m) => {
       const centre = amount(m[1], m[2]);
       if (centre === null) return null;
-      return { min: roundThousand(centre * 0.8), max: roundThousand(centre * 1.2), label: `Khoảng ${formatMoneyLabel(centre)}` };
+      return { min: roundThousand(centre * 0.8), max: roundThousand(centre * 1.2), target: centre, label: `Khoảng ${formatMoneyLabel(centre)}` };
     },
   },
 ];

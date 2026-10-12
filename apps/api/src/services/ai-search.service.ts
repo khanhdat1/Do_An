@@ -1,6 +1,8 @@
 import { prisma } from "@pczone/db";
+import { isConfigured } from "../ai/openai-client.js";
 import { retrieveProducts } from "../ai/retrieval.js";
 import { productInclude, toProductDto } from "../mappers/product.mapper.js";
+import { parsePriceIntent, type PriceIntent } from "../search/price-intent.js";
 import type { AiSearchResultDto } from "../types/dto.js";
 import { PUBLIC_FILTER } from "./product.service.js";
 import { isAiFeatureEnabled } from "./settings.service.js";
@@ -18,6 +20,15 @@ async function loadProducts(ids: string[]) {
   });
 }
 
+/** Id các sản phẩm đang bán nằm trong khoảng giá khách nêu — để AI chỉ xếp hạng trong tập này */
+async function productIdsInPriceRange(intent: PriceIntent): Promise<Set<string>> {
+  const rows = await prisma.product.findMany({
+    where: { ...PUBLIC_FILTER, sellingPrice: { gte: intent.min, lte: intent.max } },
+    select: { id: true },
+  });
+  return new Set(rows.map((row) => row.id));
+}
+
 /**
  * Tìm kiếm ngữ nghĩa bằng embedding. Trả `usedAi: false` (không phải lỗi) khi chưa cấu hình OpenAI
  * hoặc không có kết quả đủ liên quan — trang gọi tự lùi về `/api/search` (từ khoá) một cách êm ái,
@@ -32,7 +43,11 @@ export async function aiSearchProducts(query: string): Promise<AiSearchResultDto
     return { items: [], query: trimmed, usedAi: false };
   }
 
-  const { products, priceIntent } = await retrieveProducts(trimmed, { limit: RESULT_LIMIT });
+  // Có cụm giá thì lọc theo giá TRƯỚC khi lấy top-k: lọc sau sẽ ra rỗng khi cả RESULT_LIMIT kết quả gần nghĩa nhất đều
+  // ngoài khoảng giá, dù kho có hàng phù hợp. Chưa cấu hình AI thì khỏi đọc DB vì retrieveProducts trả rỗng ngay
+  const intent = parsePriceIntent(trimmed);
+  const allowedProductIds = intent && isConfigured() ? await productIdsInPriceRange(intent) : undefined;
+  const { products, priceIntent } = await retrieveProducts(trimmed, { limit: RESULT_LIMIT, allowedProductIds });
 
   if (products.length === 0) {
     return { items: [], query: trimmed, usedAi: false };
@@ -40,6 +55,7 @@ export async function aiSearchProducts(query: string): Promise<AiSearchResultDto
 
   let items = await loadProducts(products.map((item) => item.productId));
 
+  // Lọc lại theo giá vừa đọc: giá có thể đổi giữa lần lọc trước top-k và lúc này
   if (priceIntent) {
     items = items.filter((item) => (priceIntent.min === undefined || item.price >= priceIntent.min) && (priceIntent.max === undefined || item.price <= priceIntent.max));
   }

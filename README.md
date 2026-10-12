@@ -527,6 +527,9 @@ bộ máy từ khoá ở trên, vốn chỉ khớp được đúng chữ (có s�
   được dùng thế nào.
 - Trang kết quả AI (`/tim-kiem?q=...&mode=ai`) đơn giản hơn hẳn trang tìm từ khoá: chỉ một lưới sản phẩm kèm dấu hiệu
   "gợi ý bởi AI", không facets/phân trang (không hợp với một danh sách top-20 theo độ liên quan ngữ nghĩa).
+- **Câu có mức giá ("card màn hình dưới 15 triệu") lọc theo giá TRƯỚC khi lấy top-20**: chỉ xếp hạng ngữ nghĩa trong các
+  sản phẩm đang bán đúng khoảng giá. Lọc sau top-20 thì ra rỗng (và lùi về từ khoá) mỗi khi 20 sản phẩm gần nghĩa nhất
+  đều ngoài khoảng giá, dù kho có hàng phù hợp.
 - Lấy khoá Gemini miễn phí tại [aistudio.google.com](https://aistudio.google.com) (mục "Get API key", dùng tài khoản
   Google có sẵn) rồi điền `OPENAI_API_KEY` vào `.env`. Tên model (`OPENAI_CHAT_MODEL`/`OPENAI_EMBEDDING_MODEL`) để
   biến môi trường, có mặc định sẵn nhưng nên xác nhận lại tên model hiện có trên tài khoản trước khi dùng thật — các
@@ -585,6 +588,11 @@ kiểm tra lại** → nạp vào màn hình Build PC để khách xem, sửa, t
 - **Tổng tiền và kết luận tương thích luôn do hệ thống tính**, không lấy lời AI. Phần giải thích từng món do AI viết và
   được ghi rõ như vậy; prompt cấm AI nêu số FPS/benchmark hay tự cộng tiền. Trang hiện "AI hiểu: ngân sách … · nhu cầu …"
   để khách tự kiểm tra AI có hiểu đúng không.
+- **Ngân sách để kiểm tra cũng do hệ thống đọc**, không lấy con số AI tự khai (`promptBudget` trong
+  `apps/api/src/ai/build-suggestion.ts`): đọc từ chính câu của khách bằng bộ đọc giá của tìm kiếm — "tầm 25 triệu" là
+  đúng 25 triệu, "dưới 25 triệu" hay "từ 20 đến 25 triệu" là 25 triệu. Chỉ khi câu không nêu giá hoặc chỉ nêu cận dưới
+  ("trên 20 triệu") mới dùng con số AI đọc được. Nhờ vậy AI đọc nhầm ngân sách cũng không làm bước kiểm tra vượt ngân
+  sách, lượt sửa và bước tự điều chỉnh kiểm theo con số sai.
 - Mỗi lượt gợi ý tốn 1 lượt chat Gemini (+1 nếu phải sửa). AI chưa cấu hình hoặc hết quota → báo lỗi rõ, phần tự chọn
   linh kiện bên dưới vẫn dùng bình thường.
 

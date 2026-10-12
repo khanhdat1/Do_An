@@ -9,8 +9,10 @@ import {
   formatCatalog,
   parseSuggestion,
   minimumBuildTotal,
+  promptBudget,
   statedBudget,
   suggestionName,
+  withPromptBudget,
   type ParsedSuggestion,
 } from "./build-suggestion.js";
 
@@ -188,6 +190,28 @@ console.log("\n[6] Thứ tự giữ lại khi hệ thống tự hạ cấp cho v
     }),
     true,
   );
+}
+
+console.log("\n[7] Ngân sách để kiểm tra lấy từ câu của khách, không lấy con số AI tự khai");
+{
+  check("'tầm 25 triệu' -> đúng 25 triệu, không lấy cận trên 30 triệu của bộ lọc tìm kiếm", promptBudget("PC chơi game tầm 25 triệu"), 25_000_000);
+  check("'5 triệu' đứng một mình -> 5 triệu (chặn sớm vẫn dùng 6 triệu)", promptBudget("PC 5 triệu chơi game"), 5_000_000);
+  check("'dưới 8 triệu' -> 8 triệu", promptBudget("build pc dưới 8tr để học"), 8_000_000);
+  check("'từ 20 đến 25 triệu' -> 25 triệu", promptBudget("PC từ 20 đến 25 triệu"), 25_000_000);
+  check("chỉ có cận dưới 'trên 20 triệu' -> null, dùng con số AI đọc", promptBudget("PC gaming trên 20 triệu"), null);
+  check("không nêu ngân sách -> null", promptBudget("PC chơi game đẹp"), null);
+  check("dưới mức ngân sách tối thiểu hợp lệ -> null", promptBudget("PC dưới 500k"), null);
+
+  // AI đọc nhầm "20 triệu" thành 30 triệu: trước đây bộ 21,5 triệu được coi là trong ngân sách, không ai bắt lỗi
+  const misread = suggestion({ budget: 30_000_000 });
+  const overBudget = result({ totalPrice: 21_500_000 });
+  check("tin con số AI đọc nhầm -> bỏ lọt cấu hình vượt ngân sách", findRepairIssues(misread, overBudget, catalog).length, 0);
+  check(
+    "thay bằng ngân sách đọc từ câu của khách -> báo vượt ngân sách 20 triệu",
+    findRepairIssues(withPromptBudget(misread, promptBudget("PC chơi game 20 triệu")), overBudget, catalog)[0]?.startsWith("Tổng giá 21.500.000đ vượt ngân sách 20.000.000đ"),
+    true,
+  );
+  check("câu không nêu giá -> giữ con số AI đọc", withPromptBudget(misread, null).budget, 30_000_000);
 }
 
 console.log(`\n===== ${passed} pass / ${failed} fail =====`);
