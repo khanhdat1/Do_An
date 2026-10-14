@@ -5,7 +5,7 @@ import { publicImages } from "../mappers/product.mapper.js";
 import { ConflictError, NotFoundError } from "../middleware/errors.js";
 import type { CreateOrderResultDto, OrderDto, OrderGroupDto, Paginated, OrderSummaryDto, ShippingSettingsDto } from "../types/dto.js";
 import { generateOrderCode } from "../utils/order-code.js";
-import { isUniqueViolation } from "../utils/prisma-errors.js";
+import { isUniqueViolation, retryOnTransactionConflict } from "../utils/prisma-errors.js";
 import { calcShippingFee } from "../utils/shipping.js";
 import { ORDER_GROUP_STATUSES } from "./account.service.js";
 import { createAddress, type AddressInput } from "./address.service.js";
@@ -231,7 +231,9 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   const settings = await getSettings();
   assertPaymentMethodEnabled(settings.payments, input.paymentMethod);
 
-  const { orderId, payUrl } = await runCreateOrder(input, settings.shipping);
+  // Nhiều khách đặt cùng lúc có thể cùng sinh một `orderCode` (mã theo số đơn trong ngày) → InnoDB báo deadlock (P2034)
+  // và huỷ cả transaction. Chạy lại từ đầu: lượt sau đọc lại giỏ + tồn kho, ai hết hàng sẽ nhận 409 như thiết kế thay vì 500
+  const { orderId, payUrl } = await retryOnTransactionConflict(() => runCreateOrder(input, settings.shipping));
   const row = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: orderInclude });
   return { order: toOrderDto(row), payUrl };
 }
