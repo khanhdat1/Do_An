@@ -1,0 +1,55 @@
+﻿Chay tu 05:05:17 13/10/2026 den 05:10:12 13/10/2026 (gio may), API http://localhost:4000
+So cau co loi (xem cot "loi"): 1. Tong so lan phai thu lai do han muc/dich vu AI ban: 0
+p95 tinh theo hang gan nhat; voi n nho (10-20), p95 gan bang hoac bang gia tri lon nhat.
+
+TIM KIEM: 20 cau, 19 cau co ky_vong va khong loi
+  Hit@5       AI 16/19   | tu khoa 11/19
+  Precision@5 AI 0.66   | tu khoa 0.41   (trung binh, P@5 = so ket qua dung trong 5 dau / 5)
+  Do tre AI     : TB 1044 ms, p95 1717 ms (n = 20, max 1923 ms)
+  Do tre tu khoa: TB 15 ms, p95 28 ms (n = 20, max 29 ms)
+  AI khong tra ket qua (usedAi = 0): 1 — T02 (xem log API luc do: loi goi AI hay that su khong co ket qua)
+  - nhom "nhu-cau" (7 cau): Hit@5 AI 6/7, tu khoa 3/7; P@5 AI 0.71, tu khoa 0.14
+  - nhom "rang-buoc" (7 cau): Hit@5 AI 5/7, tu khoa 5/7; P@5 AI 0.46, tu khoa 0.54
+  - nhom "ten-goi" (5 cau): Hit@5 AI 5/5, tu khoa 3/5; P@5 AI 0.88, tu khoa 0.60
+
+TRO LY: 12 cau, 12 cau tra loi tron ven
+  Toi khung SSE dau tien (meta, chua co chu): TB 973 ms, p95 1573 ms (n = 12, max 1573 ms)
+  Toi doan chu dau tien cua cau tra loi   : TB 1794 ms, p95 2386 ms (n = 12, max 2386 ms)
+  Toi khi tra loi xong                    : TB 2505 ms, p95 3137 ms (n = 12, max 3137 ms)
+  Co trich dan san pham: 8/12; tong so san pham duoc trich dan: 34
+  - nhom "tu-van": 9 cau
+  - nhom "bay": 3 cau
+  Phan dung/sai gia - thong so, va cau bay tu choi dung hay khong: cham tay o cot cham_tay_dung
+
+GOI Y CAU HINH - tat ca: 10 cau, 9 cau tra ve cau hinh
+    Ma HTTP: 200 x9, 400 x1
+    Khong co van de ngay lan dau (repair = NOT_NEEDED): 1/9
+    Phai sua 1 lan: REPAIRED 7 (it van de hon, CHUA chac het loi), FAILED 1
+    Hop le o ket qua cuoi (isValidAtSave, sau ca buoc sua va buoc dieu chinh ngan sach): 8/9
+    Trong ngan sach o ket qua cuoi: 8/8 (chi tinh cau AI hieu duoc ngan sach)
+    Buoc dieu chinh ngan sach: FITTED 4, NOT_POSSIBLE 0
+    So ma AI dua ra bi bo (khong co trong kho/sai loai): trung binh 0.00 moi lan
+    Du 7 loai linh kien: 7/9
+    Thoi gian xu ly (cau tra ve cau hinh): TB 4279 ms, p95 5265 ms (n = 9, max 5265 ms)
+    B07: HTTP 400 sau 50 ms — HTTP 400: Ngân sách khoảng 3 triệu chưa đủ để ráp một bộ PC đủ linh kiện tại PCZone — bộ rẻ nhất hiện khoảng 8,8 triệu (chưa tính card đồ họa rời). Bạn thử tăng ngân sách nhé.
+  - nhom "thuong": 8 cau, 8 cau tra ve cau hinh
+    Ma HTTP: 200 x8
+    Khong co van de ngay lan dau (repair = NOT_NEEDED): 0/8
+    Phai sua 1 lan: REPAIRED 7 (it van de hon, CHUA chac het loi), FAILED 1
+    Hop le o ket qua cuoi (isValidAtSave, sau ca buoc sua va buoc dieu chinh ngan sach): 7/8
+    Trong ngan sach o ket qua cuoi: 8/8 (chi tinh cau AI hieu duoc ngan sach)
+    Buoc dieu chinh ngan sach: FITTED 4, NOT_POSSIBLE 0
+    So ma AI dua ra bi bo (khong co trong kho/sai loai): trung binh 0.00 moi lan
+    Du 7 loai linh kien: 6/8
+    Thoi gian xu ly (cau tra ve cau hinh): TB 4526 ms, p95 5265 ms (n = 8, max 5265 ms)
+  - nhom "bien": 2 cau, 1 cau tra ve cau hinh
+    Ma HTTP: 400 x1, 200 x1
+    Khong co van de ngay lan dau (repair = NOT_NEEDED): 1/1
+    Phai sua 1 lan: REPAIRED 0 (it van de hon, CHUA chac het loi), FAILED 0
+    Hop le o ket qua cuoi (isValidAtSave, sau ca buoc sua va buoc dieu chinh ngan sach): 1/1
+    Trong ngan sach o ket qua cuoi: 0/0 (chi tinh cau AI hieu duoc ngan sach)
+    Buoc dieu chinh ngan sach: FITTED 0, NOT_POSSIBLE 0
+    So ma AI dua ra bi bo (khong co trong kho/sai loai): trung binh 0.00 moi lan
+    Du 7 loai linh kien: 1/1
+    Thoi gian xu ly (cau tra ve cau hinh): TB 2308 ms, p95 2308 ms (n = 1, max 2308 ms)
+    B07: HTTP 400 sau 50 ms — HTTP 400: Ngân sách khoảng 3 triệu chưa đủ để ráp một bộ PC đủ linh kiện tại PCZone — bộ rẻ nhất hiện khoảng 8,8 triệu (chưa tính card đồ họa rời). Bạn thử tăng ngân sách nhé.
