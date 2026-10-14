@@ -29,6 +29,12 @@ erDiagram
     string name
     string source
     decimal costPrice
+    decimal sellingPrice
+    decimal originalPrice
+    decimal refPrice
+    int inventoryQuantity
+    int reservedQuantity
+    int lowStockThreshold
   }
   ProductImage {
     string id PK
@@ -83,7 +89,7 @@ erDiagram
   Category |o--o{ Category : "parentId"
   Category ||--o{ Product : "categoryId"
   Brand |o--o{ Product : "brandId"
-  Product ||--o| ProductImage : "productId"
+  Product ||--o{ ProductImage : "productId"
   Product ||--o| ProductSpec : "productId"
   Product ||--o| ProductEmbedding : "productId"
   Product ||--o{ InventoryTransaction : "productId"

@@ -23,7 +23,7 @@ for (const m of schema.matchAll(/^model (\w+) \{([\s\S]*?)^\}/gm)) {
     const line = raw.replace(/\/\/.*$/, "").trim();
     if (!line) continue;
     if (line.startsWith("@@unique")) {
-      uniques.push([...line.matchAll(/\b(\w+)\b(?=[,\]])/g)].map((x) => x[1]));
+      uniques.push((/\[([^\]]*)\]/.exec(line)?.[1] ?? "").split(",").map((s) => s.trim().replace(/\(.*$/, "")).filter(Boolean));
       continue;
     }
     if (line.startsWith("@@")) continue;
@@ -91,7 +91,7 @@ function erd(group) {
     }
   }
   // Quan hệ từ bảng ngoài nhóm trỏ vào bảng trong nhóm (vd Order -> Voucher) — chỉ vẽ khi bảng kia có trong nhóm
-  const blocks = group.map((name) => entityBlock(name));
+  const blocks = group.map((name) => entityBlock(name, name === "Product" ? 15 : 9));
   const stubBlocks = [...stubs].map((name) => `  ${name} {\n    string id PK\n  }`);
   return ["erDiagram", ...blocks, ...stubBlocks, ...[...new Set(rels)]].join("\n");
 }

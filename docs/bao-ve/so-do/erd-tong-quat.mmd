@@ -6,7 +6,7 @@ erDiagram
   Category |o--o{ Category : "parentId"
   Category ||--o{ Product : "categoryId"
   Brand |o--o{ Product : "brandId"
-  Product ||--o| ProductImage : "productId"
+  Product ||--o{ ProductImage : "productId"
   Product ||--o| ProductSpec : "productId"
   User ||--o{ AdminAuditLog : "actorId"
   User ||--o{ Address : "userId"
