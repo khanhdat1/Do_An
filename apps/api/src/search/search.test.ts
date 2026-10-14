@@ -73,6 +73,11 @@ console.log("\n[4] Hiểu ý định về giá");
   check("gõ ngược 20-10 triệu vẫn đúng chiều", p("ssd 20-10 triệu")?.min, 10_000_000);
   check("khoảng 15 triệu → ±20%", p("laptop khoảng 15 triệu"), { min: 12_000_000, max: 18_000_000, label: "Khoảng 15 triệu", rest: "laptop" });
   check("15tr đứng một mình cũng là ngân sách", p("laptop 15tr")?.label, "Khoảng 15 triệu");
+  check(
+    "'khoảng'/'tầm'/số đứng một mình giữ đúng con số khách nêu (target), khoảng có hai đầu thì không",
+    [parsePriceIntent("laptop khoảng 15 triệu")?.target, parsePriceIntent("pc tầm 25tr")?.target, parsePriceIntent("laptop 15tr")?.target, parsePriceIntent("ssd 10-20 triệu")?.target, parsePriceIntent("laptop dưới 30 triệu")?.target],
+    [15_000_000, 25_000_000, 15_000_000, undefined, undefined],
+  );
   check("dưới 2,5 triệu (dấu phẩy thập phân)", p("chuột dưới 2,5 triệu")?.max, 2_500_000);
   check("dưới 500k, đơn vị k chỉ nhận sau từ chỉ giá", p("chuột dưới 500k")?.max, 500_000);
   check("số đầy đủ: dưới 5.000.000đ", p("laptop dưới 5.000.000đ")?.max, 5_000_000);

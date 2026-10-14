@@ -254,6 +254,24 @@ export function statedBudget(prompt: string): { amount: number; label: string } 
   return intent && amount !== undefined ? { amount, label: intent.label } : null;
 }
 
+/**
+ * Ngân sách dùng để KIỂM TRA cấu hình (vượt ngân sách, nhờ AI sửa, tự điều chỉnh bằng nhánh cận), đọc từ chính câu của
+ * khách bằng bộ đọc giá tất định — không tin con số AI tự khai: AI đọc sai thì mọi bước kiểm chứng phía sau kiểm theo
+ * con số sai. Khác `statedBudget` (cận trên rộng nhất, chỉ để chặn sớm): "tầm 25 triệu" là đúng 25 triệu chứ không phải
+ * cận trên 30 triệu của bộ lọc tìm kiếm; "dưới 25 triệu" và "từ 20 đến 25 triệu" là 25 triệu. `null` khi câu không nêu
+ * giá hoặc chỉ nêu cận dưới ("trên 20 triệu") — chỉ khi đó mới dùng con số AI đọc được.
+ */
+export function promptBudget(prompt: string): number | null {
+  const intent = parsePriceIntent(prompt);
+  const amount = intent?.target ?? intent?.max;
+  return amount !== undefined && amount >= MIN_BUDGET && amount <= MAX_BUDGET ? amount : null;
+}
+
+/** Thay ngân sách AI tự khai bằng ngân sách đọc từ câu của khách (nếu đọc được) trước mọi bước kiểm tra */
+export function withPromptBudget(suggestion: ParsedSuggestion, budgetFromPrompt: number | null): ParsedSuggestion {
+  return budgetFromPrompt === null ? suggestion : { ...suggestion, budget: budgetFromPrompt };
+}
+
 /** Giới hạn dưới của một bộ đủ linh kiện bắt buộc (chưa tính card rời): cộng món rẻ nhất mỗi loại */
 export function minimumBuildTotal(entries: CatalogEntry[]): number | null {
   let total = 0;

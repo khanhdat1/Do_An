@@ -8,6 +8,8 @@ export interface RetrievalOptions {
   /** Ngưỡng cosine similarity tối thiểu để coi là "liên quan" — bắt đầu bằng một con số thận trọng,
    * cần tinh chỉnh lại bằng dữ liệu thật một khi có khoá OpenAI thật để thử. */
   minScore?: number;
+  /** Chỉ xếp hạng trong các sản phẩm này (vd đã lọc sẵn theo khoảng giá) — lọc trước khi lấy top-k, xem rankBySimilarity */
+  allowedProductIds?: ReadonlySet<string>;
 }
 
 export interface RetrievedProduct {
@@ -45,7 +47,7 @@ export async function retrieveProducts(query: string, opts: RetrievalOptions = {
 
   try {
     const [queryVector, index] = await Promise.all([embed(searchText), getEmbeddingIndex()]);
-    const ranked = rankBySimilarity(queryVector, index.docs, opts.limit ?? DEFAULT_LIMIT);
+    const ranked = rankBySimilarity(queryVector, index.docs, opts.limit ?? DEFAULT_LIMIT, opts.allowedProductIds);
     const minScore = opts.minScore ?? DEFAULT_MIN_SCORE;
     return { products: ranked.filter((item) => item.score >= minScore), priceIntent };
   } catch (error) {

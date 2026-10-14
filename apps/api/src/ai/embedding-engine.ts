@@ -31,9 +31,14 @@ export function cosineSimilarity(a: number[], b: number[]): number {
   return denom === 0 ? 0 : dot(a, b) / denom;
 }
 
-/** Xếp hạng toàn bộ tài liệu theo độ tương đồng với vector truy vấn, lấy `limit` kết quả cao nhất */
-export function rankBySimilarity(query: number[], docs: EmbeddingDoc[], limit: number): RankedMatch[] {
-  return docs
+/**
+ * Xếp hạng tài liệu theo độ tương đồng với vector truy vấn, lấy `limit` kết quả cao nhất. Có `allowedIds` thì chỉ xếp
+ * hạng trong tập đó: lọc TRƯỚC khi lấy top-k, vì lọc sau sẽ mất trắng khi `limit` kết quả gần nghĩa nhất đều nằm ngoài tập
+ * (vd hỏi "card màn hình dưới 15 triệu" mà 20 card gần nghĩa nhất đều đắt hơn).
+ */
+export function rankBySimilarity(query: number[], docs: EmbeddingDoc[], limit: number, allowedIds?: ReadonlySet<string>): RankedMatch[] {
+  const candidates = allowedIds ? docs.filter((doc) => allowedIds.has(doc.productId)) : docs;
+  return candidates
     .map((doc) => ({ productId: doc.productId, score: cosineSimilarity(query, doc.vector) }))
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);

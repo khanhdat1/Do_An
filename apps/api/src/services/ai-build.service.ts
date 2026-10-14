@@ -6,9 +6,11 @@ import {
   findRepairIssues,
   minimumBuildTotal,
   parseSuggestion,
+  promptBudget,
   statedBudget,
   suggestionName,
   UNREADABLE_REPLY_ISSUE,
+  withPromptBudget,
   type Catalog,
   type ParsedSuggestion,
 } from "../ai/build-suggestion.js";
@@ -40,9 +42,14 @@ function partsOf(suggestion: ParsedSuggestion, partById: Map<string, BuildPart>)
   return parts;
 }
 
-function evaluate(reply: string, catalog: Catalog, partById: Map<string, BuildPart>): Attempt {
-  const suggestion = parseSuggestion(reply, catalog);
-  if (!suggestion) return { suggestion: null, parts: {}, issues: [UNREADABLE_REPLY_ISSUE] };
+function evaluate(reply: string, catalog: Catalog, partById: Map<string, BuildPart>, budgetFromPrompt: number | null): Attempt {
+  const parsed = parseSuggestion(reply, catalog);
+  if (!parsed) return { suggestion: null, parts: {}, issues: [UNREADABLE_REPLY_ISSUE] };
+  if (budgetFromPrompt !== null && parsed.budget !== budgetFromPrompt) {
+    const aiBudget = parsed.budget === null ? "không có" : formatPrice(parsed.budget);
+    console.info(`[ai-build] AI đọc ngân sách ${aiBudget}, câu của khách là ${formatPrice(budgetFromPrompt)} — kiểm tra theo câu của khách`);
+  }
+  const suggestion = withPromptBudget(parsed, budgetFromPrompt);
   const parts = partsOf(suggestion, partById);
   return { suggestion, parts, issues: findRepairIssues(suggestion, checkBuild(parts), catalog) };
 }
@@ -71,13 +78,14 @@ export async function suggestBuild(userId: string | null, prompt: string): Promi
 
   const catalog = buildCatalog(entries);
   const partById = new Map(components.map(({ part }) => [part.productId, part]));
+  const budgetFromPrompt = promptBudget(prompt);
 
   const messages: ChatMessage[] = [
     { role: "system", content: buildSystemPrompt(catalog) },
     { role: "user", content: prompt },
   ];
   const firstReply = await chatComplete(messages, { json: true });
-  let attempt = evaluate(firstReply, catalog, partById);
+  let attempt = evaluate(firstReply, catalog, partById, budgetFromPrompt);
   let repair: AiBuildSuggestionDto["repair"] = "NOT_NEEDED";
 
   if (attempt.issues.length > 0) {
@@ -88,7 +96,7 @@ export async function suggestBuild(userId: string | null, prompt: string): Promi
         [...messages, { role: "assistant", content: firstReply }, { role: "user", content: buildRepairMessage(attempt.issues) }],
         { json: true },
       );
-      const second = evaluate(secondReply, catalog, partById);
+      const second = evaluate(secondReply, catalog, partById, budgetFromPrompt);
       if (second.suggestion && second.issues.length <= attempt.issues.length) {
         attempt = second;
         repair = "REPAIRED";
