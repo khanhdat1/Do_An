@@ -4,6 +4,7 @@ import { orderInclude, orderSummaryInclude, toOrderDto, toOrderSummaryDto } from
 import { publicImages } from "../mappers/product.mapper.js";
 import { ConflictError, NotFoundError } from "../middleware/errors.js";
 import type { CreateOrderResultDto, OrderDto, OrderGroupDto, Paginated, OrderSummaryDto, ShippingSettingsDto } from "../types/dto.js";
+import { MAX_QUANTITY_PER_LINE } from "../utils/limits.js";
 import { generateOrderCode } from "../utils/order-code.js";
 import { isUniqueViolation, retryOnTransactionConflict } from "../utils/prisma-errors.js";
 import { calcShippingFee } from "../utils/shipping.js";
@@ -96,6 +97,12 @@ async function runCreateOrder(input: CreateOrderInput, shippingConfig: ShippingS
       if (item.product.status !== ProductStatus.ACTIVE || available < item.quantity) {
         throw new ConflictError(
           `"${item.product.name}" không còn đủ số lượng. Vui lòng quay lại giỏ hàng để kiểm tra.`,
+        );
+      }
+      // Giỏ hàng đã chặn trần này, kiểm lại ở đây để mọi đơn đều chắc chắn tuân theo
+      if (item.quantity > MAX_QUANTITY_PER_LINE) {
+        throw new ConflictError(
+          `"${item.product.name}": mỗi sản phẩm chỉ được mua tối đa ${MAX_QUANTITY_PER_LINE} cái mỗi đơn`,
         );
       }
     }

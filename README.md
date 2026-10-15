@@ -616,7 +616,7 @@ kiểm tra lại** → nạp vào màn hình Build PC để khách xem, sửa, t
 - Giá crawl về ghi vào `refPrice` (giá tham khảo), **không** ghi đè `sellingPrice`.
 - API **không** trả `costPrice`, `aiSearchText` và tồn kho tuyệt đối (`inventoryQuantity`) ra
   ngoài. Ô chọn số lượng ở trang chi tiết và giỏ hàng dùng `maxQuantity` = tồn khả dụng (tồn kho
-  trừ phần đang giữ cho đơn chưa xong) — không có trần cố định, mua tối đa đúng số còn trong kho.
+  trừ phần đang giữ cho đơn chưa xong), kẹp thêm trần 50 cái mỗi sản phẩm trong một đơn.
 - Ảnh có `needsReview = true` (còn watermark shop khác, so khớp model chưa chắc) không bao
   giờ được trả ra — cả ở thẻ sản phẩm lẫn gallery trang chi tiết.
 - Bảng thông số (`Product.specifications`) nhận hai dạng: mảng `[{ "label", "value" }]` (giữ
@@ -649,7 +649,7 @@ nguyên qua các lần refresh.
 của tài khoản (cùng sản phẩm thì cộng số lượng) rồi xoá.
 
 **Kiểm tra ở server, không tin frontend.** Giá lấy từ DB tại thời điểm tính; số lượng bị
-chặn theo tồn kho khả dụng đọc từ DB (không có trần cố định); sản phẩm đổi giá / hết hàng / ngừng
+chặn theo tồn kho khả dụng đọc từ DB và trần 50 cái mỗi sản phẩm trong một đơn; sản phẩm đổi giá / hết hàng / ngừng
 bán sau khi đã vào giỏ được đánh dấu để khách xử lý trước khi đặt hàng.
 
 **Các lớp bảo vệ đã có:** chống dò mật khẩu (giới hạn số lần đăng nhập sai theo IP), thông

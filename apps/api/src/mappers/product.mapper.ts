@@ -9,6 +9,7 @@ import type {
   StockInfoDto,
   Tone,
 } from "../types/dto.js";
+import { MAX_QUANTITY_PER_LINE } from "../utils/limits.js";
 
 /**
  * Ảnh được phép hiển thị ra ngoài: bỏ ảnh `needsReview` (còn watermark của shop
@@ -215,7 +216,7 @@ export function toProductDetailDto(product: ProductDetailRow): ProductDetailDto 
     description: product.description?.trim() || undefined,
     specifications: readSpecifications(product.specifications),
     warrantyMonths: product.warrantyMonths ?? undefined,
-    maxQuantity: available,
+    maxQuantity: Math.min(available, MAX_QUANTITY_PER_LINE),
     breadcrumb: buildBreadcrumb(product.category),
   };
 }

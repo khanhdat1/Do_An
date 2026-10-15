@@ -84,10 +84,7 @@ export default function QuantityStepper({
         value={draft}
         disabled={disabled}
         aria-label="Số lượng"
-        // Đủ chữ số để gõ tới `max` (tồn kho có thể từ 1.000 trở lên), tối thiểu 3 như trước
-        onChange={(event) =>
-          setDraft(event.target.value.replace(/\D/g, "").slice(0, Math.max(3, String(max).length)))
-        }
+        onChange={(event) => setDraft(event.target.value.replace(/\D/g, "").slice(0, 3))}
         onBlur={commit}
         onKeyDown={(event) => {
           if (event.key === "Enter") {

@@ -13,6 +13,7 @@ import {
   type CartOwner,
 } from "../services/cart.service.js";
 import { GUEST_CART_COOKIE, readCookie, setGuestCartCookie } from "../utils/cookies.js";
+import { MAX_QUANTITY_PER_LINE } from "../utils/limits.js";
 
 /**
  * Giỏ hàng dùng chung cho khách đã đăng nhập (theo tài khoản) và khách vãng lai
@@ -31,14 +32,13 @@ cartRouter.use((req, res, next) => {
 
 const itemIdParam = z.object({ itemId: z.string().min(1).max(40) });
 
-// Không đặt trần cố định cho số lượng: cart.service chặn theo tồn kho khả dụng đọc từ DB
-// (`.int()` của Zod 4 chỉ nhận số nguyên an toàn nên không lo tràn số)
 const addBody = z.object({
   productId: z.string({ error: "Thiếu mã sản phẩm" }).min(1).max(40),
   quantity: z
     .number({ error: "Số lượng không hợp lệ" })
     .int("Số lượng không hợp lệ")
     .min(1, "Số lượng tối thiểu là 1")
+    .max(MAX_QUANTITY_PER_LINE, `Mỗi sản phẩm chỉ được mua tối đa ${MAX_QUANTITY_PER_LINE} cái mỗi đơn`)
     .default(1),
 });
 
@@ -46,7 +46,8 @@ const setQuantityBody = z.object({
   quantity: z
     .number({ error: "Số lượng không hợp lệ" })
     .int("Số lượng không hợp lệ")
-    .min(1, "Số lượng tối thiểu là 1"),
+    .min(1, "Số lượng tối thiểu là 1")
+    .max(MAX_QUANTITY_PER_LINE, `Mỗi sản phẩm chỉ được mua tối đa ${MAX_QUANTITY_PER_LINE} cái mỗi đơn`),
 });
 
 /** Chủ giỏ khi chỉ ĐỌC: không có cookie thì chưa có giỏ, không tạo gì cả */
