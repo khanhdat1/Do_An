@@ -1,6 +1,6 @@
 # PCZone — Ngữ cảnh dự án cho các phiên làm việc tiếp theo
 
-Cập nhật: 06/10/2026 (Asia/Bangkok), lần 3 — sau báo cáo Word đầy đủ (`a5faa56`): rà soát lỗ hổng thư viện, nâng Next.js lên 16.3.8, sửa một dòng README sai về VNPay. Lần 2: 30/09/2026 (đổi màu nhận diện, logo hãng, kiểm thử truy cập toàn bộ trang `aed0d37`, nút thu tiền COD `5d3fc76`, báo cáo Word); lần 1 cùng ngày tại `cc0f97a`; bản trước nữa: 23/09/2026 tại `471d1b0`.
+Cập nhật: 06/10/2026 (Asia/Bangkok), lần 3 — sau báo cáo Word đầy đủ (`3454d41`): rà soát lỗ hổng thư viện, nâng Next.js lên 16.3.8, sửa một dòng README sai về VNPay. Lần 2: 30/09/2026 (đổi màu nhận diện, logo hãng, kiểm thử truy cập toàn bộ trang `9d8814f`, nút thu tiền COD `a09bc46`, báo cáo Word); lần 1 cùng ngày tại `d609dcf`; bản trước nữa: 23/09/2026 tại `0693454`.
 
 ## 1. Mục đích và phạm vi ghi nhận
 
@@ -102,12 +102,12 @@ Mức kiểm chứng: **E2E** = có kịch bản Playwright đang đạt; **ch�
 - 24–25/09: AI Search thật, AI Chat stream + trích dẫn thật (Gemini, `gemini-3.1-flash-lite`).
 - 25–28/09: Build PC (chuẩn hoá thông số, 9 luật, trang tự ráp), chia sẻ qua Cloudflare Tunnel, AI gợi ý cấu hình + lưu/chia sẻ, tự điều chỉnh ngân sách.
 - 28–29/09: gỡ quảng cáo bịa, bỏ PCPoints, đánh giá sau khi nhận hàng; trang Cài đặt; gộp nhãn so sánh; trang Tài khoản dạng bảng điều khiển; kiểm thử đầu-cuối Playwright.
-- 30/09: bộ triển khai VPS + Docker (`9269ede`); trang chính sách, SEO, header bảo mật, kiểm tra chữ ký ảnh, sửa lỗi truy cập và hai link 404 ở trang chủ (`cc0f97a`); hồ sơ bảo vệ đồ án (`docs/bao-ve/`).
+- 30/09: bộ triển khai VPS + Docker (`a1be7c7`); trang chính sách, SEO, header bảo mật, kiểm tra chữ ký ảnh, sửa lỗi truy cập và hai link 404 ở trang chủ (`d609dcf`); hồ sơ bảo vệ đồ án (`docs/bao-ve/`).
 - 30/09 (chiều): đổi màu nhận diện sang cam đậm + sửa mọi lỗi tương phản/nhãn ô nhập ở trang khách, tài khoản và quản trị (E2E 56/56, kiểm tra truy cập chặt ở mọi trang); logo hãng thật ở trang chủ; gỡ khối "cộng đồng" và các câu bịa ở mục bán chạy.
 - 30/09 (chiều, tiếp): báo cáo Word phần kỹ thuật `docs/bao-ve/bao-cao-do-an-pczone.docx` (Chương 3–5 + tài liệu tham khảo + phụ lục API/triển khai, 80 trang, 42 hình, ảnh chụp thật); sửa 2 sơ đồ lệch mã (máy trạng thái thêm Đang giao → Đã hoàn trả; trợ lý AI lấy 8 ứng viên, khung SSE `chunk`); `render-diagrams.cjs` nhận mã sơ đồ để vẽ lại riêng từng hình.
 - 30/09 (tối): nút "Xác nhận đã thu tiền COD" cho đơn COD đang giao/đã giao (quy tắc `manualPaymentBlockReason`, +11 kiểm thử đơn vị, E2E vòng đời đơn có bước thu tiền; doanh thu tổng quan đã tính đơn COD); ảnh banner tải lên lúc chạy vào `.gitignore`. Báo cáo Word thêm Chương 1–2 và Kết luận, cập nhật theo phần COD và chụp lại ảnh quản trị (trang tổng quan có doanh thu từ đơn COD đã ghi nhận).
 - 06/10: rà soát `npm audit` — nâng Next.js 16.3.5 → 16.3.8 (vá lỗi thực thi mã từ xa ở `ImageResponse` của `next/og`; dự án không dùng `next/og`) và `source-map-js` 1.2.2, kiểm thử lại đủ (lint, kiểm tra kiểu, 465 đơn vị, 56 đầu-cuối). Sửa dòng README nói VNPay "đã dùng được" (sai: VNPay chưa chạy thật, đang tắt).
-- Trước khi tiếp tục: đọc `git status`/`git log` sau mốc `a5faa56`; có thể có một phiên chat khác làm song song trên cùng repo — kiểm tra trước khi commit.
+- Trước khi tiếp tục: đọc `git status`/`git log` sau mốc `3454d41`; có thể có một phiên chat khác làm song song trên cùng repo — kiểm tra trước khi commit.
 
 ## 9. Tài liệu nên đọc cùng
 
