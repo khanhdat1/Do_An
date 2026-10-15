@@ -873,8 +873,9 @@ riêng, đúng lý do tách bảng này khỏi `Order` ở `csdl.md` mục 4.4).
 
 ### Chuyển khoản ngân hàng / MoMo thủ công
 
-Tuỳ chọn — thiếu biến môi trường tương ứng thì phương thức bị ẩn ở trang đặt hàng, cùng nguyên tắc với
-VNPay/Google/Facebook. Khác VNPay: đây **không phải cổng thanh toán**, không có API/chữ ký/callback nào
+Thông tin nhận tiền thật của đồ án (MB Bank + ví MoMo) đã điền sẵn trong `.env.example` và
+`deploy/.env.example` — copy ra `.env` là dùng được ngay. Xoá trống các biến tương ứng thì phương thức bị ẩn
+ở trang đặt hàng, cùng nguyên tắc với VNPay/Google/Facebook. Khác VNPay: đây **không phải cổng thanh toán**, không có API/chữ ký/callback nào
 cả — chỉ hiện QR + thông tin để khách tự chuyển khoản, sau đó **nhân viên xác nhận tay**:
 
 - **Chuyển khoản ngân hàng** (`BANK_ID`, `BANK_ACCOUNT_NUMBER`, `BANK_ACCOUNT_NAME`, `BANK_NAME` trong
@@ -1297,8 +1298,8 @@ mới lên và hiện ngay trên trang chủ, log API ghi đúng IP khách. **Ch
    nano .env
    ```
    Điền `SITE_ADDRESS`, `PUBLIC_URL`, `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD`, `JWT_SECRET` (sinh bằng
-   `openssl rand -hex 32`), rồi các khoá tuỳ chọn — Google/Facebook, email, AI, chuyển khoản/MoMo — chép từ `.env` máy
-   dev. `deploy/.env` chứa bí mật: không commit, không gửi qua chat/email.
+   `openssl rand -hex 32`), rồi các khoá tuỳ chọn — Google/Facebook, email, AI — chép từ `.env` máy dev
+   (chuyển khoản/MoMo đã điền sẵn). `deploy/.env` chứa bí mật: không commit, không gửi qua chat/email.
 3. **Ở máy dev** (Git Bash, Docker Desktop đang chạy): đóng gói bản sao DB + ảnh rồi chép lên máy chủ:
    ```bash
    bash deploy/export-data.sh
