@@ -21,8 +21,8 @@ interface PaymentMethodPickerProps {
 const OPTIONS: { value: Method; label: string; note: string; icon: typeof Banknote; configKey: keyof PaymentMethods }[] = [
   { value: "COD", label: "Thanh toán khi nhận hàng", note: "Trả tiền mặt cho nhân viên giao hàng (COD)", icon: Banknote, configKey: "cod" },
   { value: "VNPAY", label: "Thanh toán qua VNPay", note: "Quét mã hoặc thẻ ATM/Visa/Master qua cổng VNPay", icon: CreditCard, configKey: "vnpay" },
-  { value: "BANK_TRANSFER", label: "Chuyển khoản ngân hàng", note: "Quét mã QR, hệ thống tự đối chiếu theo mã đơn", icon: Landmark, configKey: "bankTransfer" },
-  { value: "MOMO", label: "Ví MoMo", note: "Chuyển khoản qua ứng dụng MoMo", icon: Wallet, configKey: "momo" },
+  { value: "BANK_TRANSFER", label: "Chuyển khoản ngân hàng", note: "Quét mã QR, cửa hàng xác nhận khi nhận được tiền", icon: Landmark, configKey: "bankTransfer" },
+  { value: "MOMO", label: "Ví MoMo", note: "Quét mã QR bằng app MoMo, cửa hàng xác nhận khi nhận được tiền", icon: Wallet, configKey: "momo" },
 ];
 
 export default function PaymentMethodPicker({ value, onChange, methods }: PaymentMethodPickerProps) {
