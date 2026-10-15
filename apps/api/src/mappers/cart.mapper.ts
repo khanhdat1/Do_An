@@ -1,6 +1,5 @@
 import { ProductStatus, type Prisma } from "@pczone/db";
 import type { CartDto, CartItemDto, CartItemIssue } from "../types/dto.js";
-import { MAX_QUANTITY_PER_LINE } from "../utils/limits.js";
 import { buildCategoryPath, productInclude } from "./product.mapper.js";
 
 export const cartInclude = {
@@ -33,7 +32,7 @@ function toCartItemDto(item: CartItemRow): CartItemDto {
   const { product } = item;
   const available = availableQuantity(product);
   const isActive = product.status === ProductStatus.ACTIVE;
-  const maxQuantity = isActive ? Math.min(available, MAX_QUANTITY_PER_LINE) : 0;
+  const maxQuantity = isActive ? available : 0;
 
   let issue: CartItemIssue | undefined;
   if (!isActive) issue = "UNAVAILABLE";

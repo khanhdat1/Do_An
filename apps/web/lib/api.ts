@@ -207,7 +207,8 @@ function fallbackProductDetail(slug: string): ProductDetail | null {
     images: [],
     highlights: product.specs,
     specifications: [],
-    maxQuantity: 10,
+    // API tắt thì không biết tồn kho thật (cũng không thêm vào giỏ được) — chỉ để ô số lượng hợp lệ
+    maxQuantity: 1,
     // Dữ liệu dự phòng chỉ biết tên của các danh mục lá ở lưới trang chủ
     breadcrumb: product.categoryPath.flatMap((categorySlug) => {
       const category = featuredCategories.find((item) => item.slug === categorySlug);

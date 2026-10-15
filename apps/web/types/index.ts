@@ -83,7 +83,7 @@ export interface ProductDetail extends Product {
   description?: string;
   specifications: SpecRow[];
   warrantyMonths?: number;
-  /** Số lượng tối đa chọn được trong một lần đặt (đã tính tồn kho) */
+  /** Số lượng tối đa chọn được trong một lần đặt = tồn kho khả dụng (không có trần cố định) */
   maxQuantity: number;
   breadcrumb: Breadcrumb[];
 }
@@ -482,7 +482,7 @@ export interface CartItem {
   priceAtAdd: number;
   priceChanged: boolean;
   quantity: number;
-  /** Số lượng tối đa chọn được cho dòng này (0 nếu không mua được) */
+  /** Số lượng tối đa chọn được cho dòng này = tồn kho khả dụng (0 nếu không mua được) */
   maxQuantity: number;
   lineTotal: number;
   issue?: CartItemIssue;

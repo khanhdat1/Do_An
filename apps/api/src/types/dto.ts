@@ -78,8 +78,8 @@ export interface ProductDetailDto extends ProductDto {
   specifications: SpecRowDto[];
   warrantyMonths?: number;
   /**
-   * Số lượng tối đa khách chọn được trong một lần đặt = min(tồn kho khả dụng, trần mỗi dòng).
-   * Không trả tồn kho tuyệt đối ra ngoài, nhưng ô chọn số lượng vẫn cần biết giới hạn.
+   * Số lượng tối đa khách chọn được trong một lần đặt = tồn kho khả dụng (tồn kho trừ phần đang
+   * giữ cho đơn chưa xong), không có trần cố định. Không trả `inventoryQuantity` tuyệt đối ra ngoài.
    */
   maxQuantity: number;
   breadcrumb: BreadcrumbDto[];
@@ -228,7 +228,7 @@ export interface CartItemDto {
   /** true khi giá hiện tại khác giá lúc thêm — để hiện cảnh báo "đã đổi giá" */
   priceChanged: boolean;
   quantity: number;
-  /** Số lượng tối đa chọn được cho dòng này (0 nếu không mua được) */
+  /** Số lượng tối đa chọn được cho dòng này = tồn kho khả dụng (0 nếu không mua được) */
   maxQuantity: number;
   lineTotal: number;
   issue?: CartItemIssue;

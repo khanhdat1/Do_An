@@ -15,7 +15,7 @@ interface ProductPurchasePanelProps {
   slug: string;
   name: string;
   inStock: boolean;
-  /** Số lượng tối đa được đặt (đã tính tồn kho và trần mỗi dòng) */
+  /** Số lượng tối đa được đặt = tồn kho khả dụng */
   maxQuantity: number;
 }
 
@@ -98,7 +98,7 @@ export default function ProductPurchasePanel({
 
       {!canBuy ? (
         <p className="mt-2 text-xs font-medium text-gold-800">
-          Bạn đã thêm tối đa số lượng cho phép của sản phẩm này vào giỏ hàng.
+          Bạn đã thêm toàn bộ số lượng còn trong kho của sản phẩm này vào giỏ hàng.
         </p>
       ) : null}
 

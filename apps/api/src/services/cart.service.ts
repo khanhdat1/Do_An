@@ -8,7 +8,7 @@ import {
 } from "../mappers/cart.mapper.js";
 import { ConflictError, NotFoundError, UnauthorizedError } from "../middleware/errors.js";
 import type { CartDto } from "../types/dto.js";
-import { MAX_CART_LINES, MAX_QUANTITY_PER_LINE } from "../utils/limits.js";
+import { MAX_CART_LINES } from "../utils/limits.js";
 import { isUniqueViolation } from "../utils/prisma-errors.js";
 
 /**
@@ -78,17 +78,6 @@ export async function getCart(owner: CartOwner | null): Promise<CartDto> {
   return cart ? toCartDto(cart) : EMPTY_CART;
 }
 
-/** Trần số lượng của một sản phẩm: không quá tồn kho và không quá trần mỗi dòng */
-function quantityLimit(available: number): { limit: number; reason: string } {
-  if (available < MAX_QUANTITY_PER_LINE) {
-    return { limit: available, reason: `kho chỉ còn ${available} sản phẩm` };
-  }
-  return {
-    limit: MAX_QUANTITY_PER_LINE,
-    reason: `mỗi sản phẩm chỉ được mua tối đa ${MAX_QUANTITY_PER_LINE} cái`,
-  };
-}
-
 export async function addItem(
   owner: CartOwner,
   productId: string,
@@ -108,7 +97,7 @@ export async function addItem(
   const available = availableQuantity(product);
   if (available === 0) throw new ConflictError("Sản phẩm đã hết hàng");
 
-  const { limit, reason } = quantityLimit(available);
+  // Số lượng mỗi sản phẩm chỉ bị chặn bởi tồn kho khả dụng trong DB, không có trần cố định
   const cart = await findOrCreateCart(owner);
 
   const existing = await prisma.cartItem.findUnique({
@@ -116,19 +105,19 @@ export async function addItem(
   });
   const inCart = existing?.quantity ?? 0;
 
-  if (inCart + quantity > limit) {
+  if (inCart + quantity > available) {
     throw new ConflictError(
       inCart > 0
-        ? `Không thể thêm: ${reason} (bạn đã có ${inCart} trong giỏ)`
-        : `Không thể thêm: ${reason}`,
+        ? `Không thể thêm: kho chỉ còn ${available} sản phẩm (bạn đã có ${inCart} trong giỏ)`
+        : `Không thể thêm: kho chỉ còn ${available} sản phẩm`,
     );
   }
 
   if (existing) {
-    // Điều kiện quantity <= limit - quantity nằm ngay trong câu UPDATE: hai request
-    // cộng dồn cùng lúc cũng không thể đẩy số lượng vượt trần.
+    // Điều kiện quantity <= available - quantity nằm ngay trong câu UPDATE: hai request
+    // cộng dồn cùng lúc cũng không thể đẩy số lượng vượt tồn kho đã đọc.
     const updated = await prisma.cartItem.updateMany({
-      where: { id: existing.id, quantity: { lte: limit - quantity } },
+      where: { id: existing.id, quantity: { lte: available - quantity } },
       data: { quantity: { increment: quantity }, priceAtAdd: product.sellingPrice },
     });
     if (updated.count === 0) {
@@ -174,9 +163,8 @@ export async function setItemQuantity(
   const available = availableQuantity(item.product);
   if (available === 0) throw new ConflictError("Sản phẩm đã hết hàng, vui lòng xoá khỏi giỏ hàng");
 
-  const { limit, reason } = quantityLimit(available);
-  if (quantity > limit) {
-    throw new ConflictError(`Không thể đặt ${quantity} sản phẩm: ${reason}`);
+  if (quantity > available) {
+    throw new ConflictError(`Không thể đặt ${quantity} sản phẩm: kho chỉ còn ${available} sản phẩm`);
   }
 
   await prisma.cartItem.update({
@@ -204,7 +192,8 @@ export async function clearCart(owner: CartOwner): Promise<CartDto> {
 
 /**
  * Gộp giỏ khách vãng lai vào giỏ tài khoản ngay sau khi đăng nhập / đăng ký.
- * Cùng một sản phẩm thì cộng số lượng (tới trần mỗi dòng); xong thì xoá giỏ khách.
+ * Cùng một sản phẩm thì cộng số lượng; tổng vượt tồn kho thì dòng đó tự bị đánh dấu
+ * INSUFFICIENT_STOCK (cart.mapper) để khách điều chỉnh trước khi đặt. Xong thì xoá giỏ khách.
  */
 export async function mergeGuestCartIntoUser(userId: string, sessionId: string): Promise<void> {
   await prisma.$transaction(async (tx) => {
@@ -228,14 +217,14 @@ export async function mergeGuestCartIntoUser(userId: string, sessionId: string):
       if (existing) {
         await tx.cartItem.update({
           where: { id: existing.id },
-          data: { quantity: Math.min(MAX_QUANTITY_PER_LINE, existing.quantity + item.quantity) },
+          data: { quantity: existing.quantity + item.quantity },
         });
       } else if (lines < MAX_CART_LINES) {
         await tx.cartItem.create({
           data: {
             cartId: target.id,
             productId: item.productId,
-            quantity: Math.min(MAX_QUANTITY_PER_LINE, item.quantity),
+            quantity: item.quantity,
             priceAtAdd: item.priceAtAdd,
             buildId: item.buildId,
           },
