@@ -5,6 +5,7 @@ import { Bot, RotateCcw, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AiChatMessage } from "@/types";
 import ChatCitedProducts from "./ChatCitedProducts";
+import ChatMarkdown from "./ChatMarkdown";
 
 interface ChatMessageListProps {
   messages: AiChatMessage[];
@@ -22,6 +23,7 @@ export default function ChatMessageList({ messages, onRetry }: ChatMessageListPr
     <div className="flex-1 space-y-4 overflow-y-auto px-3 py-4 sm:px-6" aria-live="polite">
       {messages.map((message) => {
         const isUser = message.role === "user";
+        const cursor = message.pending ? <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-current align-text-bottom" /> : null;
         return (
           <div key={message.id} className={cn("flex", isUser ? "justify-end" : "justify-start")}>
             <div className={cn("flex max-w-[85%] items-start gap-2 sm:max-w-[70%]", isUser && "flex-row-reverse")}>
@@ -36,13 +38,20 @@ export default function ChatMessageList({ messages, onRetry }: ChatMessageListPr
               <div className="min-w-0">
                 <div
                   className={cn(
-                    "whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
-                    isUser ? "bg-brand-500 text-white" : "bg-white text-slate-800 ring-1 ring-slate-200",
+                    "break-words rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+                    isUser ? "whitespace-pre-wrap bg-brand-500 text-white" : "bg-white text-slate-800 ring-1 ring-slate-200",
                     message.failed && "bg-sale-50 text-sale-700 ring-1 ring-sale-200",
                   )}
                 >
-                  {message.content}
-                  {message.pending ? <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-current align-text-bottom" /> : null}
+                  {isUser ? (
+                    <>
+                      {message.content}
+                      {cursor}
+                    </>
+                  ) : (
+                    // Câu trả lời AI có **in đậm**, gạch đầu dòng — dựng bằng React, không in ra dấu ** thô
+                    <ChatMarkdown text={message.content} trailing={cursor} />
+                  )}
                 </div>
 
                 {message.failed ? (
