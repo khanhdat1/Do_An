@@ -20,8 +20,8 @@ async function loadProducts(ids: string[]) {
   });
 }
 
-/** Id các sản phẩm đang bán nằm trong khoảng giá khách nêu — để AI chỉ xếp hạng trong tập này */
-async function productIdsInPriceRange(intent: PriceIntent): Promise<Set<string>> {
+/** Id các sản phẩm đang bán nằm trong khoảng giá khách nêu — để AI chỉ xếp hạng trong tập này (AI Chat dùng chung) */
+export async function productIdsInPriceRange(intent: Pick<PriceIntent, "min" | "max">): Promise<Set<string>> {
   const rows = await prisma.product.findMany({
     where: { ...PUBLIC_FILTER, sellingPrice: { gte: intent.min, lte: intent.max } },
     select: { id: true },

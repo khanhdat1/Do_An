@@ -7,13 +7,17 @@
  */
 import { MessageRole, prisma } from "@pczone/db";
 import { env } from "../env.js";
+import { buildChatRetrievalQuery, buildChatSystemPrompt, type ChatPromptProduct, summarizeSpecs } from "../ai/chat-context.js";
 import { findCitedProductIds } from "../ai/citation.js";
 import { type ChatMessage, chatCompleteStream, isConfigured } from "../ai/openai-client.js";
 import { retrieveProducts } from "../ai/retrieval.js";
 import { ServiceUnavailableError } from "../middleware/errors.js";
-import { productInclude, toProductDto } from "../mappers/product.mapper.js";
-import type { ProductDto } from "../types/dto.js";
-import { formatPrice } from "../utils/format.js";
+import { buildProductInclude, type BuildProductRow, keySpecs } from "../mappers/pc-build.mapper.js";
+import { productInclude, readAllShortSpecs, readSpecifications, toProductDto } from "../mappers/product.mapper.js";
+import { isBuildSlot } from "../pc-build/slots.js";
+import { readStoredSpec } from "../pc-build/spec-store.js";
+import type { ProductDto, SpecRowDto } from "../types/dto.js";
+import { productIdsInPriceRange } from "./ai-search.service.js";
 import { PUBLIC_FILTER } from "./product.service.js";
 import { assertAiFeatureEnabled } from "./settings.service.js";
 
@@ -40,6 +44,30 @@ async function loadCandidates(ids: string[]): Promise<ProductDto[]> {
   });
 }
 
+/** Thông số chuẩn hoá (ProductSpec) — chỉ linh kiện Build PC mới có, laptop/màn hình/gear thì rỗng */
+function normalizedSpecRows(row: BuildProductRow): SpecRowDto[] {
+  const slot = row.spec?.componentType;
+  return row.spec && slot && isBuildSlot(slot) ? keySpecs(slot, readStoredSpec(row.spec)) : [];
+}
+
+/** Như loadCandidates nhưng kèm thông số đầy đủ để đưa vào prompt — `ProductDto.specs` chỉ có 3 chip đầu của thẻ sản phẩm */
+async function loadPromptCandidates(ids: string[]): Promise<{ product: ProductDto; prompt: ChatPromptProduct }[]> {
+  if (ids.length === 0) return [];
+  const rows = await prisma.product.findMany({ where: { id: { in: ids }, ...PUBLIC_FILTER }, include: buildProductInclude });
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  return ids.flatMap((id) => {
+    const row = byId.get(id);
+    if (!row) return [];
+    const product = toProductDto(row);
+    const specs = summarizeSpecs({
+      keySpecs: normalizedSpecRows(row),
+      highlights: readAllShortSpecs(row.shortSpecs),
+      specifications: readSpecifications(row.specifications),
+    });
+    return [{ product, prompt: { name: product.name, categoryName: product.categoryName, price: product.price, inStock: product.inStock, specs } }];
+  });
+}
+
 async function resolveConversation(identity: ChatIdentity, conversationId: string | undefined) {
   if (conversationId) {
     const existing = await prisma.aiConversation.findFirst({ where: { id: conversationId, ...identityWhere(identity) } });
@@ -62,31 +90,6 @@ function trimHistoryByCharBudget(rowsOldToNew: { role: MessageRole; content: str
   return kept;
 }
 
-function buildSystemPrompt(candidates: ProductDto[], priceLabel: string | undefined): string {
-  const productLines = candidates.length
-    ? candidates
-        .map((p) => `- ${p.name} (${p.categoryName}) — ${formatPrice(p.price)} — ${p.inStock ? "Còn hàng" : "Hết hàng"} — ${p.specs.slice(0, 3).join(", ")}`)
-        .join("\n")
-    : "Hiện không tìm thấy sản phẩm nào trong kho đủ liên quan tới câu hỏi này.";
-
-  const priceNote = priceLabel
-    ? `\n\nKhách có nhắc tới mức giá "${priceLabel}" — ưu tiên sản phẩm phù hợp khoảng giá này nếu có trong danh sách trên.`
-    : "";
-
-  return `Bạn là trợ lý AI tư vấn mua sắm của PCZone — cửa hàng PC gaming, laptop, linh kiện và gaming gear.
-
-Nguyên tắc bắt buộc:
-- Chỉ được nhắc đến sản phẩm có trong danh sách "Sản phẩm tham khảo" bên dưới — đó là dữ liệu THẬT lấy trực tiếp từ kho PCZone ngay lúc bạn trả lời. Tuyệt đối không tự bịa thêm sản phẩm, mẫu mã, giá hay thông số nào khác, kể cả khi bạn nghĩ mình biết về chúng.
-- Danh sách này CHỈ LÀ MỘT PHẦN nhỏ kho hàng, lọc riêng cho câu hỏi hiện tại — không phải toàn bộ những gì PCZone có. Nếu danh sách trống hoặc không có sản phẩm nào thật sự phù hợp, chỉ được nói là "trong kết quả tìm kiếm hiện tại chưa thấy sản phẩm phù hợp" — TUYỆT ĐỐI không khẳng định chắc chắn rằng PCZone không kinh doanh hay không có mặt hàng/danh mục đó (bạn không có đủ căn cứ để khẳng định điều này), và không suy luận rộng ra rằng cả một loại linh kiện/danh mục là không có chỉ vì lượt tìm kiếm này không thấy. Gợi ý khách hỏi cụ thể hơn hoặc thử lại thay vì cố gợi ý đại khái cho có.
-- Luôn nêu đúng giá và tình trạng còn/hết hàng như trong danh sách, không tự làm tròn hay đoán.
-- Bạn không có dữ liệu thời gian thực về đơn hàng, vận chuyển hay nhân viên hỗ trợ — nếu khách hỏi những việc này, trả lời trung thực là bạn không có thông tin đó, hướng khách tới trang "Tra cứu đơn hàng" hoặc tổng đài PCZone.
-- Trả lời ngắn gọn, tự nhiên như một tư vấn viên thật, không liệt kê thông số dài dòng nếu khách không hỏi.
-- Luôn trả lời bằng tiếng Việt.
-
-Sản phẩm tham khảo (giá và tồn kho cập nhật ngay lúc này):
-${productLines}${priceNote}`;
-}
-
 export interface PreparedChatTurn {
   conversationId: string;
   userMessageId: string;
@@ -107,8 +110,7 @@ export async function prepareChatTurn(identity: ChatIdentity, input: { conversat
     data: { conversationId: conversation.id, role: MessageRole.USER, content: input.message },
   });
 
-  const [{ products, priceIntent }, historyRows] = await Promise.all([
-    retrieveProducts(input.message, { limit: RETRIEVAL_LIMIT }),
+  const [historyRows] = await Promise.all([
     prisma.aiMessage.findMany({
       // Loại chính tin nhắn vừa tạo ở trên — sẽ tự thêm lại vào cuối `messages` từ `input.message`, không đọc lại từ DB
       where: { conversationId: conversation.id, id: { not: userMessage.id } },
@@ -119,8 +121,17 @@ export async function prepareChatTurn(identity: ChatIdentity, input: { conversat
     prisma.aiConversation.update({ where: { id: conversation.id }, data: { lastMessageAt: new Date() } }),
   ]);
 
-  const candidates = await loadCandidates(products.map((item) => item.productId));
-  const systemPrompt = buildSystemPrompt(candidates, priceIntent?.label);
+  // Truy hồi theo cả vài câu hỏi gần nhất cùng chủ đề (câu tiếp nối như "còn con nào rẻ hơn không?" tự nó không
+  // nói gì về sản phẩm), và lọc theo giá TRƯỚC khi lấy top-k như ai-search.service.ts — lọc sau (hay chỉ nhắc AI
+  // "ưu tiên khoảng giá") thì top-k gần nghĩa nhất có thể toàn hàng ngoài khoảng giá dù kho có hàng phù hợp
+  const previousUserMessages = historyRows.filter((row) => row.role === MessageRole.USER).map((row) => row.content);
+  const query = buildChatRetrievalQuery(input.message, previousUserMessages);
+  const allowedProductIds = query.priceFilter ? await productIdsInPriceRange(query.priceFilter) : undefined;
+  const { products } = await retrieveProducts(query.text, { limit: RETRIEVAL_LIMIT, allowedProductIds });
+
+  const loaded = await loadPromptCandidates(products.map((item) => item.productId));
+  const candidates = loaded.map((item) => item.product);
+  const systemPrompt = buildChatSystemPrompt(loaded.map((item) => item.prompt), query.priceFilter);
   const history = trimHistoryByCharBudget([...historyRows].reverse());
 
   const messages: ChatMessage[] = [

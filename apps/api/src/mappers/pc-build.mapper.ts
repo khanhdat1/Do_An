@@ -17,7 +17,8 @@ export const buildProductInclude = { ...productInclude, spec: true } satisfies P
 
 export type BuildProductRow = Prisma.ProductGetPayload<{ include: typeof buildProductInclude }>;
 
-const NO_DATA = "Chưa có dữ liệu";
+/** Giá trị của dòng thông số mà luật tương thích cần nhưng dữ liệu gốc không có — AI Chat bỏ các dòng này khỏi prompt */
+export const NO_DATA = "Chưa có dữ liệu";
 
 type SpecEntry = [label: string, value: string | null, usedByRules: boolean];
 
