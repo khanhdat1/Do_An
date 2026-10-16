@@ -32,3 +32,13 @@ deploy/data/
 
 # Tệp khoá tạm của Microsoft Office khi đang mở tài liệu (vd. báo cáo Word trong docs/)
 ~$*
+
+# Tệp của trợ lý AI (Claude Code, Next.js agent rules) — cấu hình và ngữ cảnh làm việc cục bộ, không đưa lên GitHub
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+# Nhật ký làm việc do trợ lý AI viết khi chạy đánh giá/kiểm thử — chỉ giữ trên máy
+docs/bao-ve/danh-gia/ket-qua-cho-claude.md
+docs/bao-ve/danh-gia/ket-qua-kiem-thu-don-hang.md
+docs/bao-ve/danh-gia/ket-qua-sua-loi-tc16.md
