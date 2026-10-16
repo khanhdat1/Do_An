@@ -1,8 +1,11 @@
 import { prisma, type Prisma, type UserRole } from "@pczone/db";
 import slugify from "slugify";
+import { buildAiSearchText } from "../ai/search-text.js";
 import {
   adminProductDetailInclude,
   adminProductSummaryInclude,
+  readAllShortSpecs,
+  readSpecifications,
   toAdminProductDetailDto,
   toAdminProductSummaryDto,
 } from "../mappers/product.mapper.js";
@@ -139,6 +142,30 @@ async function syncSpecSafely(productId: string): Promise<void> {
   }
 }
 
+/**
+ * Văn bản chỉ mục AI theo ĐÚNG nội dung sắp lưu (ghi cùng lần create/update, không lệch nhau). Chỉ mục embedding
+ * tự nhận ra nội dung đổi qua contentHash ở lần dựng lại kế tiếp (ai/embedding-store.ts).
+ */
+async function aiSearchTextFor(
+  input: AdminProductInput,
+  existing?: { brandId: string | null; shortDescription: string | null; shortSpecs: Prisma.JsonValue; specifications: Prisma.JsonValue },
+): Promise<string> {
+  const brandId = input.brandId ?? existing?.brandId;
+  const [category, brand] = await Promise.all([
+    prisma.category.findUnique({ where: { id: input.categoryId }, select: { name: true } }),
+    brandId ? prisma.brand.findUnique({ where: { id: brandId }, select: { name: true } }) : null,
+  ]);
+  return buildAiSearchText({
+    name: input.name,
+    brandName: brand?.name,
+    categoryName: category?.name,
+    // Trường không gửi lên thì giữ giá trị cũ — đúng như lệnh update bên dưới (Prisma bỏ qua undefined)
+    shortDescription: input.shortDescription ?? existing?.shortDescription,
+    shortSpecs: existing ? readAllShortSpecs(existing.shortSpecs) : [],
+    specifications: input.specifications ?? (existing ? readSpecifications(existing.specifications) : []),
+  });
+}
+
 async function assertSkuAvailable(sku: string, excludeId?: string): Promise<void> {
   const existing = await prisma.product.findUnique({ where: { sku }, select: { id: true } });
   if (existing && existing.id !== excludeId) throw new ConflictError(`Mã SKU "${sku}" đã được dùng cho sản phẩm khác`);
@@ -148,6 +175,7 @@ async function assertSkuAvailable(sku: string, excludeId?: string): Promise<void
 export async function createProduct(input: AdminProductInput, admin: AdminActor): Promise<AdminProductDetailDto> {
   await assertSkuAvailable(input.sku);
   const slug = await uniqueSlug(toSlug(input.name));
+  const aiSearchText = await aiSearchTextFor(input);
 
   const product = await prisma.$transaction(async (tx) => {
     const created = await tx.product.create({
@@ -165,6 +193,7 @@ export async function createProduct(input: AdminProductInput, admin: AdminActor)
         warrantyMonths: input.warrantyMonths,
         lowStockThreshold: input.lowStockThreshold ?? 5,
         specifications: input.specifications as unknown as Prisma.InputJsonValue | undefined,
+        aiSearchText,
         status: "DRAFT",
         source: "MANUAL",
       },
@@ -190,6 +219,7 @@ export async function updateProduct(id: string, input: AdminProductInput, admin:
 
   await assertSkuAvailable(input.sku, id);
   const slug = input.name === existing.name ? existing.slug : await uniqueSlug(toSlug(input.name), id);
+  const aiSearchText = await aiSearchTextFor(input, existing);
 
   await prisma.$transaction(async (tx) => {
     await tx.product.update({
@@ -208,6 +238,7 @@ export async function updateProduct(id: string, input: AdminProductInput, admin:
         warrantyMonths: input.warrantyMonths,
         lowStockThreshold: input.lowStockThreshold ?? existing.lowStockThreshold,
         ...(input.specifications ? { specifications: input.specifications as unknown as Prisma.InputJsonValue } : {}),
+        aiSearchText,
       },
     });
     await logAdminAction(tx, {

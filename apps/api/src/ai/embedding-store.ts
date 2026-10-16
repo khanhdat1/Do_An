@@ -34,8 +34,8 @@ interface EmbeddingIndex {
 
 async function build(): Promise<EmbeddingIndex> {
   const [products, existingRows] = await Promise.all([
-    // Cùng điều kiện ACTIVE với search/index-store.ts. aiSearchText đã được cả hai luồng crawler
-    // ghi sẵn (tên + hãng + danh mục + thông số), chỉ là chưa ai đọc tới trước Đợt này.
+    // Cùng điều kiện ACTIVE với search/index-store.ts. aiSearchText do hai luồng crawler, seed và form
+    // thêm/sửa sản phẩm của admin (ai/search-text.ts) ghi sẵn: tên + hãng + danh mục + thông số.
     prisma.product.findMany({
       where: { status: ProductStatus.ACTIVE, aiSearchText: { not: null } },
       select: { id: true, aiSearchText: true },
