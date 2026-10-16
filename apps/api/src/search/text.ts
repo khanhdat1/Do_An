@@ -49,7 +49,7 @@ const STOP_WORDS = new Set(["cho", "cua", "va", "voi", "la", "nhung", "cac", "mo
  */
 const UNIT_SUFFIXES = new Set(["gb", "tb", "mb", "gbps", "hz", "khz", "ghz", "mhz", "w", "wh", "mm", "cm", "inch", "kg", "ti", "xt", "xtx", "super"]);
 
-function mergeUnits(words: string[]): string[] {
+export function mergeUnits(words: string[]): string[] {
   const merged: string[] = [];
   for (let index = 0; index < words.length; index++) {
     const word = words[index];

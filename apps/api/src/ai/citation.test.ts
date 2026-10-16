@@ -98,13 +98,85 @@ console.log("\n[1] findCitedProductIds");
   );
 
   check(
-    // "5060" là chuỗi con của "5060ti" sau compact() (bỏ dấu cách) — cùng bản chất so-nguyên-chuỗi
-    // với đánh đổi đã ghi nhận từ đầu ("tệ nhất là thừa một sản phẩm thật, không bao giờ là sản phẩm
-    // bịa"): bản RTX 5060 thường bị trích dẫn kèm theo dù câu trả lời chỉ nêu đúng bản "5060 Ti". Chấp
-    // nhận được — vẫn là 2 sản phẩm CÓ THẬT liên quan sát nhau, không phải trích dẫn sai lệch hẳn.
-    "cùng bộ ứng viên 'PC Gaming PCZone' ở trên, nhưng trả lời THẬT SỰ nêu tên một sản phẩm -> vẫn trích dẫn đúng sản phẩm đó (không bị lọc quá tay, dù kèm theo bản gần giống)",
+    // Trước đây bản RTX 5060 thường bị trích kèm vì "5060" là chuỗi con của "5060ti" sau compact().
+    // Mã model giờ so NGUYÊN TỪ nên "5060 Ti" không còn bị coi là nhắc tới bản "5060".
+    "cùng bộ ứng viên 'PC Gaming PCZone' ở trên, nhưng trả lời THẬT SỰ nêu tên một sản phẩm -> trích dẫn đúng sản phẩm đó, không kèm bản 5060 thường",
     findCitedProductIds("Mình gợi ý cấu hình i5-12400F RTX 5060 Ti, đủ mạnh cho nhu cầu của bạn.", pcCandidates),
-    ["prod-pc-i5-5060", "prod-pc-i5-5060ti"],
+    ["prod-pc-i5-5060ti"],
+  );
+}
+
+// Tên đúng như trong DB dev (apps/crawler/data/demo-catalog.json qua displayName(), và seed.ts)
+const loqEssential = { productId: "prod-loq-essential", name: "Laptop gaming Lenovo LOQ Essential 15ARP10E 83S0000DVN" };
+const loq15irx10 = { productId: "prod-loq-15irx10", name: "Laptop gaming Lenovo LOQ 15IRX10 83JE01AGVN" };
+const loq15arp10e = { productId: "prod-loq-15arp10e", name: "Laptop gaming Lenovo LOQ 15ARP10E 83S0006RVN" };
+const laptopCandidates = [
+  loqEssential,
+  loq15irx10,
+  loq15arp10e,
+  { productId: "prod-tuf-fa506", name: "Laptop gaming ASUS TUF Gaming A15 FA506NCG-HN329W" },
+  { productId: "prod-tuf-fa507", name: "Laptop ASUS TUF Gaming A15 FA507NV" },
+  { productId: "prod-tuf-f16", name: "Laptop gaming ASUS TUF Gaming F16 FX608JHI-TU209W" },
+  { productId: "prod-rog-g16", name: "Laptop ASUS ROG Strix G16 G614JIR" },
+];
+
+const cpuCandidates = [
+  { productId: "prod-9700x", name: "CPU AMD Ryzen 7 9700X AM5 Zen 5" },
+  { productId: "prod-9800x3d", name: "CPU AMD Ryzen 7 9800X3D" },
+  { productId: "prod-265k", name: "CPU Intel Core Ultra 7 265K" },
+  { productId: "prod-4070tis", name: "Card màn hình ASUS TUF RTX 4070 Ti SUPER" },
+  { productId: "prod-4080s", name: "GIGABYTE RTX 4080 SUPER Gaming OC 16GB" },
+  { productId: "prod-ram", name: "RAM Corsair Vengeance RGB DDR5 32GB 6000MHz" },
+];
+
+console.log("\n[2] findCitedProductIds — bắt buộc khớp mã model (ca lỗi thật khi chấm)");
+{
+  check(
+    "ca lỗi thật: nhắc 'Lenovo LOQ Essential 15ARP10E' -> KHÔNG trích kèm 'LOQ 15IRX10 83JE01AGVN' (chỉ chung hãng/dòng), cũng không kèm bản 'LOQ 15ARP10E' thường",
+    findCitedProductIds(
+      "Trong tầm giá này, mình gợi ý **Lenovo LOQ Essential 15ARP10E** giá 26.990.000đ, còn hàng, chip Ryzen 5 7535HS cùng RTX 3050 6GB, đủ chơi tốt các game eSports.",
+      laptopCandidates,
+    ),
+    ["prod-loq-essential"],
+  );
+
+  check(
+    "nhắc hai mẫu LOQ bằng đúng mã model -> trích cả hai",
+    findCitedProductIds("Bạn có thể cân nhắc Lenovo LOQ Essential 15ARP10E hoặc mạnh hơn là Lenovo LOQ 15IRX10.", laptopCandidates),
+    ["prod-loq-essential", "prod-loq-15irx10"],
+  );
+
+  check(
+    "nhắc 'TUF Gaming A15 FA506NCG' -> không trích kèm 'TUF Gaming A15 FA507NV' dù chung dòng A15",
+    findCitedProductIds("Con ASUS TUF Gaming A15 FA506NCG là lựa chọn bền bỉ, giá dễ chịu.", laptopCandidates),
+    ["prod-tuf-fa506"],
+  );
+
+  check(
+    "ca lỗi thật: nhắc 'Ryzen 7 9700X' -> KHÔNG trích kèm 'Ryzen 7 9800X3D'",
+    findCitedProductIds("Với nhu cầu chơi game, bạn có thể chọn **AMD Ryzen 7 9700X** (8 nhân 16 luồng, socket AM5, TDP 65W).", cpuCandidates),
+    ["prod-9700x"],
+  );
+
+  check(
+    "chiều ngược lại: nhắc 'Ryzen 7 9800X3D' -> không trích kèm 9700X",
+    findCitedProductIds("Nếu chỉ chơi game thì AMD Ryzen 7 9800X3D là CPU gaming mạnh nhất trong danh sách.", cpuCandidates),
+    ["prod-9800x3d"],
+  );
+
+  check(
+    "mã so nguyên từ: nhắc '9950X3D' -> không trích bản '9950X' (dù '9950x' là chuỗi con của '9950x3d')",
+    findCitedProductIds("Ryzen 9 9950X3D là lựa chọn mạnh nhất cho vừa chơi game vừa render.", [
+      { productId: "prod-9950x", name: "CPU AMD Ryzen 9 9950X" },
+      { productId: "prod-9950x3d", name: "CPU AMD Ryzen 9 9950X3D" },
+    ]),
+    ["prod-9950x3d"],
+  );
+
+  check(
+    "viết liền/viết rời khác tên trong DB ('RTX4070 Ti Super' so với 'RTX 4070 Ti SUPER') -> vẫn khớp mã",
+    findCitedProductIds("Card ASUS TUF RTX4070 Ti Super chạy 2K rất ổn.", cpuCandidates),
+    ["prod-4070tis"],
   );
 }
 
