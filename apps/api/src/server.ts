@@ -5,9 +5,12 @@ import { createApp } from "./app.js";
 import { env } from "./env.js";
 import { warmSearchIndex } from "./search/index-store.js";
 import { getProvider, isConfigured, redirectUri } from "./services/oauth.providers.js";
+import { startUnpaidOrderSweeper } from "./services/unpaid-order.service.js";
 import { isVnpayConfigured } from "./services/vnpay.service.js";
+import { formatTimeout } from "./utils/unpaid-order.js";
 
 const app = createApp();
+let stopUnpaidOrderSweeper = () => {};
 
 const server = app.listen(env.port, () => {
   console.log(`\n  PCZone API đang chạy: http://localhost:${env.port}`);
@@ -36,7 +39,16 @@ const server = app.listen(env.port, () => {
       ? `  AI Search:            đã bật (model: ${env.ai.embeddingModel})`
       : `  AI Search:            chưa cấu hình (xem README mục 8) — tìm kiếm từ khoá vẫn hoạt động bình thường`,
   );
+  const unpaidTimeout = env.orders.unpaidTimeoutHours;
+  console.log(
+    unpaidTimeout === null
+      ? `  Tự huỷ đơn chưa trả:  đã tắt (UNPAID_ORDER_TIMEOUT_HOURS=0)`
+      : `  Tự huỷ đơn chưa trả:  chuyển khoản/MoMo quá ${formatTimeout(unpaidTimeout)} chưa xác nhận tiền`,
+  );
   console.log("");
+
+  // Đơn chuyển khoản/MoMo bỏ dở không được giữ kho mãi — xem services/unpaid-order.service.ts
+  stopUnpaidOrderSweeper = startUnpaidOrderSweeper(unpaidTimeout);
 
   // Dựng sẵn chỉ mục tìm kiếm để lượt tìm đầu tiên không phải chờ; DB chưa lên thì lượt tìm đầu sẽ tự dựng
   warmSearchIndex()
@@ -61,6 +73,7 @@ const server = app.listen(env.port, () => {
 /** Đóng kết nối gọn gàng khi dừng bằng Ctrl+C hoặc khi container bị kill */
 async function shutdown(signal: string) {
   console.log(`\nNhận ${signal}, đang đóng API...`);
+  stopUnpaidOrderSweeper();
   server.close();
   await prisma.$disconnect();
   process.exit(0);

@@ -2,6 +2,7 @@ import { config as loadEnv } from "dotenv";
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseUnpaidOrderTimeoutHours } from "./utils/unpaid-order.js";
 
 /**
  * Nạp biến môi trường.
@@ -139,6 +140,14 @@ export const env = {
   momo: {
     phone: optional("MOMO_PHONE"),
     displayName: optional("MOMO_DISPLAY_NAME"),
+  },
+
+  /**
+   * Đơn chuyển khoản ngân hàng/MoMo chưa được xác nhận đã nhận tiền quá `UNPAID_ORDER_TIMEOUT_HOURS` giờ (mặc định 24)
+   * thì tự huỷ và hoàn kho — không để đơn bỏ dở giữ hàng mãi (`services/unpaid-order.service.ts`). `0` = tắt.
+   */
+  orders: {
+    unpaidTimeoutHours: parseUnpaidOrderTimeoutHours(process.env.UNPAID_ORDER_TIMEOUT_HOURS),
   },
 
   /**
