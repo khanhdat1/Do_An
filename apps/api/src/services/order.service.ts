@@ -11,6 +11,7 @@ import { calcShippingFee } from "../utils/shipping.js";
 import { ORDER_GROUP_STATUSES } from "./account.service.js";
 import { createAddress, type AddressInput } from "./address.service.js";
 import { isBankTransferConfigured, isMomoConfigured } from "./manual-payment.service.js";
+import { cancelOrderInTx, ORDER_CHANGED_MESSAGE } from "./order-cancellation.service.js";
 import { assertPaymentMethodEnabled, getSettings } from "./settings.service.js";
 import { buildPaymentUrl, isVnpayConfigured, type VerifiedCallback } from "./vnpay.service.js";
 import { redeemVoucher, validateVoucherForOrder } from "./voucher.service.js";
@@ -287,61 +288,30 @@ export async function lookupGuestOrder(orderCode: string, phone: string): Promis
  * cho khách trả hàng đã nhận).
  */
 export async function cancelOrder(userId: string, orderCode: string, reason: string | undefined): Promise<OrderDto> {
-  const orderId = await prisma.$transaction(async (tx) => {
-    const order = await tx.order.findFirst({ where: { orderCode, userId }, include: { items: true } });
-    if (!order) throw new NotFoundError("Không tìm thấy đơn hàng");
+  const orderId = await retryOnTransactionConflict(() =>
+    prisma.$transaction(async (tx) => {
+      const order = await tx.order.findFirst({ where: { orderCode, userId }, include: { items: true } });
+      if (!order) throw new NotFoundError("Không tìm thấy đơn hàng");
 
-    const cancellable =
-      (order.status === "PENDING" || order.status === "CONFIRMED") && order.paymentStatus === "PENDING";
-    if (!cancellable) {
-      throw new ConflictError("Đơn hàng này không thể tự huỷ. Vui lòng liên hệ hotline nếu cần hỗ trợ.");
-    }
+      const cancellable =
+        (order.status === "PENDING" || order.status === "CONFIRMED") && order.paymentStatus === "PENDING";
+      if (!cancellable) {
+        throw new ConflictError("Đơn hàng này không thể tự huỷ. Vui lòng liên hệ hotline nếu cần hỗ trợ.");
+      }
 
-    for (const item of order.items) {
-      // Dòng hàng của sản phẩm đã bị xoá hẳn khỏi catalog thì không còn gì để hoàn kho
-      if (!item.productId) continue;
-
-      const updated = await tx.product.update({
-        where: { id: item.productId },
-        data: { inventoryQuantity: { increment: item.quantity }, soldCount: { decrement: item.quantity } },
+      // Bước kiểm tra trên đọc không khoá dòng: hai lượt bấm huỷ cùng lúc đều qua được — `cancelOrderInTx` giành đơn
+      // bằng cập nhật có điều kiện, lượt sau nhận 409 thay vì hoàn kho/hoàn mã lần hai
+      const cancelled = await cancelOrderInTx(tx, order, {
+        reason,
+        historyNote: reason || "Khách tự huỷ đơn",
+        stockNote: `Hoàn kho do huỷ đơn ${order.orderCode}`,
+        requireUnpaid: true,
       });
+      if (!cancelled) throw new ConflictError(ORDER_CHANGED_MESSAGE);
 
-      await tx.inventoryTransaction.create({
-        data: {
-          productId: item.productId,
-          type: "ADJUST",
-          quantityChange: item.quantity,
-          quantityAfter: updated.inventoryQuantity,
-          orderId: order.id,
-          note: `Hoàn kho do huỷ đơn ${order.orderCode}`,
-        },
-      });
-    }
-
-    // Hoàn lại lượt mã giảm giá — cùng nguyên tắc với hoàn kho: đơn huỷ thì mọi thứ đã trừ lúc tạo đơn
-    // phải trả lại, kẻo mã coi như đã dùng dù đơn chưa từng thành công
-    if (order.voucherId) {
-      await tx.voucher.updateMany({
-        where: { id: order.voucherId, usageCount: { gt: 0 } },
-        data: { usageCount: { decrement: 1 } },
-      });
-      await tx.voucherRedemption.deleteMany({
-        where: { voucherId: order.voucherId, userId, orderId: order.orderCode },
-      });
-    }
-
-    await tx.order.update({
-      where: { id: order.id },
-      data: { status: "CANCELLED", cancelledAt: new Date(), cancelReason: reason },
-    });
-    await tx.orderStatusHistory.create({
-      data: { orderId: order.id, fromStatus: order.status, toStatus: "CANCELLED", note: reason || "Khách tự huỷ đơn" },
-    });
-    // Lượt thử VNPay còn treo (khách bấm huỷ trong lúc đang ở trang VNPay) không còn ý nghĩa
-    await tx.payment.updateMany({ where: { orderId: order.id, status: "PENDING" }, data: { status: "CANCELLED" } });
-
-    return order.id;
-  });
+      return order.id;
+    }),
+  );
 
   const row = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: orderInclude });
   return toOrderDto(row);

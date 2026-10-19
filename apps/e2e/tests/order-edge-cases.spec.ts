@@ -3,7 +3,8 @@ import { API_URL, WEB_URL } from "../e2e-env";
 import { randomPassword, TEST_ADDRESS, uniqueEmail } from "./helpers";
 
 /**
- * Các ca kiểm thử bổ sung cho đơn hàng (Bảng 5.9 của báo cáo, TC16–TC20) — gọi thẳng API, không qua giao diện.
+ * Các ca kiểm thử bổ sung cho đơn hàng (Bảng 5.9 của báo cáo, TC16–TC20; TC21–TC23: hai thao tác cùng lúc trên một
+ * đơn) — gọi thẳng API, không qua giao diện.
  * Mỗi khách/quản trị là một APIRequestContext riêng (cookie phiên riêng). Gọi thẳng tới API_URL (không qua proxy
  * của web) nên chạy được cả với cấu hình chính lẫn `playwright.api-only.config.ts`; header Origin là của web kiểm
  * thử vì originGuard chỉ cho phép Origin nằm trong CORS_ORIGIN.
@@ -14,7 +15,7 @@ import { randomPassword, TEST_ADDRESS, uniqueEmail } from "./helpers";
  */
 
 const SEED_ADMIN = { email: "admin@pczone.vn", password: "admin123" };
-/** Sản phẩm mẫu trong seed.ts, không test nào khác dùng: TC16 riêng một sản phẩm, TC17–TC20 dùng chung sản phẩm thứ hai */
+/** Sản phẩm mẫu trong seed.ts, không test nào khác dùng: TC16 riêng một sản phẩm, TC17–TC23 dùng chung sản phẩm thứ hai */
 const RACE_PRODUCT_SLUG = "ssd-samsung-990-pro-2tb";
 const FLOW_PRODUCT_SLUG = "ram-corsair-vengeance-rgb-ddr5-32gb";
 const VOUCHER_CODE = "WELCOME10";
@@ -356,4 +357,126 @@ test("TC20 - ghi nhận hoàn tiền cho đơn chưa thu tiền bị từ chối
   expect.soft(before.paymentStatus, "đơn chưa thu tiền").toBe("PENDING");
   expect.soft(refundStatus, "bị từ chối 409").toBe(409);
   expect.soft(after.paymentStatus, "paymentStatus không đổi").toBe(before.paymentStatus);
+});
+
+/** Chạy hai request ĐÚNG cùng lúc rồi trả mã HTTP + nội dung của từng cái (theo thứ tự truyền vào) */
+async function race(...requests: Promise<APIResponse>[]): Promise<{ status: number; body: unknown }[]> {
+  const responses = await Promise.all(requests);
+  return Promise.all(responses.map(async (response) => ({ status: response.status(), body: await bodyOf(response) })));
+}
+
+const sortedStatuses = (results: { status: number }[]) => results.map((result) => result.status).sort((a, b) => a - b);
+
+test("TC21 - khách bấm huỷ hai lần cùng lúc: đúng một lần thành công, kho và lượt mã chỉ hoàn một lần", async () => {
+  const admin = await loginAdmin();
+  const id = await productId(admin, FLOW_PRODUCT_SLUG);
+  await setStock(admin, id, 5);
+  const customer = await newCustomer("tc21");
+
+  const stockBefore = await stockOf(admin, id);
+  const usageBefore = await voucherUsage(admin, VOUCHER_CODE);
+  await addToCart(customer.api, id, 2);
+  const orderCode = await placeOrderOk(customer.api, customer.addressId, VOUCHER_CODE);
+  const stockAfterOrder = await stockOf(admin, id);
+  const usageAfterOrder = await voucherUsage(admin, VOUCHER_CODE);
+
+  const cancelUrl = `/api/orders/${encodeURIComponent(orderCode)}/cancel`;
+  const results = await race(customer.api.post(cancelUrl, { data: {} }), customer.api.post(cancelUrl, { data: {} }));
+  const after = await adminOrder(admin, orderCode);
+  const stockAfter = await stockOf(admin, id);
+  const usageAfter = await voucherUsage(admin, VOUCHER_CODE);
+  const restockRows = rowsOfOrder(await inventoryRows(admin, id), orderCode).filter((row) => row.quantityChange > 0);
+  const cancelEvents = after.statusHistory.filter((event) => event.status === "CANCELLED");
+
+  report("TC21", {
+    orderCode,
+    maHttp: results.map((result) => result.status),
+    phanHoiLoi: results.filter((result) => result.status !== 200).map((result) => result.body),
+    trangThaiSau: after.status,
+    tonKho: { truocDat: stockBefore, sauDat: stockAfterOrder, sauHuy: stockAfter },
+    usageCount: { truocDat: usageBefore, sauDat: usageAfterOrder, sauHuy: usageAfter },
+    soKhoHoan: restockRows,
+    soDongLichSuHuy: cancelEvents.length,
+  });
+
+  expect.soft(sortedStatuses(results), "đúng một 200, request kia 409").toEqual([200, 409]);
+  expect.soft(after.status).toBe("CANCELLED");
+  expect.soft(stockAfterOrder, "đặt đơn trừ 2").toBe(stockBefore - 2);
+  expect.soft(stockAfter, "kho hoàn đúng một lần").toBe(stockBefore);
+  expect.soft(usageAfter, "lượt mã trả đúng một lần").toBe(usageBefore);
+  expect.soft(restockRows, "đúng 1 dòng sổ kho hoàn (+2)").toEqual([expect.objectContaining({ type: "ADJUST", quantityChange: 2 })]);
+  expect.soft(cancelEvents, "đúng 1 dòng lịch sử Đã huỷ").toHaveLength(1);
+});
+
+test("TC22 - khách và nhân viên cùng huỷ một đơn: đúng một bên thành công, kho chỉ hoàn một lần", async () => {
+  const admin = await loginAdmin();
+  const id = await productId(admin, FLOW_PRODUCT_SLUG);
+  await setStock(admin, id, 5);
+  const customer = await newCustomer("tc22");
+
+  const stockBefore = await stockOf(admin, id);
+  await addToCart(customer.api, id);
+  const orderCode = await placeOrderOk(customer.api, customer.addressId);
+
+  const code = encodeURIComponent(orderCode);
+  const results = await race(
+    customer.api.post(`/api/orders/${code}/cancel`, { data: {} }),
+    admin.post(`/api/admin/orders/${code}/cancel`, { data: { reason: "TC22 e2e: nhân viên huỷ" } }),
+  );
+  const after = await adminOrder(admin, orderCode);
+  const stockAfter = await stockOf(admin, id);
+  const restockRows = rowsOfOrder(await inventoryRows(admin, id), orderCode).filter((row) => row.quantityChange > 0);
+  const cancelEvents = after.statusHistory.filter((event) => event.status === "CANCELLED");
+
+  report("TC22", {
+    orderCode,
+    maHttp: { khach: results[0].status, nhanVien: results[1].status },
+    phanHoiLoi: results.filter((result) => result.status !== 200).map((result) => result.body),
+    trangThaiSau: after.status,
+    tonKho: { truocDat: stockBefore, sauHuy: stockAfter },
+    soKhoHoan: restockRows,
+    lichSuHuy: cancelEvents,
+  });
+
+  expect.soft(sortedStatuses(results), "đúng một 200, request kia 409").toEqual([200, 409]);
+  expect.soft(after.status).toBe("CANCELLED");
+  expect.soft(stockAfter, "kho hoàn đúng một lần").toBe(stockBefore);
+  expect.soft(restockRows, "đúng 1 dòng sổ kho hoàn").toHaveLength(1);
+  expect.soft(cancelEvents, "đúng 1 dòng lịch sử Đã huỷ").toHaveLength(1);
+});
+
+test("TC23 - nhân viên bấm hoàn hàng hai lần cùng lúc: chỉ một phiếu RETURN", async () => {
+  const admin = await loginAdmin();
+  const id = await productId(admin, FLOW_PRODUCT_SLUG);
+  await setStock(admin, id, 5);
+  const customer = await newCustomer("tc23");
+
+  const stockBefore = await stockOf(admin, id);
+  await addToCart(customer.api, id);
+  const orderCode = await placeOrderOk(customer.api, customer.addressId);
+  await advance(admin, orderCode, ["CONFIRMED", "PACKING", "SHIPPING"]);
+
+  const returnUrl = `/api/admin/orders/${encodeURIComponent(orderCode)}/return`;
+  const data = { reason: "TC23 e2e: giao không thành công" };
+  const results = await race(admin.post(returnUrl, { data }), admin.post(returnUrl, { data }));
+  const after = await adminOrder(admin, orderCode);
+  const stockAfter = await stockOf(admin, id);
+  const returnRows = rowsOfOrder(await inventoryRows(admin, id), orderCode).filter((row) => row.type === "RETURN");
+  const returnEvents = after.statusHistory.filter((event) => event.status === "RETURNED");
+
+  report("TC23", {
+    orderCode,
+    maHttp: results.map((result) => result.status),
+    phanHoiLoi: results.filter((result) => result.status !== 200).map((result) => result.body),
+    trangThaiSau: after.status,
+    tonKho: { truocDat: stockBefore, sauHoanTra: stockAfter },
+    soKhoReturn: returnRows,
+    soDongLichSuHoan: returnEvents.length,
+  });
+
+  expect.soft(sortedStatuses(results), "đúng một 200, request kia 409").toEqual([200, 409]);
+  expect.soft(after.status).toBe("RETURNED");
+  expect.soft(stockAfter, "kho hoàn đúng một lần").toBe(stockBefore);
+  expect.soft(returnRows, "đúng 1 dòng sổ kho RETURN").toHaveLength(1);
+  expect.soft(returnEvents, "đúng 1 dòng lịch sử Đã hoàn").toHaveLength(1);
 });

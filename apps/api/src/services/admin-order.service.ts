@@ -10,8 +10,10 @@ import {
 } from "../mappers/order.mapper.js";
 import { ConflictError, NotFoundError } from "../middleware/errors.js";
 import type { AdminOrderDto, AdminOrderSummaryDto, Paginated } from "../types/dto.js";
+import { retryOnTransactionConflict } from "../utils/prisma-errors.js";
 import { logAdminAction } from "./audit-log.service.js";
 import { manualPaymentBlockReason } from "./manual-payment.service.js";
+import { cancelOrderInTx, claimOrderTransitionOrThrow, ORDER_CHANGED_MESSAGE, restockOrderItems } from "./order-cancellation.service.js";
 
 /** Ai đang thực hiện thao tác — khớp thẳng `req.auth` của phiên đăng nhập quản trị */
 export interface AdminActor {
@@ -92,16 +94,20 @@ export async function confirmOrderPayment(orderCode: string, admin: AdminActor):
     const now = new Date();
     await tx.payment.update({ where: { id: payment.id }, data: { status: "PAID", paidAt: now } });
 
+    // Ghi có điều kiện (đơn vẫn đúng trạng thái vừa đọc, vẫn chưa thanh toán): khách tự huỷ hoặc hệ thống tự huỷ
+    // đơn quá hạn đúng lúc này thì nhận 409 — không "hồi sinh" đơn vừa huỷ thành CONFIRMED mà kho đã hoàn
     if (order.paymentMethod === "COD") {
-      await tx.order.update({ where: { id: order.id }, data: { paymentStatus: "PAID" } });
+      await claimOrderTransitionOrThrow(tx, order, { paymentStatus: "PAID" }, { paymentStatus: "PENDING" });
     } else {
       const stillPending = order.status === "PENDING";
       const toStatus: OrderStatus = stillPending ? "CONFIRMED" : order.status;
 
-      await tx.order.update({
-        where: { id: order.id },
-        data: { paymentStatus: "PAID", ...(stillPending ? { status: "CONFIRMED", confirmedAt: now } : {}) },
-      });
+      await claimOrderTransitionOrThrow(
+        tx,
+        order,
+        { paymentStatus: "PAID", ...(stillPending ? { status: "CONFIRMED", confirmedAt: now } : {}) },
+        { paymentStatus: "PENDING" },
+      );
       await tx.orderStatusHistory.create({
         data: {
           orderId: order.id,
@@ -152,7 +158,7 @@ export async function advanceOrderStatus(
     }
 
     const now = new Date();
-    const stageTimestamp: Prisma.OrderUpdateInput =
+    const stageTimestamp: Prisma.OrderUpdateManyMutationInput =
       targetStatus === "CONFIRMED"
         ? { confirmedAt: now }
         : targetStatus === "PACKING"
@@ -161,7 +167,8 @@ export async function advanceOrderStatus(
             ? { shippedAt: now }
             : { deliveredAt: now }; // targetStatus chỉ còn DELIVERED — FORWARD_NEXT_STATUS đã chặn mọi giá trị khác ở trên
 
-    await tx.order.update({ where: { id: order.id }, data: { status: targetStatus, ...stageTimestamp } });
+    // Có điều kiện: hai lượt bấm "tiến một bước" cùng lúc thì lượt sau nhận 409, không ghi trùng lịch sử/nhật ký
+    await claimOrderTransitionOrThrow(tx, order, { status: targetStatus, ...stageTimestamp });
     await tx.orderStatusHistory.create({
       data: { orderId: order.id, fromStatus: order.status, toStatus: targetStatus, changedBy: admin.userId, note },
     });
@@ -186,63 +193,32 @@ export async function advanceOrderStatus(
  * nhân viên tự xác nhận đã chuyển tiền lại, tránh giả vờ đã hoàn tiền khi chưa thực sự làm.
  */
 export async function cancelOrderAsAdmin(orderCode: string, reason: string | undefined, admin: AdminActor): Promise<AdminOrderDto> {
-  await prisma.$transaction(async (tx) => {
-    const order = await tx.order.findUnique({ where: { orderCode }, include: { items: true } });
-    if (!order) throw new NotFoundError("Không tìm thấy đơn hàng");
-    if (!canAdminCancelOrder(order.status)) {
-      throw new ConflictError("Đơn hàng ở trạng thái này không thể huỷ (đã giao, đã huỷ hoặc đã hoàn).");
-    }
+  await retryOnTransactionConflict(() =>
+    prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({ where: { orderCode }, include: { items: true } });
+      if (!order) throw new NotFoundError("Không tìm thấy đơn hàng");
+      if (!canAdminCancelOrder(order.status)) {
+        throw new ConflictError("Đơn hàng ở trạng thái này không thể huỷ (đã giao, đã huỷ hoặc đã hoàn).");
+      }
 
-    for (const item of order.items) {
-      if (!item.productId) continue;
-      const updated = await tx.product.update({
-        where: { id: item.productId },
-        data: { inventoryQuantity: { increment: item.quantity }, soldCount: { decrement: item.quantity } },
-      });
-      await tx.inventoryTransaction.create({
-        data: {
-          productId: item.productId,
-          type: "ADJUST",
-          quantityChange: item.quantity,
-          quantityAfter: updated.inventoryQuantity,
-          orderId: order.id,
-          note: `Hoàn kho do nhân viên huỷ đơn ${order.orderCode}`,
-        },
-      });
-    }
-
-    if (order.voucherId) {
-      await tx.voucher.updateMany({
-        where: { id: order.voucherId, usageCount: { gt: 0 } },
-        data: { usageCount: { decrement: 1 } },
-      });
-      await tx.voucherRedemption.deleteMany({ where: { voucherId: order.voucherId, orderId: order.orderCode } });
-    }
-
-    await tx.order.update({
-      where: { id: order.id },
-      data: { status: "CANCELLED", cancelledAt: new Date(), cancelReason: reason },
-    });
-    await tx.orderStatusHistory.create({
-      data: {
-        orderId: order.id,
-        fromStatus: order.status,
-        toStatus: "CANCELLED",
+      const cancelled = await cancelOrderInTx(tx, order, {
+        reason,
+        historyNote: reason || "Nhân viên huỷ đơn",
+        stockNote: `Hoàn kho do nhân viên huỷ đơn ${order.orderCode}`,
         changedBy: admin.userId,
-        note: reason || "Nhân viên huỷ đơn",
-      },
-    });
-    await tx.payment.updateMany({ where: { orderId: order.id, status: "PENDING" }, data: { status: "CANCELLED" } });
-    await logAdminAction(tx, {
-      actorId: admin.userId,
-      actorRole: admin.role,
-      action: "order.cancelled",
-      targetType: "Order",
-      targetId: order.orderCode,
-      metadata: { reason: reason ?? null, fromStatus: order.status },
-    });
+      });
+      if (!cancelled) throw new ConflictError(ORDER_CHANGED_MESSAGE);
 
-  });
+      await logAdminAction(tx, {
+        actorId: admin.userId,
+        actorRole: admin.role,
+        action: "order.cancelled",
+        targetType: "Order",
+        targetId: order.orderCode,
+        metadata: { reason: reason ?? null, fromStatus: order.status },
+      });
+    }),
+  );
 
   return getOrderForAdmin(orderCode);
 }
@@ -253,54 +229,37 @@ export async function cancelOrderAsAdmin(orderCode: string, reason: string | und
  * giảm giá: đơn đã hoàn tất giao dịch, khách đã dùng mã, khác trường hợp huỷ khi đơn chưa từng thành công.
  */
 export async function returnOrder(orderCode: string, reason: string | undefined, admin: AdminActor): Promise<AdminOrderDto> {
-  await prisma.$transaction(async (tx) => {
-    const order = await tx.order.findUnique({ where: { orderCode }, include: { items: true } });
-    if (!order) throw new NotFoundError("Không tìm thấy đơn hàng");
-    if (!canReturnOrder(order.status)) {
-      throw new ConflictError("Chỉ xử lý hoàn hàng cho đơn đang giao hoặc đã giao.");
-    }
+  await retryOnTransactionConflict(() =>
+    prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({ where: { orderCode }, include: { items: true } });
+      if (!order) throw new NotFoundError("Không tìm thấy đơn hàng");
+      if (!canReturnOrder(order.status)) {
+        throw new ConflictError("Chỉ xử lý hoàn hàng cho đơn đang giao hoặc đã giao.");
+      }
 
-    for (const item of order.items) {
-      if (!item.productId) continue;
-      const updated = await tx.product.update({
-        where: { id: item.productId },
-        data: { inventoryQuantity: { increment: item.quantity }, soldCount: { decrement: item.quantity } },
-      });
-      await tx.inventoryTransaction.create({
+      // Giành đơn TRƯỚC khi hoàn kho — xem `order-cancellation.service.ts`
+      await claimOrderTransitionOrThrow(tx, order, { status: "RETURNED", returnedAt: new Date(), returnReason: reason });
+      await restockOrderItems(tx, order, "RETURN", `Khách trả hàng — đơn ${order.orderCode}`);
+
+      await tx.orderStatusHistory.create({
         data: {
-          productId: item.productId,
-          type: "RETURN",
-          quantityChange: item.quantity,
-          quantityAfter: updated.inventoryQuantity,
           orderId: order.id,
-          note: `Khách trả hàng — đơn ${order.orderCode}`,
+          fromStatus: order.status,
+          toStatus: "RETURNED",
+          changedBy: admin.userId,
+          note: reason || "Nhân viên xử lý hoàn hàng",
         },
       });
-    }
-
-    await tx.order.update({
-      where: { id: order.id },
-      data: { status: "RETURNED", returnedAt: new Date(), returnReason: reason },
-    });
-    await tx.orderStatusHistory.create({
-      data: {
-        orderId: order.id,
-        fromStatus: order.status,
-        toStatus: "RETURNED",
-        changedBy: admin.userId,
-        note: reason || "Nhân viên xử lý hoàn hàng",
-      },
-    });
-    await logAdminAction(tx, {
-      actorId: admin.userId,
-      actorRole: admin.role,
-      action: "order.returned",
-      targetType: "Order",
-      targetId: order.orderCode,
-      metadata: { reason: reason ?? null, fromStatus: order.status },
-    });
-
-  });
+      await logAdminAction(tx, {
+        actorId: admin.userId,
+        actorRole: admin.role,
+        action: "order.returned",
+        targetType: "Order",
+        targetId: order.orderCode,
+        metadata: { reason: reason ?? null, fromStatus: order.status },
+      });
+    }),
+  );
 
   return getOrderForAdmin(orderCode);
 }

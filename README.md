@@ -1012,6 +1012,10 @@ kho) sẽ ghi thêm khi thao tác tương ứng được xây.
   hỏi chưa thanh toán) hoàn kho kiểu `ADJUST` + hoàn lượt mã giảm giá nếu có. **Xử lý hoàn hàng** (chỉ
   khi đơn đang giao/đã giao) hoàn kho kiểu `RETURN`, không hoàn mã giảm giá (đơn đã hoàn tất giao dịch).
   Cả hai đều hỏi lại kèm ô lý do trước khi thực hiện.
+- **Không xử lý hai lần khi bấm cùng lúc**: huỷ, hoàn hàng, tiến một bước và xác nhận đã nhận tiền đều đổi
+  trạng thái bằng cập nhật CÓ ĐIỀU KIỆN (`UPDATE … WHERE id = ? AND status = <trạng thái vừa đọc>`) trước khi hoàn
+  kho/hoàn mã (`services/order-cancellation.service.ts`). Hai request cùng huỷ một đơn (khách bấm hai lần, hoặc khách
+  và nhân viên cùng lúc) thì đúng một request thành công, request kia nhận 409 — kho và lượt mã chỉ hoàn một lần.
 - **Không tự động hoàn tiền**: huỷ/hoàn một đơn đã thu tiền (`paymentStatus: PAID`) không tự đổi trạng
   thái thanh toán — nút riêng **"Đánh dấu đã hoàn tiền"** chỉ ghi nhận bút toán thủ công (nhân viên xác
   nhận đã tự chuyển khoản lại), giao diện nói rõ đây không phải chuyển tiền tự động qua cổng nào, đúng
