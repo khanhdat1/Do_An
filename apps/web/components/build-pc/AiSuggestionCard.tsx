@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Scale, Sparkles, TriangleAlert, X } from "lucide-react";
+import { Copy, Scale, Sparkles, TrendingUp, TriangleAlert, X } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { formatPrice } from "@/lib/format";
 import { SLOT_LABEL, savedBuildUrl, type BuildSelection } from "@/lib/pc-build";
@@ -36,8 +36,12 @@ export default function AiSuggestionCard({ suggestion, selection, result, onDism
         : suggestion.repair === "REPAIRED"
           ? "AI đã sửa 1 lần nhưng cấu hình vẫn còn vấn đề."
           : null;
-  const fittedSwaps = budgetFit.status === "FITTED" ? budgetFit.swaps : [];
-  const fittedSaving = fittedSwaps.reduce((sum, swap) => sum + swap.from.price * swap.from.quantity - swap.to.price * swap.to.quantity, 0);
+  // Hệ thống (không dùng AI) đã đổi vài món: hạ cho vừa ngân sách, hoặc nâng để tận dụng ngân sách
+  const upgraded = budgetFit.status === "UPGRADED";
+  const systemSwaps = budgetFit.status === "FITTED" || upgraded ? budgetFit.swaps : [];
+  const swapDelta = Math.abs(systemSwaps.reduce((sum, swap) => sum + swap.to.price * swap.to.quantity - swap.from.price * swap.from.quantity, 0));
+  // Tổng lúc lưu trừ phần hệ thống thêm vào = tổng AI chọn ban đầu
+  const aiBudgetUse = upgraded && budget ? Math.round(((build.totalAtSave - swapDelta) / budget) * 100) : null;
 
   async function copyLink() {
     try {
@@ -95,18 +99,30 @@ export default function AiSuggestionCard({ suggestion, selection, result, onDism
         </p>
       ) : null}
 
-      {fittedSwaps.length > 0 ? (
+      {systemSwaps.length > 0 ? (
         <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 text-xs leading-relaxed text-slate-600 ring-1 ring-slate-200">
           <p className="flex items-center gap-1.5 font-semibold text-slate-800">
-            <Scale className="size-4 shrink-0 text-brand-500" aria-hidden />
-            Hệ thống đã tự điều chỉnh cho vừa ngân sách
+            {upgraded ? (
+              <TrendingUp className="size-4 shrink-0 text-brand-500" aria-hidden />
+            ) : (
+              <Scale className="size-4 shrink-0 text-brand-500" aria-hidden />
+            )}
+            {upgraded ? "Hệ thống đã nâng cấp để tận dụng ngân sách" : "Hệ thống đã tự điều chỉnh cho vừa ngân sách"}
           </p>
-          <p className="mt-1">
-            AI vẫn chọn vượt ngân sách, nên hệ thống (không dùng AI) đổi {fittedSwaps.length} món sang món rẻ hơn cùng loại — vẫn qua đủ
-            bộ kiểm tra tương thích, và giữ lâu nhất linh kiện quan trọng với nhu cầu &quot;{purpose}&quot;:
-          </p>
+          {upgraded ? (
+            <p className="mt-1">
+              AI chọn cấu hình mới dùng khoảng {aiBudgetUse}% ngân sách, nên hệ thống (không dùng AI) nâng {systemSwaps.length} món lên món
+              đắt hơn cùng loại — ưu tiên linh kiện quan trọng với nhu cầu &quot;{purpose}&quot;, vẫn qua đủ bộ kiểm tra tương thích và không
+              vượt ngân sách:
+            </p>
+          ) : (
+            <p className="mt-1">
+              AI vẫn chọn vượt ngân sách, nên hệ thống (không dùng AI) đổi {systemSwaps.length} món sang món rẻ hơn cùng loại — vẫn qua đủ
+              bộ kiểm tra tương thích, và giữ lâu nhất linh kiện quan trọng với nhu cầu &quot;{purpose}&quot;:
+            </p>
+          )}
           <ul className="mt-1.5 space-y-1">
-            {fittedSwaps.map((swap) => (
+            {systemSwaps.map((swap) => (
               <li key={swap.slot}>
                 <span className="font-semibold text-slate-700">{SLOT_LABEL[swap.slot]}:</span> {swap.from.name} ({formatPrice(swap.from.price)}
                 {swap.from.quantity > 1 ? ` × ${swap.from.quantity}` : ""}) → <span className="font-semibold text-slate-800">{swap.to.name}</span> (
@@ -115,13 +131,15 @@ export default function AiSuggestionCard({ suggestion, selection, result, onDism
               </li>
             ))}
           </ul>
-          <p className="mt-1.5 font-semibold text-emerald-700">Bớt được {formatPrice(fittedSaving)}</p>
+          <p className="mt-1.5 font-semibold text-emerald-700">
+            {upgraded ? `Thêm ${formatPrice(swapDelta)}, tổng vẫn trong ngân sách` : `Bớt được ${formatPrice(swapDelta)}`}
+          </p>
         </div>
       ) : null}
 
       {suggestion.summary ? (
         <p className="mt-3 text-sm leading-relaxed text-slate-700">
-          {fittedSwaps.length > 0 ? (
+          {systemSwaps.length > 0 ? (
             <span className="block text-xs text-slate-500">Tóm tắt của AI (viết cho lựa chọn ban đầu, trước khi hệ thống đổi linh kiện):</span>
           ) : null}
           {suggestion.summary}

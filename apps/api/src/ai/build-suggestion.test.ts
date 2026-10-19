@@ -10,6 +10,7 @@ import {
   parseSuggestion,
   minimumBuildTotal,
   promptBudget,
+  shouldUpgrade,
   statedBudget,
   suggestionName,
   withPromptBudget,
@@ -192,7 +193,17 @@ console.log("\n[6] Thứ tự giữ lại khi hệ thống tự hạ cấp cho v
   );
 }
 
-console.log("\n[7] Ngân sách để kiểm tra lấy từ câu của khách, không lấy con số AI tự khai");
+console.log("\n[7] Khi nào hệ thống tự nâng cấp (không dùng AI)");
+{
+  check("chơi game dùng 66% ngân sách (13,12/20 triệu) -> nâng", shouldUpgrade("Chơi game", 13_120_000, 20_000_000), true);
+  check("đồ họa dùng 84% -> nâng", shouldUpgrade("Đồ họa - dựng video", 25_200_000, 30_000_000), true);
+  check("chơi game đã dùng 85% -> thôi", shouldUpgrade("Chơi game", 17_000_000, 20_000_000), false);
+  check("văn phòng dùng ít ngân sách -> không nâng", shouldUpgrade("Văn phòng - học tập", 6_000_000, 12_000_000), false);
+  check("đa dụng -> không nâng", shouldUpgrade("Đa dụng", 6_000_000, 12_000_000), false);
+  check("không nêu ngân sách -> không nâng", shouldUpgrade("Chơi game", 13_000_000, null), false);
+}
+
+console.log("\n[8] Ngân sách để kiểm tra lấy từ câu của khách, không lấy con số AI tự khai");
 {
   check("'tầm 25 triệu' -> đúng 25 triệu, không lấy cận trên 30 triệu của bộ lọc tìm kiếm", promptBudget("PC chơi game tầm 25 triệu"), 25_000_000);
   check("'5 triệu' đứng một mình -> 5 triệu (chặn sớm vẫn dùng 6 triệu)", promptBudget("PC 5 triệu chơi game"), 5_000_000);

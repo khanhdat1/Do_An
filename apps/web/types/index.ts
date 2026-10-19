@@ -334,7 +334,7 @@ export interface SavedBuildSummary {
   itemCount: number;
 }
 
-/** Một món hệ thống tự đổi sang món rẻ hơn cùng loại để vừa ngân sách (đơn giá lúc gợi ý; RAM có thể đổi cả số thanh) */
+/** Một món hệ thống tự đổi cùng loại: rẻ hơn để vừa ngân sách, hoặc đắt hơn để tận dụng ngân sách (đơn giá lúc gợi ý; RAM có thể đổi cả số thanh) */
 export interface BudgetSwap {
   slot: BuildSlot;
   from: { productId: string; name: string; price: number; quantity: number };
@@ -345,20 +345,22 @@ export interface AiBuildSuggestion {
   build: SavedBuild;
   /** Ngân sách/nhu cầu AI hiểu từ câu của khách */
   understood: { budget: number | null; purpose: string };
-  /** AI viết cho lựa chọn của nó — khi `budgetFit` là FITTED, vài món đã được hệ thống đổi sau đó */
+  /** AI viết cho lựa chọn của nó — khi `budgetFit` là FITTED/UPGRADED, vài món đã được hệ thống đổi sau đó */
   summary: string;
   /** Đã bỏ lý do của những món hệ thống đổi */
   notes: { slot: BuildSlot; text: string }[];
   /**
-   * Bước cuối, không dùng AI: vẫn vượt ngân sách thì hệ thống đổi vài món sang món rẻ hơn mà vẫn tương thích.
-   * NOT_NEEDED: không vượt / không nêu ngân sách; FITTED: đã đổi; NOT_POSSIBLE: không có cách đổi nào hợp lệ
+   * Bước cuối, không dùng AI: vẫn vượt ngân sách thì hệ thống đổi vài món sang món rẻ hơn; nhu cầu hiệu năng mà dùng chưa tới
+   * 85% ngân sách thì nâng vài món lên món đắt hơn — luôn vẫn tương thích, không vượt ngân sách.
+   * NOT_NEEDED: không cần / không nêu ngân sách; FITTED: đã hạ; UPGRADED: đã nâng; NOT_POSSIBLE: vượt mà không có cách đổi nào hợp lệ
    */
-  budgetFit: { status: "NOT_NEEDED" | "FITTED" | "NOT_POSSIBLE"; swaps: BudgetSwap[] };
+  budgetFit: { status: "NOT_NEEDED" | "FITTED" | "UPGRADED" | "NOT_POSSIBLE"; swaps: BudgetSwap[] };
   /**
    * NOT_NEEDED: lượt đầu đạt; REPAIRED: đang hiện lượt sửa (không tệ hơn lượt đầu, nhưng vẫn có thể còn vấn đề);
-   * FAILED: lượt sửa lỗi/không đọc được/tệ hơn, đang hiện lượt đầu
+   * FAILED: lượt sửa lỗi/không đọc được/tệ hơn, đang hiện lượt đầu; SKIPPED: lượt đầu chỉ lệch ngân sách nhưng đã quá chậm,
+   * nên không nhờ AI sửa — hệ thống tự điều chỉnh (`budgetFit`)
    */
-  repair: "NOT_NEEDED" | "REPAIRED" | "FAILED";
+  repair: "NOT_NEEDED" | "REPAIRED" | "FAILED" | "SKIPPED";
   /** Số mã AI đưa ra nhưng không có trong kho nên bị bỏ */
   droppedCount: number;
 }

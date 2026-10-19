@@ -15,8 +15,9 @@ export type BuildPurpose = (typeof BUILD_PURPOSES)[number];
 const NEEDS_DISCRETE_GPU: readonly BuildPurpose[] = ["Chơi game", "Đồ họa - dựng video", "Lập trình - AI"];
 
 /**
- * Bước tự điều chỉnh cho vừa ngân sách (không dùng AI — pc-build/budget-fit.ts): mức "tiếc" khi phải hạ cấp từng loại, càng
- * cao càng được giữ lâu. Chỉ để xếp thứ tự đánh đổi giữa các loại theo nhu cầu, không phải điểm hiệu năng.
+ * Bước tự điều chỉnh theo ngân sách (không dùng AI — pc-build/budget-fit.ts): mức "tiếc" khi phải hạ cấp từng loại, càng
+ * cao càng được giữ lâu; khi nâng cấp thì tiền dư được chia theo tỉ lệ các trọng số này. Chỉ để xếp thứ tự đánh đổi giữa
+ * các loại theo nhu cầu, không phải điểm hiệu năng.
  */
 const DOWNGRADE_WEIGHTS: Record<BuildPurpose, Record<BuildSlot, number>> = {
   "Chơi game": { VGA: 3, CPU: 1.5, RAM: 1, SSD: 0.8, MAINBOARD: 0.6, PSU: 0.6, CASE: 0.4 },
@@ -28,6 +29,11 @@ const DOWNGRADE_WEIGHTS: Record<BuildPurpose, Record<BuildSlot, number>> = {
 
 export function downgradeWeights(purpose: BuildPurpose): Record<BuildSlot, number> {
   return DOWNGRADE_WEIGHTS[purpose];
+}
+
+/** Chơi game, đồ họa, lập trình - AI: cần card rời và nên tận dụng ngân sách cho hiệu năng */
+export function needsPerformance(purpose: BuildPurpose): boolean {
+  return NEEDS_DISCRETE_GPU.includes(purpose);
 }
 
 const MIN_BUDGET = 1_000_000;
@@ -194,8 +200,15 @@ export function parseSuggestion(raw: string, catalog: Catalog): ParsedSuggestion
   };
 }
 
-/** Nhu cầu hiệu năng mà tổng dưới mức này so với ngân sách thì coi là chọn quá tiết kiệm */
+/** Nhu cầu hiệu năng mà tổng dưới mức này so với ngân sách thì coi là chọn quá tiết kiệm — nhờ AI sửa */
 const MIN_BUDGET_USE = 0.7;
+/** Nhu cầu hiệu năng mà tổng cuối (sau AI) vẫn dưới mức này so với ngân sách thì hệ thống tự nâng cấp, không dùng AI */
+const UPGRADE_BELOW_BUDGET_USE = 0.85;
+
+/** Có chạy bước tự nâng cấp (pc-build/budget-fit.ts) không: có ngân sách, nhu cầu hiệu năng, tổng chưa tới 85% ngân sách */
+export function shouldUpgrade(purpose: BuildPurpose, total: number, budget: number | null): boolean {
+  return budget !== null && needsPerformance(purpose) && total < budget * UPGRADE_BELOW_BUDGET_USE;
+}
 
 /** "VGA: Card RTX 5060 (8.490.000đ); CPU: …" — giá cao trước, để AI biết đổi món nào thì giảm/tăng được bao nhiêu */
 function describePicks(suggestion: ParsedSuggestion, catalog: Catalog): string {
@@ -215,7 +228,7 @@ export function findRepairIssues(suggestion: ParsedSuggestion, result: BuildChec
   if (result.missingSlots.length > 0) {
     issues.push(`Còn thiếu linh kiện bắt buộc: ${result.missingSlots.map((slot) => `${slot} (${SLOT_LABEL_VI[slot]})`).join(", ")}.`);
   }
-  const wantsPerformance = NEEDS_DISCRETE_GPU.includes(suggestion.purpose);
+  const wantsPerformance = needsPerformance(suggestion.purpose);
   if (!suggestion.picks.VGA && wantsPerformance) {
     issues.push(`Nhu cầu "${suggestion.purpose}" cần card đồ họa rời (VGA) nhưng cấu hình chưa có.`);
   }

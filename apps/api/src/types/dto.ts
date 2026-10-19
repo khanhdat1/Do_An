@@ -443,7 +443,10 @@ export interface SavedBuildSummaryDto {
   itemCount: number;
 }
 
-/** Một món hệ thống tự đổi sang món rẻ hơn cùng loại để vừa ngân sách (đơn giá lúc gợi ý; RAM có thể đổi cả số thanh) */
+/**
+ * Một món hệ thống tự đổi cùng loại theo ngân sách: sang món rẻ hơn để vừa ngân sách, hoặc món đắt hơn để tận dụng ngân sách
+ * (đơn giá lúc gợi ý; RAM có thể đổi cả số thanh)
+ */
 export interface BudgetSwapDto {
   slot: BuildSlotDto;
   from: { productId: string; name: string; price: number; quantity: number };
@@ -455,21 +458,24 @@ export interface AiBuildSuggestionDto {
   build: SavedBuildDto;
   /** Ngân sách/nhu cầu AI hiểu từ câu của khách — hiện ra để khách tự kiểm tra */
   understood: { budget: number | null; purpose: string };
-  /** AI viết cho lựa chọn CỦA NÓ — khi `budgetFit` là FITTED, vài món đã được hệ thống đổi sau đó */
+  /** AI viết cho lựa chọn CỦA NÓ — khi `budgetFit` là FITTED/UPGRADED, vài món đã được hệ thống đổi sau đó */
   summary: string;
   /** Lý do AI chọn từng món; bỏ những món hệ thống đã đổi (lý do cũ không còn đúng) */
   notes: { slot: BuildSlotDto; text: string }[];
   /**
    * Bước cuối, KHÔNG dùng AI: AI (kể cả sau lượt sửa) vẫn chọn vượt ngân sách thì hệ thống tự đổi vài món sang món rẻ hơn cùng
-   * loại, chỉ nhận phương án đủ linh kiện, không lỗi tương thích. NOT_NEEDED: không vượt hoặc không nêu ngân sách;
-   * FITTED: đã đổi (xem `swaps`); NOT_POSSIBLE: không có cách đổi nào vừa ngân sách mà vẫn tương thích.
+   * loại; nhu cầu hiệu năng (chơi game, đồ họa, lập trình - AI) mà dùng chưa tới 85% ngân sách thì nâng vài món lên món đắt hơn
+   * cùng loại. Chỉ nhận phương án đủ linh kiện, không lỗi tương thích, không vượt ngân sách. NOT_NEEDED: không cần/không nêu
+   * ngân sách, hoặc không có cách nâng nào đáng; FITTED: đã hạ (xem `swaps`); UPGRADED: đã nâng (xem `swaps`);
+   * NOT_POSSIBLE: vượt ngân sách mà không có cách đổi nào vừa ngân sách và vẫn tương thích.
    */
-  budgetFit: { status: "NOT_NEEDED" | "FITTED" | "NOT_POSSIBLE"; swaps: BudgetSwapDto[] };
+  budgetFit: { status: "NOT_NEEDED" | "FITTED" | "UPGRADED" | "NOT_POSSIBLE"; swaps: BudgetSwapDto[] };
   /**
    * NOT_NEEDED: lượt đầu đã đạt. REPAIRED: lượt đầu có vấn đề, đang hiện câu trả lời sau khi AI sửa 1 lần (không tệ hơn lượt đầu, nhưng vẫn có thể còn vấn đề).
    * FAILED: lượt đầu có vấn đề nhưng AI không sửa được (dịch vụ bận, hoặc lượt sửa còn tệ hơn) — đang hiện lượt đầu.
+   * SKIPPED: lượt đầu chỉ lệch ngân sách nhưng đã quá chậm, nên không nhờ AI sửa — bước `budgetFit` tự điều chỉnh.
    */
-  repair: "NOT_NEEDED" | "REPAIRED" | "FAILED";
+  repair: "NOT_NEEDED" | "REPAIRED" | "FAILED" | "SKIPPED";
   /** Số mã AI đưa ra nhưng không có trong kho/sai loại nên bị bỏ */
   droppedCount: number;
 }

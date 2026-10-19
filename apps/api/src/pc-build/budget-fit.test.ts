@@ -1,6 +1,7 @@
-// Kiểm thử bước tự điều chỉnh cho vừa ngân sách, không cần DB/mạng/AI. Chạy: npx tsx src/pc-build/budget-fit.test.ts
+// Kiểm thử bước tự điều chỉnh theo ngân sách (hạ cấp cho vừa, nâng cấp khi dư nhiều), không cần DB/mạng/AI.
+// Chạy: npx tsx src/pc-build/budget-fit.test.ts
 // Thông số theo kiểu sản phẩm thật; giá là số giả lập đủ để thấy rõ từng phép đánh đổi.
-import { fitToBudget, type BuildCandidates } from "./budget-fit.js";
+import { fitToBudget, upgradeWithinBudget, type BuildCandidates } from "./budget-fit.js";
 import { checkBuild, type BuildPart, type BuildParts } from "./compatibility.js";
 import type { BuildSlot } from "./slots.js";
 import { emptySpec, type NormalizedSpec } from "./spec-types.js";
@@ -25,12 +26,13 @@ function part(productId: string, price: number, spec: Partial<NormalizedSpec>, q
 }
 
 /** Rút gọn các lần đổi thành "ô: món cũ -> món mới" cho dễ đọc (kèm " x2" khi nhiều hơn 1 cái) */
-function swapsOf(fit: ReturnType<typeof fitToBudget>) {
+function swapsOf(fit: ReturnType<typeof fitToBudget | typeof upgradeWithinBudget>) {
   const label = (item: BuildPart) => `${item.productId}${item.quantity > 1 ? ` x${item.quantity}` : ""}`;
   return fit?.swaps.map((swap) => `${swap.slot}: ${label(swap.from)} -> ${label(swap.to)}`) ?? null;
 }
 
 const GAMING: Record<BuildSlot, number> = { VGA: 3, CPU: 1.5, RAM: 1, SSD: 0.8, MAINBOARD: 0.6, PSU: 0.6, CASE: 0.4 };
+const GRAPHICS: Record<BuildSlot, number> = { CPU: 2, VGA: 2, RAM: 1.5, SSD: 1, MAINBOARD: 0.6, PSU: 0.6, CASE: 0.4 };
 const EVEN: Record<BuildSlot, number> = { CPU: 1, MAINBOARD: 1, RAM: 1, VGA: 1, SSD: 1, PSU: 1, CASE: 1 };
 
 const cpu5600gt = part("cpu-5600gt", 4_490_000, { socket: "AM4", tdpWatts: 65, hasIgpu: true, extra: { coolerIncluded: true } });
@@ -168,6 +170,131 @@ console.log("\n[6] Kho lớn vẫn chạy nhanh");
   check("tìm được phương án hợp lệ trong ngân sách", fit !== null && fit.result.totalPrice <= 20_000_000 && fit.result.isValid, true);
   check("dưới 2 giây", elapsed < 2000, true);
   console.log(`    (${Math.round(elapsed)} ms, đổi ${fit?.swaps.length} món)`);
+}
+
+/* ------------------------------------------------------------------------------------------------------------------ */
+/*  Nâng cấp khi dùng quá ít ngân sách                                                                                */
+/* ------------------------------------------------------------------------------------------------------------------ */
+
+const cpu5700g = part("cpu-5700g", 6_490_000, { socket: "AM4", tdpWatts: 65, hasIgpu: true, extra: { coolerIncluded: true } });
+const cpu5800x = part("cpu-5800x", 5_990_000, { socket: "AM4", tdpWatts: 105, hasIgpu: false, extra: { coolerIncluded: false } });
+const vga5070ti = part("vga-5070ti", 19_490_000, { tdpWatts: 300, gpuLengthMm: 304 });
+const vgaLong = part("vga-4070-long", 15_990_000, { tdpWatts: 200, gpuLengthMm: 336 });
+const vgaNoData = part("vga-nodata", 11_490_000, {});
+const ssd1tbGen5 = part("ssd-1tb-gen5", 4_490_000, { storageCapacityGb: 1000 });
+const ssd2tb = part("ssd-2tb", 4_990_000, { storageCapacityGb: 2000 });
+const psu450 = part("psu-450", 790_000, { psuWattage: 450 });
+const psu750 = part("psu-750", 1_990_000, { psuWattage: 750 });
+const caseBig = part("case-big", 2_190_000, { caseFormFactors: ["E-ATX", "ATX", "mATX", "ITX"], caseMaxGpuMm: 400 });
+
+// Bộ chơi game AI chọn quá tiết kiệm: 15.730.000đ, đủ linh kiện, không lỗi, không cảnh báo
+const starter: BuildParts = { CPU: cpu5600gt, MAINBOARD: mbB550, RAM: ram16, VGA: vga6500, SSD: ssd512, PSU: psu450, CASE: caseAtx };
+const pricier: BuildCandidates = {
+  CPU: [cpu5500gt, cpu5600gt, cpu5700g, cpu5800x, cpu8400f],
+  MAINBOARD: [mbA520, mbB550, mbB650],
+  RAM: [ram8, ram16, ram16Rgb, ramKit32, ramDdr5],
+  VGA: [vga6500, vgaB580, vga5060, vga5070ti],
+  SSD: [ssd256, ssd512, ssd1tb, ssd1tbGen5, ssd2tb],
+  PSU: [psu250, psu450, psu550, psu650, psu750],
+  CASE: [caseMini, caseNoData, caseOk, caseAtx, caseBig],
+};
+
+console.log("\n[7] Nâng cấp: không cần hoặc không có cách nâng đáng");
+{
+  const base = checkBuild(starter);
+  check("bộ tiết kiệm ban đầu: 15.730.000đ, không lỗi, không cảnh báo", [base.totalPrice, base.status], [15_730_000, "COMPATIBLE"]);
+  check("đã dùng đúng bằng ngân sách -> null", upgradeWithinBudget(starter, pricier, 15_730_000, GAMING), null);
+  check("đang vượt ngân sách -> null (việc của fitToBudget)", upgradeWithinBudget(starter, pricier, 15_000_000, GAMING), null);
+  check("không có món nào đắt hơn -> null", upgradeWithinBudget(starter, {}, 30_000_000, GAMING), null);
+  // Dư 270.000đ: chỉ đủ đổi nguồn 550W — nguồn đắt hơn không làm máy mạnh hơn nên không đổi
+  check("chỉ đổi được món đi kèm (nguồn) -> null", upgradeWithinBudget(starter, pricier, 16_000_000, GAMING), null);
+}
+
+console.log("\n[8] Chơi game dư ~8 triệu: tiền vào card đồ họa trước, phần dư nâng RAM");
+{
+  const fit = upgradeWithinBudget(starter, pricier, 24_000_000, GAMING);
+  // Tính tay: Arc B580 (+6,7 triệu) lợi 3×ln(10,49/3,79) ≈ 3,05 — hơn hẳn mọi cách rải vào CPU + RAM + SSD (≈ 2,04).
+  // Còn 1,57 triệu: RAM 16GB -> kit 2×16GB (+1,2 triệu); SSD 1TB (+1,7 triệu) không còn đủ tiền
+  check("card 6500 XT -> Arc B580, RAM 16GB -> 32GB", swapsOf(fit), ["RAM: ram-ddr4-1x16 -> ram-ddr4-2x16", "VGA: vga-6500xt -> vga-b580"]);
+  check("tổng 23.630.000đ, không vượt ngân sách", fit?.result.totalPrice, 23_630_000);
+  check("vẫn tương thích, không thêm cảnh báo", fit?.result.status, "COMPATIBLE");
+  check("RAM 32GB lấy kit rẻ hơn, không lấy 2 thanh 16GB lẻ", fit?.parts.RAM?.price, 2_490_000);
+  check("chạy lại ra đúng phương án cũ", swapsOf(upgradeWithinBudget(starter, pricier, 24_000_000, GAMING)), swapsOf(fit));
+}
+
+console.log("\n[9] Card mạnh hơn cần nguồn khỏe hơn: nâng nguồn kèm theo");
+{
+  const candidates: BuildCandidates = { VGA: [vga5070ti], PSU: [psu250, psu550, psu650, psu750] };
+  // RTX 5070 Ti: ước tính 65 + 300 + 80 = 445 W, khuyến nghị 579 W — nguồn 450W/550W chỉ "đủ" sát nút (cảnh báo)
+  const fit = upgradeWithinBudget(starter, candidates, 36_000_000, GAMING);
+  check("đổi card thì đổi kèm nguồn 650W", swapsOf(fit), ["VGA: vga-6500xt -> vga-5070ti", "PSU: psu-450 -> psu-650"]);
+  check("nguồn mới đạt mức khuyến nghị", fit?.result.checks.find((item) => item.rule === "PSU_WATTAGE")?.severity, "PASS");
+  check("hai nguồn cùng đủ thì lấy nguồn rẻ hơn (650W, không lấy 750W)", fit?.parts.PSU?.productId, "psu-650");
+  check("không đủ tiền nâng nguồn -> không nâng card (không chấp nhận nguồn dưới mức khuyến nghị)", upgradeWithinBudget(starter, candidates, 32_000_000, GAMING), null);
+}
+
+console.log("\n[10] Card dài hơn vỏ: đổi kèm vỏ lớn hơn");
+{
+  const fit = upgradeWithinBudget(starter, { VGA: [vgaLong], CASE: [caseMini, caseNoData, caseBig] }, 30_000_000, GAMING);
+  check("card 336 mm không vừa vỏ 330 mm -> đổi kèm vỏ 400 mm", swapsOf(fit), ["VGA: vga-6500xt -> vga-4070-long", "CASE: case-atx -> case-big"]);
+  check("kết quả không có lỗi nào", fit?.result.checks.filter((item) => item.severity === "ERROR").length, 0);
+}
+
+console.log("\n[11] Không phát sinh cảnh báo thật; card thiếu số liệu bị trừ điểm");
+{
+  check("CPU không kèm tản nhiệt -> không chọn", upgradeWithinBudget(starter, { CPU: [cpu5800x] }, 24_000_000, GAMING), null);
+  check("có CPU khác kèm tản nhiệt thì chọn CPU đó", swapsOf(upgradeWithinBudget(starter, { CPU: [cpu5800x, cpu5700g] }, 24_000_000, GAMING)), [
+    "CPU: cpu-5600gt -> cpu-5700g",
+  ]);
+  // Card thiếu số liệu đắt hơn B580 nhưng sinh 2 cảnh báo thiếu dữ liệu (chiều dài, điện năng)
+  check("chọn card đủ số liệu thay vì card thiếu số liệu đắt hơn", swapsOf(upgradeWithinBudget(starter, { VGA: [vgaB580, vgaNoData] }, 28_000_000, GAMING)), [
+    "VGA: vga-6500xt -> vga-b580",
+  ]);
+  check("card thiếu số liệu vẫn dùng được nếu là cách duy nhất", swapsOf(upgradeWithinBudget(starter, { VGA: [vgaNoData] }, 28_000_000, GAMING)), [
+    "VGA: vga-6500xt -> vga-nodata",
+  ]);
+}
+
+console.log("\n[12] RAM, SSD nâng theo dung lượng");
+{
+  check("đắt hơn nhưng vẫn 16GB (chỉ khác đèn RGB) -> không đổi", upgradeWithinBudget(starter, { RAM: [ram16Rgb] }, 19_500_000, GAMING), null);
+  check("không nâng thành 4 thanh 8GB (chừa khe để nâng sau)", upgradeWithinBudget(starter, { RAM: [ram8] }, 24_000_000, GAMING), null);
+  check("SSD 1TB: chọn ổ rẻ hơn trong hai ổ cùng 1TB", swapsOf(upgradeWithinBudget(starter, { SSD: [ssd1tb, ssd1tbGen5, ssd2tb] }, 18_000_000, GAMING)), [
+    "SSD: ssd-512 -> ssd-1tb",
+  ]);
+  check("đủ tiền thì lên 2TB", swapsOf(upgradeWithinBudget(starter, { SSD: [ssd1tb, ssd1tbGen5, ssd2tb] }, 20_000_000, GAMING)), ["SSD: ssd-512 -> ssd-2tb"]);
+}
+
+console.log("\n[13] Cùng số tiền dư, ưu tiên theo nhu cầu");
+{
+  // Dư 7 triệu: đủ lên Arc B580 (+6,7 triệu), HOẶC nâng CPU + RAM + SSD 2TB (+6,9 triệu), không đủ cả hai
+  check("chơi game: dồn vào card đồ họa", swapsOf(upgradeWithinBudget(starter, pricier, 22_730_000, GAMING)), ["VGA: vga-6500xt -> vga-b580"]);
+  check("đồ họa - dựng video: nâng CPU, RAM, SSD", swapsOf(upgradeWithinBudget(starter, pricier, 22_730_000, GRAPHICS)), [
+    "CPU: cpu-5600gt -> cpu-5700g",
+    "RAM: ram-ddr4-1x16 -> ram-ddr4-2x16",
+    "SSD: ssd-512 -> ssd-2tb",
+  ]);
+}
+
+console.log("\n[14] Nâng cấp với kho lớn vẫn chạy nhanh");
+{
+  // 7 loại × 14 món đắt dần (RAM, SSD tăng dần dung lượng), cùng thông số tương thích
+  const bigCandidates: BuildCandidates = {};
+  for (const slot of Object.keys(starter) as BuildSlot[]) {
+    const current = starter[slot] as BuildPart;
+    bigCandidates[slot] = Array.from({ length: 14 }, (_, index) => {
+      const spec = { ...current.spec };
+      if (slot === "RAM") spec.ramCapacity = 16 * (index + 2);
+      if (slot === "SSD") spec.storageCapacityGb = 512 * (index + 2);
+      return { ...current, productId: `${current.productId}-${index}`, price: Math.round(current.price * (1.05 + index * 0.05)), spec };
+    });
+  }
+  const started = performance.now();
+  const fit = upgradeWithinBudget(starter, bigCandidates, 30_000_000, GAMING);
+  const elapsed = performance.now() - started;
+  check("tìm được phương án hợp lệ trong ngân sách", fit !== null && fit.result.totalPrice <= 30_000_000 && fit.result.isValid, true);
+  check("dưới 2 giây", elapsed < 2000, true);
+  console.log(`    (${Math.round(elapsed)} ms, đổi ${fit?.swaps.length} món, tổng ${fit?.result.totalPrice})`);
 }
 
 console.log(`\n===== ${passed} pass / ${failed} fail =====`);
