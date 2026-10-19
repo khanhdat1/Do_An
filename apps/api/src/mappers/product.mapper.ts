@@ -233,10 +233,14 @@ export const adminProductSummaryInclude = {
 
 export type AdminProductSummaryRow = Prisma.ProductGetPayload<{ include: typeof adminProductSummaryInclude }>;
 
+/**
+ * Trang sửa sản phẩm cần MỌI ảnh (kể cả ảnh chờ duyệt, để quản trị viên xoá được) theo đúng thứ tự đang lưu — cùng
+ * cách sắp với `sortByStoredOrder` (utils/product-images.ts) mà các thao tác đổi thứ tự/ảnh chính dựa vào.
+ */
 export const adminProductDetailInclude = {
   category: true,
   brand: true,
-  images: publicImages,
+  images: { orderBy: [{ position: "asc" }, { createdAt: "asc" }, { id: "asc" }] },
 } satisfies Prisma.ProductInclude;
 
 export type AdminProductDetailRow = Prisma.ProductGetPayload<{ include: typeof adminProductDetailInclude }>;
@@ -266,8 +270,11 @@ export function toAdminProductSummaryDto(product: AdminProductSummaryRow): Admin
 }
 
 export function toAdminProductDetailDto(product: AdminProductDetailRow): AdminProductDetailDto {
+  // `images` ở đây gồm cả ảnh chờ duyệt — ảnh đại diện vẫn phải là ảnh khách thấy, như ở danh sách (publicImages)
+  const visible = product.images.filter((image) => !image.needsReview);
   return {
     ...toAdminProductSummaryDto(product),
+    image: (visible.find((image) => image.isPrimary) ?? visible[0])?.url,
     categoryId: product.categoryId,
     brandId: product.brandId ?? undefined,
     originalPrice: toNumber(product.originalPrice),
@@ -275,7 +282,16 @@ export function toAdminProductDetailDto(product: AdminProductDetailRow): AdminPr
     description: product.description ?? undefined,
     warrantyMonths: product.warrantyMonths ?? undefined,
     specifications: readSpecifications(product.specifications),
-    images: product.images.map((image) => ({ url: image.url, alt: image.alt ?? product.name })),
+    images: product.images.map((image) => ({
+      id: image.id,
+      url: image.url,
+      alt: image.alt ?? product.name,
+      position: image.position,
+      isPrimary: image.isPrimary,
+      needsReview: image.needsReview,
+      source: image.source ?? undefined,
+      bytes: image.bytes ?? undefined,
+    })),
     createdAt: product.createdAt.toISOString(),
   };
 }

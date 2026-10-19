@@ -1,5 +1,5 @@
 import { defineConfig } from "@playwright/test";
-import { API_PORT, API_URL, E2E_DATABASE_URL, WEB_PORT, WEB_URL } from "./e2e-env";
+import { API_PORT, API_URL, E2E_DATABASE_URL, E2E_IMAGE_DIR, WEB_PORT, WEB_URL } from "./e2e-env";
 
 /**
  * Kiểm thử đầu-cuối PCZone: tự bật MỘT bộ API + web riêng trên DB kiểm thử (xem `e2e-env.ts`), chạy xong tự tắt.
@@ -44,6 +44,7 @@ export default defineConfig({
         WEB_URL,
         CORS_ORIGIN: WEB_URL,
         API_PUBLIC_URL: API_URL,
+        IMAGE_STORAGE_DIR: E2E_IMAGE_DIR,
         OPENAI_API_KEY: "",
         RESEND_API_KEY: "",
         VNPAY_TMN_CODE: "",

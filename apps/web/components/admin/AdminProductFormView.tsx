@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CloudOff, ImageOff, LoaderCircle, Plus, ShieldAlert, Trash2 } from "lucide-react";
+import { ArrowLeft, CloudOff, LoaderCircle, Plus, ShieldAlert, Trash2 } from "lucide-react";
 import AdminBadge from "@/components/admin/AdminBadge";
+import AdminProductImageManager from "@/components/admin/AdminProductImageManager";
 import AdminProductInventoryPanel from "@/components/admin/AdminProductInventoryPanel";
-import ProductThumb from "@/components/product/ProductThumb";
 import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { ApiError, adminApiFetch, errorMessage } from "@/lib/admin-api-client";
@@ -419,27 +419,18 @@ export default function AdminProductFormView({ productId }: { productId?: string
               )}
             </form>
 
-            <section className="admin-card p-4 sm:p-5">
-              <h2 className="mb-3 text-base font-bold text-slate-900">Ảnh sản phẩm</h2>
-              {state.product && state.product.images.length > 0 ? (
-                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-                  {state.product.images.map((image, index) => (
-                    <div key={index} className="w-full">
-                      <ProductThumb name={image.alt} image={image.url} sizes="120px" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center py-8 text-center text-slate-500">
-                  <ImageOff className="size-8" />
-                  <p className="mt-2 text-sm">Chưa có ảnh nào</p>
-                </div>
-              )}
-              <p className="mt-3 text-xs text-slate-500">
-                Ảnh sản phẩm được quản lý qua công cụ tải ảnh riêng của dự án (thư mục ảnh + pipeline kiểm tra chất lượng),
-                chưa hỗ trợ tải ảnh trực tiếp từ trang này.
-              </p>
-            </section>
+            {state.product ? (
+              <AdminProductImageManager
+                product={state.product}
+                canWrite={canWrite}
+                onUpdated={(updated) => setState((current) => (current.status === "ready" ? { ...current, product: updated } : current))}
+              />
+            ) : (
+              <section className="admin-card p-4 sm:p-5">
+                <h2 className="mb-1 text-base font-bold text-slate-900">Ảnh sản phẩm</h2>
+                <p className="text-sm text-slate-500">Tạo sản phẩm xong mới thêm được ảnh.</p>
+              </section>
+            )}
           </div>
 
           <div className="lg:col-span-4">

@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
+import { join } from "node:path";
 import { env } from "./env.js";
 import { errorHandler, notFoundHandler } from "./middleware/errors.js";
 import { originGuard } from "./middleware/security.js";
@@ -36,6 +37,7 @@ import { searchRouter } from "./routes/search.routes.js";
 import { settingsRouter } from "./routes/settings.routes.js";
 import { vouchersRouter } from "./routes/vouchers.routes.js";
 import { wishlistRouter } from "./routes/wishlist.routes.js";
+import { PRODUCT_UPLOAD_PUBLIC_PREFIX, PRODUCT_UPLOAD_SUBDIR } from "./utils/product-images.js";
 
 export function createApp() {
   const app = express();
@@ -58,6 +60,17 @@ export function createApp() {
   app.get("/health", (_req, res) => {
     res.json({ status: "ok", service: "pczone-api", time: new Date().toISOString() });
   });
+
+  /*
+   * Ảnh sản phẩm quản trị viên tải lên LÚC ĐANG CHẠY (routes/admin-products.routes.ts). `next start` chỉ phục vụ file
+   * có sẵn trong public/ lúc khởi động, nên web chuyển tiếp đường dẫn này sang đây (apps/web/next.config.ts). Tên file
+   * ngẫu nhiên và nội dung không bao giờ đổi → cho trình duyệt cache lâu. Chỉ có ảnh đã qua kiểm tra chữ ký trong thư
+   * mục này; helmet đã đặt `X-Content-Type-Options: nosniff` nên trình duyệt không đoán lại kiểu nội dung.
+   */
+  app.use(
+    PRODUCT_UPLOAD_PUBLIC_PREFIX,
+    express.static(join(env.images.productDir, PRODUCT_UPLOAD_SUBDIR), { index: false, dotfiles: "ignore", immutable: true, maxAge: "30d" }),
+  );
 
   app.use("/api/products", productsRouter);
   // Cùng tiền tố với productsRouter (giống auth+oauth cùng dùng /api/auth) — không đụng nhau vì

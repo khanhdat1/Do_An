@@ -151,6 +151,15 @@ export const env = {
   },
 
   /**
+   * Thư mục ảnh sản phẩm tự host — cùng biến `IMAGE_STORAGE_DIR` crawler dùng để ghi ảnh (cột `ProductImage.localPath`
+   * tính tương đối so với thư mục này). Đường dẫn tương đối tính từ gốc monorepo, như giá trị mẫu trong .env.example.
+   * API ghi ảnh quản trị viên tải lên vào thư mục con `uploads/` (`services/admin-product-image.service.ts`).
+   */
+  images: {
+    productDir: resolve(here, "../../..", optional("IMAGE_STORAGE_DIR") ?? "apps/web/public/images/products"),
+  },
+
+  /**
    * Gửi email "quên mật khẩu" qua Resend (resend.com — miễn phí 100 email/ngày, không cần thẻ).
    * Thiếu khoá thì KHÔNG chặn tính năng — link đặt lại mật khẩu được in ra console server thay vì
    * gửi email thật, để luồng vẫn kiểm thử được khi chưa cấu hình (README mục 8).

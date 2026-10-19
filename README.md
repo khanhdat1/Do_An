@@ -1058,10 +1058,16 @@ phẩm để tới `/admin/products/[id]` (sửa) hoặc `/admin/products/new` (
   từng sản phẩm (đã có sẵn trong schema, mặc định 5) — CỐ Ý so theo tồn kho vật lý, khác với
   `inStock`/"sắp hết hàng" phía khách hàng (trừ thêm số đang giữ chỗ): một bên trả lời "khách mua được
   không", một bên trả lời "có cần đặt hàng thêm không".
-- **Ảnh sản phẩm hiện chỉ xem, chưa tải lên được từ trang này** — ảnh vẫn quản lý qua pipeline riêng
-  của dự án (mục 4 "Ảnh sản phẩm": `npm run seed-images`, thư mục ảnh, kiểm tra chất lượng/checksum).
-  Xây một luồng tải ảnh trực tiếp mà bỏ qua các bước kiểm tra đó (needsReview, watermark, trùng nội
-  dung) sẽ phá vỡ nguyên tắc "chỉ dùng ảnh thật đã kiểm tra" của dự án — để lại cho một đợt riêng.
+- **Ảnh sản phẩm** quản lý ngay trên trang sửa: chọn hoặc kéo thả nhiều ảnh (JPEG/PNG/WEBP, tối đa 5 MB
+  mỗi ảnh, 10 ảnh mỗi lượt, 20 ảnh mỗi sản phẩm), xem trước rồi tải lên; đổi thứ tự, đặt ảnh chính, xoá
+  (xoá cả file trên đĩa). Máy chủ không tin kiểu tệp trình duyệt khai: đọc chữ ký thật ở đầu tệp, chặn
+  ảnh trùng nội dung theo SHA-256, đặt tên tệp ngẫu nhiên — một tệp không đạt là cả lượt bị từ chối.
+  Ảnh tải lên có `source = MANUAL`, `needsReview = false` (người tải chính là người duyệt), nằm ở
+  `IMAGE_STORAGE_DIR/uploads/`, tách khỏi thư mục `<SKU>/` của crawler để chạy lại crawler không xoá
+  nhầm. Ảnh chính luôn là ảnh đầu tiên khách nhìn thấy được; ảnh crawler đang chờ duyệt cũng hiện ở đây
+  để xoá nhưng không đặt làm ảnh chính được. `next start` chỉ phục vụ file có sẵn lúc khởi động, nên web
+  chuyển tiếp `/images/products/uploads/*` sang API (bản Docker: container API gắn thư mục `data/products`).
+  Ảnh crawler vẫn đi qua pipeline riêng (mục 4 "Ảnh sản phẩm": `npm run seed-images`).
 - **Bảng thông số kỹ thuật** sửa được ngay trên form (thêm/xoá từng dòng nhãn–giá trị), ghi thẳng vào
   cột `specifications` theo đúng định dạng mảng đã ưu tiên trong mapper (giữ thứ tự hiển thị).
 - **Xuất Excel** (nút "Xuất Excel" trên trang danh sách): tải file `.xlsx` TẤT CẢ sản phẩm khớp đúng bộ

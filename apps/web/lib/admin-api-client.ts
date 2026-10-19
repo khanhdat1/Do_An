@@ -4,7 +4,8 @@
  * nên không dùng chung `apiFetch` của `api-client.ts` (nó sẽ gọi nhầm sang refresh của khách hàng).
  */
 import { PUBLIC_API_URL } from "./config";
-import { ApiError, createApiClient } from "./api-client";
+import { ApiError, createApiClient, toApiError } from "./api-client";
+import type { AdminProductDetail } from "@/types";
 
 const adminClient = createApiClient({
   refreshPath: "/api/admin/auth/refresh",
@@ -22,27 +23,37 @@ export const onAdminSessionExpired = adminClient.onSessionExpired;
 export { ApiError, errorMessage } from "./api-client";
 
 /**
- * Upload file duy nhất trong khu quản trị (ảnh banner) — `adminApiFetch` luôn `JSON.stringify` body
- * nên không gửi được `multipart/form-data`; viết riêng một hàm nhỏ thay vì mở rộng `apiFetch` cho
- * một trường hợp duy nhất. Không tự thử refresh lại phiên nếu 401 — nếu đúng lúc đó phiên hết hạn,
- * người dùng bấm upload lại là được, không đáng để lặp lại toàn bộ máy refresh cho một nút bấm.
+ * Gửi `multipart/form-data` (tải ảnh lên) — `adminApiFetch` luôn `JSON.stringify` body nên không gửi được. Gặp 401
+ * (access token hết hạn khi quản trị viên để trang mở lâu) thì làm mới phiên rồi gửi lại đúng một lần, như `apiFetch`:
+ * FormData gửi lại được nguyên vẹn. Lỗi trả về theo đúng định dạng JSON chung của API (`toApiError`).
  */
+async function postAdminForm<T>(path: string, formData: FormData): Promise<T> {
+  const send = async () => {
+    try {
+      return await fetch(`${PUBLIC_API_URL}${path}`, { method: "POST", credentials: "include", body: formData });
+    } catch {
+      throw new ApiError("Không kết nối được máy chủ. Vui lòng kiểm tra kết nối rồi thử lại.", 0);
+    }
+  };
+
+  let response = await send();
+  if (response.status === 401 && (await adminClient.renewSession())) response = await send();
+  if (!response.ok) throw await toApiError(response);
+  return response.json();
+}
+
+/** Ảnh banner: một file, trường "image" — trả về URL để đưa vào form tạo/sửa banner */
 export async function uploadAdminImage(path: string, file: File): Promise<{ url: string }> {
   const formData = new FormData();
   formData.append("image", file);
+  return postAdminForm(path, formData);
+}
 
-  const response = await fetch(`${PUBLIC_API_URL}${path}`, {
-    method: "POST",
-    credentials: "include",
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const payload = await response.json().catch(() => null);
-    throw new ApiError(typeof payload?.message === "string" ? payload.message : `Máy chủ trả về lỗi ${response.status}`, response.status);
-  }
-
-  return response.json();
+/** Ảnh sản phẩm: nhiều file, trường "images" — thêm vào cuối bộ ảnh, trả về sản phẩm với bộ ảnh mới */
+export async function uploadAdminProductImages(productId: string, files: File[]): Promise<AdminProductDetail> {
+  const formData = new FormData();
+  for (const file of files) formData.append("images", file, file.name);
+  return postAdminForm(`/api/admin/products/${encodeURIComponent(productId)}/images`, formData);
 }
 
 /**

@@ -1,4 +1,6 @@
 import { randomBytes } from "node:crypto";
+import { deflateSync } from "node:zlib";
+import { AxeBuilder } from "@axe-core/playwright";
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
 
 /** Sản phẩm có sẵn trong `packages/db/prisma/seed.ts` — DB kiểm thử được nạp lại từ đúng file đó ở mỗi lượt chạy */
@@ -106,4 +108,50 @@ export async function placeCodOrderViaApi(request: APIRequestContext, slug: stri
   });
   expect(order.status(), await order.text()).toBe(201);
   return ((await order.json()) as { order: { orderCode: string } }).order.orderCode;
+}
+
+/** Lỗi mức "serious"/"critical" theo WCAG 2.1 A + AA (axe-core), kể cả độ tương phản màu */
+export async function seriousViolations(page: Page) {
+  const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+  return violations
+    .filter((violation) => violation.impact === "serious" || violation.impact === "critical")
+    .map((violation) => ({
+      rule: violation.id,
+      count: violation.nodes.length,
+      examples: violation.nodes.slice(0, 3).map((node) => `${node.target.join(" ")} — ${node.failureSummary?.split("\n")[1]?.trim() ?? ""}`),
+    }));
+}
+
+const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+
+function pngChunk(type: string, data: Buffer): Buffer {
+  const body = Buffer.concat([Buffer.from(type, "ascii"), data]);
+  let crc = 0xffffffff;
+  for (const byte of body) crc = CRC_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length);
+  const checksum = Buffer.alloc(4);
+  checksum.writeUInt32BE((crc ^ 0xffffffff) >>> 0);
+  return Buffer.concat([length, body, checksum]);
+}
+
+/** Ảnh PNG thật một màu (đúng chữ ký, giải mã được) — để thử tải ảnh lên mà không cần tệp ảnh mẫu trong repo */
+export function solidPng(width: number, height: number, [r, g, b]: [number, number, number]): Buffer {
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header[8] = 8; // 8 bit mỗi kênh
+  header[9] = 2; // RGB
+  const row = Buffer.concat([Buffer.from([0]), Buffer.from(Array.from({ length: width }, () => [r, g, b]).flat())]);
+  const pixels = Buffer.concat(Array.from({ length: height }, () => row));
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    pngChunk("IHDR", header),
+    pngChunk("IDAT", deflateSync(pixels)),
+    pngChunk("IEND", Buffer.alloc(0)),
+  ]);
 }

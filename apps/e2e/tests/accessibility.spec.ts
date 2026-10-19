@@ -1,6 +1,5 @@
-import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { loginAdminViaApi, MOUSE, placeCodOrderViaApi, registerCustomerViaApi } from "./helpers";
+import { loginAdminViaApi, MOUSE, placeCodOrderViaApi, registerCustomerViaApi, seriousViolations } from "./helpers";
 
 /** Trang khách vãng lai mở được, không cần dữ liệu riêng */
 const GUEST_PAGES = [
@@ -50,18 +49,6 @@ const ADMIN_PAGES = [
 async function open(page: Page, path: string) {
   await page.goto(path);
   await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {});
-}
-
-/** Lỗi mức "serious"/"critical" theo WCAG 2.1 A + AA (axe-core), kể cả độ tương phản màu */
-async function seriousViolations(page: Page) {
-  const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
-  return violations
-    .filter((violation) => violation.impact === "serious" || violation.impact === "critical")
-    .map((violation) => ({
-      rule: violation.id,
-      count: violation.nodes.length,
-      examples: violation.nodes.slice(0, 3).map((node) => `${node.target.join(" ")} — ${node.failureSummary?.split("\n")[1]?.trim() ?? ""}`),
-    }));
 }
 
 /** Quét lần lượt nhiều trang trong cùng một phiên, gom lỗi theo trang để báo một lần */

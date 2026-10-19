@@ -772,8 +772,22 @@ export interface AdminProductDetailDto extends AdminProductSummaryDto {
   description?: string;
   warrantyMonths?: number;
   specifications: SpecRowDto[];
-  images: ProductImageDto[];
+  /** MỌI ảnh của sản phẩm theo đúng thứ tự đang lưu, kể cả ảnh chờ duyệt mà khách không thấy */
+  images: AdminProductImageDto[];
   createdAt: string;
+}
+
+/** Một ảnh trong khu quản lý ảnh của trang sửa sản phẩm */
+export interface AdminProductImageDto extends ProductImageDto {
+  id: string;
+  position: number;
+  /** Ảnh đầu tiên khách nhìn thấy được — luôn là ảnh đầu tiên không chờ duyệt theo thứ tự (`normalizeImageOrder`) */
+  isPrimary: boolean;
+  /** Ảnh crawler chưa đạt (còn watermark shop khác, so khớp model chưa chắc) — không hiện cho khách */
+  needsReview: boolean;
+  /** Nguồn ảnh viết hoa: tên hãng/shop crawler lấy về, hoặc MANUAL = quản trị viên tải lên */
+  source?: string;
+  bytes?: number;
 }
 
 /** Body tạo/sửa sản phẩm — `POST`/`PATCH /api/admin/products(/:id)` */

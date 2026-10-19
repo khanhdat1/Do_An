@@ -51,6 +51,9 @@ services:
     volumes:
       # API ghi banner quản trị tải lên vào đây (apps/api/src/routes/admin-banners.routes.ts)
       - ${BANNER_DIR:-./data/banners}:/app/apps/web/public/images/banners
+      # Ảnh sản phẩm: API ghi ảnh quản trị tải lên vào uploads/ rồi tự phục vụ (web chuyển tiếp /images/products/uploads/*
+      # sang API — apps/web/next.config.ts), và xoá file khi quản trị viên xoá ảnh
+      - ${PRODUCT_IMAGE_DIR:-./data/products}:/app/apps/web/public/images/products
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s
@@ -73,6 +76,7 @@ services:
         condition: service_healthy
     volumes:
       # next start chỉ phục vụ file có sẵn trong public/ lúc khởi động → chép ảnh sản phẩm xong phải khởi động lại web
+      # (ảnh quản trị viên tải lên trên trang thì không cần: file mới chưa có ở đây được lấy từ API)
       - ${PRODUCT_IMAGE_DIR:-./data/products}:/app/apps/web/public/images/products:ro
       - ${BANNER_DIR:-./data/banners}:/app/apps/web/public/images/banners:ro
 

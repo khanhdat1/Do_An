@@ -784,8 +784,22 @@ export interface AdminProductDetail extends AdminProductSummary {
   description?: string;
   warrantyMonths?: number;
   specifications: SpecRow[];
-  images: ProductImage[];
+  /** MỌI ảnh theo đúng thứ tự đang lưu, kể cả ảnh chờ duyệt mà khách không thấy */
+  images: AdminProductImage[];
   createdAt: string;
+}
+
+/** Một ảnh trong khu quản lý ảnh của trang sửa sản phẩm */
+export interface AdminProductImage extends ProductImage {
+  id: string;
+  position: number;
+  /** Ảnh đầu tiên khách nhìn thấy được theo thứ tự */
+  isPrimary: boolean;
+  /** Ảnh crawler chưa đạt (còn watermark shop khác...) — không hiện cho khách */
+  needsReview: boolean;
+  /** Tên hãng/shop crawler lấy ảnh, hoặc MANUAL = quản trị viên tải lên */
+  source?: string;
+  bytes?: number;
 }
 
 /** Body tạo/sửa sản phẩm */
