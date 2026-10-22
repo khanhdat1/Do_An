@@ -190,7 +190,6 @@ model Product {
 
   // --- Kho ----------------------------------------------------------------
   inventoryQuantity Int         @default(0)
-  reservedQuantity  Int         @default(0) // đã giữ cho đơn chưa hoàn tất
   lowStockThreshold Int         @default(5)
   stockStatus       StockStatus @default(UNKNOWN)
 

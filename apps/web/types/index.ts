@@ -790,7 +790,6 @@ export interface AdminProductSummary {
   sellingPrice: number;
   costPrice?: number;
   inventoryQuantity: number;
-  reservedQuantity: number;
   lowStockThreshold: number;
   lowStock: boolean;
   soldCount: number;

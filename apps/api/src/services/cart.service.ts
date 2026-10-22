@@ -100,7 +100,6 @@ export async function addItem(
       id: true,
       sellingPrice: true,
       inventoryQuantity: true,
-      reservedQuantity: true,
     },
   });
   if (!product) throw new NotFoundError("Sản phẩm không tồn tại hoặc đã ngừng kinh doanh");

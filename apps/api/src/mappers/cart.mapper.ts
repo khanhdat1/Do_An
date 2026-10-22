@@ -21,12 +21,9 @@ export const EMPTY_CART: CartDto = {
   hasBlockingIssues: false,
 };
 
-/** Số lượng còn có thể bán = tồn kho trừ phần đã giữ cho đơn chưa hoàn tất */
-export function availableQuantity(product: {
-  inventoryQuantity: number;
-  reservedQuantity: number;
-}): number {
-  return Math.max(0, product.inventoryQuantity - product.reservedQuantity);
+/** Số lượng còn có thể bán = tồn kho (đặt hàng trừ thẳng tồn kho trong transaction, không có bước giữ chỗ riêng) */
+export function availableQuantity(product: { inventoryQuantity: number }): number {
+  return Math.max(0, product.inventoryQuantity);
 }
 
 function toCartItemDto(item: CartItemRow): CartItemDto {

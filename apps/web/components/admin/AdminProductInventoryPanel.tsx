@@ -170,23 +170,19 @@ export default function AdminProductInventoryPanel({
     };
   }, [product.id, page, refreshTick]);
 
-  const available = product.inventoryQuantity - product.reservedQuantity;
-
   return (
     <section className="admin-card p-4 sm:p-5">
       <h2 className="text-base font-bold text-slate-900">Tồn kho</h2>
-      <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+      <div className="mt-3 grid grid-cols-2 gap-3 text-center">
         <div className="rounded-xl bg-slate-50 p-3">
-          <p className="text-2xl font-bold text-slate-800">{product.inventoryQuantity}</p>
-          <p className="text-xs text-slate-500">Tồn kho</p>
+          <p className={`text-2xl font-bold ${product.inventoryQuantity <= product.lowStockThreshold ? "text-sale-600" : "text-slate-800"}`}>
+            {product.inventoryQuantity}
+          </p>
+          <p className="text-xs text-slate-500">Tồn kho (còn bán được)</p>
         </div>
         <div className="rounded-xl bg-slate-50 p-3">
-          <p className="text-2xl font-bold text-slate-800">{product.reservedQuantity}</p>
-          <p className="text-xs text-slate-500">Đang giữ chỗ</p>
-        </div>
-        <div className="rounded-xl bg-slate-50 p-3">
-          <p className={`text-2xl font-bold ${available <= product.lowStockThreshold ? "text-sale-600" : "text-slate-800"}`}>{available}</p>
-          <p className="text-xs text-slate-500">Còn bán được</p>
+          <p className="text-2xl font-bold text-slate-800">{product.soldCount}</p>
+          <p className="text-xs text-slate-500">Đã bán</p>
         </div>
       </div>
       <p className="mt-2 text-xs text-slate-500">Ngưỡng cảnh báo sắp hết hàng: {product.lowStockThreshold} (sửa ở form thông tin sản phẩm phía trên)</p>

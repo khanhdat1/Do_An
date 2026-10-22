@@ -76,7 +76,7 @@ Dùng `Decimal(14, 0)` vì VNĐ không có phần thập phân, và `Decimal` tr
 
 **Kho**
 
-`inventoryQuantity` là tồn thực tế, `reservedQuantity` là số đã giữ cho các đơn chưa hoàn tất. Số bán được cho khách = `inventoryQuantity - reservedQuantity`. Cách này tránh tình trạng hai khách cùng mua thanh RAM cuối cùng.
+`inventoryQuantity` là tồn thực tế và cũng là số bán được cho khách: đặt hàng trừ thẳng tồn kho bằng câu UPDATE có điều kiện `inventoryQuantity >= số lượng` trong cùng transaction tạo đơn, nên hai khách cùng mua thanh RAM cuối cùng thì chỉ một người thành công. Đơn bị huỷ (kể cả tự huỷ khi quá hạn thanh toán) hoàn lại tồn kho. Thiết kế ban đầu có thêm cột `reservedQuantity` (giữ chỗ cho đơn chưa hoàn tất) nhưng chưa từng được dùng, đã bỏ ở migration `20261022120000_drop_product_reserved_quantity`.
 
 **Số liệu tổng hợp** — `viewCount`, `soldCount`, `ratingAvg`, `ratingCount` là dữ liệu **phi chuẩn hoá có chủ đích**. Lẽ ra `ratingAvg` tính được bằng `AVG()` trên bảng `Review`, nhưng trang danh sách sản phẩm hiển thị sao cho 20 sản phẩm cùng lúc — chạy 20 câu `AVG` mỗi lần tải trang là không chấp nhận được. Đổi lại phải cập nhật hai trường này mỗi khi có đánh giá mới được duyệt.
 
@@ -378,7 +378,7 @@ npx prisma migrate dev --name advanced_features
 - `Review.rating` trong khoảng 1–5 (Prisma không sinh `CHECK` cho MySQL)
 - `Order.totalAmount = subtotal − discountAmount + shippingFee`
 - `OrderItem.lineTotal = unitPrice × quantity`
-- `Product.reservedQuantity ≤ inventoryQuantity`
+- `Product.inventoryQuantity ≥ 0`
 - Mỗi `User` chỉ một `Address` có `isDefault = true`
 
 **Việc phải chạy trong cùng một transaction:**

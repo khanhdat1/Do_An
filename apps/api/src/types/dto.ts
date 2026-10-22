@@ -781,9 +781,8 @@ export interface AdminProductSummaryDto {
   sellingPrice: number;
   costPrice?: number;
   inventoryQuantity: number;
-  reservedQuantity: number;
   lowStockThreshold: number;
-  /** true khi (tồn kho - đang giữ chỗ) <= lowStockThreshold */
+  /** true khi tồn kho <= lowStockThreshold */
   lowStock: boolean;
   soldCount: number;
   updatedAt: string;

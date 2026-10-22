@@ -45,7 +45,7 @@ async function keepAvailable(items: ScoredDoc[]): Promise<ScoredDoc[]> {
     const rows = await prisma.product.findMany({
       where: {
         id: { in: items.slice(start, start + ID_CHUNK).map((item) => item.doc.id) },
-        reservedQuantity: { lt: prisma.product.fields.inventoryQuantity },
+        inventoryQuantity: { gt: 0 },
       },
       select: { id: true },
     });

@@ -120,7 +120,7 @@ export async function loadSellableComponents(): Promise<ResolvedBuildItem[]> {
   return rows
     .flatMap((row) => {
       const slot = row.category.componentType;
-      const inStock = row.inventoryQuantity - row.reservedQuantity > 0;
+      const inStock = row.inventoryQuantity > 0;
       return slot && isBuildSlot(slot) && inStock ? [{ slot, row, part: toPart(row, 1) }] : [];
     })
     .sort((a, b) => BUILD_SLOTS.indexOf(a.slot) - BUILD_SLOTS.indexOf(b.slot));

@@ -128,9 +128,8 @@ async function buildWhere(
     if (brands.length > 0) where.brand = { slug: { in: brands } };
   }
 
-  // available > 0  <=>  reservedQuantity < inventoryQuantity (so sánh hai cột bằng field reference)
   if (params.inStock) {
-    where.reservedQuantity = { lt: prisma.product.fields.inventoryQuantity };
+    where.inventoryQuantity = { gt: 0 };
   }
 
   if (params.featured) where.isFeatured = true;

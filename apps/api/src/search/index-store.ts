@@ -26,7 +26,6 @@ const productSelect = {
   soldCount: true,
   publishedAt: true,
   inventoryQuantity: true,
-  reservedQuantity: true,
   brand: { select: { slug: true, name: true } },
   category: {
     select: {
@@ -53,7 +52,7 @@ async function build(): Promise<SearchIndex> {
       price: Number(row.sellingPrice),
       soldCount: row.soldCount,
       publishedAt: row.publishedAt,
-      inStock: row.inventoryQuantity - row.reservedQuantity > 0,
+      inStock: row.inventoryQuantity > 0,
       brand: row.brand,
       // Lá → cha → ông. Nhãn dòng thông số ("Kích thước màn hình") KHÔNG đưa vào: nó làm mọi laptop khớp "màn hình"
       categories: [row.category, ...(parent ? [parent, ...(parent.parent ? [parent.parent] : [])] : [])].map(({ slug, name }) => ({ slug, name })),

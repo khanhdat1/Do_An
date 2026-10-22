@@ -94,7 +94,7 @@ async function runCreateOrder(input: CreateOrderInput, shippingConfig: ShippingS
     if (!cart || cart.items.length === 0) throw new ConflictError("Giỏ hàng đang trống");
 
     for (const item of cart.items) {
-      const available = item.product.inventoryQuantity - item.product.reservedQuantity;
+      const available = item.product.inventoryQuantity;
       if (item.product.status !== ProductStatus.ACTIVE || available < item.quantity) {
         throw new ConflictError(
           `"${item.product.name}" không còn đủ số lượng. Vui lòng quay lại giỏ hàng để kiểm tra.`,

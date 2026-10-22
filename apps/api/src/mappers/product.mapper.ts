@@ -88,7 +88,7 @@ function buildBreadcrumb(category: ProductWithRelations["category"]): Breadcrumb
  * `note` là dòng chữ bên phải: "Gần cháy hàng", "Còn 5 suất"...
  */
 function buildStockInfo(product: ProductWithRelations): StockInfoDto | undefined {
-  const available = product.inventoryQuantity - product.reservedQuantity;
+  const available = product.inventoryQuantity;
 
   // Flash Sale: tiến trình tính trên số suất của đợt sale
   if (product.isFlashSale && product.flashSaleQuota) {
@@ -198,12 +198,12 @@ export function toProductDto(product: ProductWithRelations): ProductDto {
       : undefined,
     gift: product.giftNote ?? undefined,
     stock: buildStockInfo(product),
-    inStock: product.inventoryQuantity - product.reservedQuantity > 0,
+    inStock: product.inventoryQuantity > 0,
   };
 }
 
 export function toProductDetailDto(product: ProductDetailRow): ProductDetailDto {
-  const available = Math.max(0, product.inventoryQuantity - product.reservedQuantity);
+  const available = Math.max(0, product.inventoryQuantity);
 
   return {
     ...toProductDto(product),
@@ -258,11 +258,9 @@ export function toAdminProductSummaryDto(product: AdminProductSummaryRow): Admin
     sellingPrice: Number(product.sellingPrice),
     costPrice: toNumber(product.costPrice),
     inventoryQuantity: product.inventoryQuantity,
-    reservedQuantity: product.reservedQuantity,
     lowStockThreshold: product.lowStockThreshold,
-    // Cảnh báo NHẬP HÀNG dựa trên tồn kho vật lý — khác `inStock`/`stock.urgent` phía khách hàng
-    // (trừ đi reservedQuantity, tức "còn bán được ngay"). Hai mối quan tâm khác nhau: khách hàng
-    // cần biết mua được không, quản trị cần biết có phải đặt hàng thêm không.
+    // Cảnh báo NHẬP HÀNG theo ngưỡng riêng của từng sản phẩm — khác `inStock`/`stock.urgent` phía khách hàng
+    // (còn mua được không). Quản trị cần biết có phải đặt hàng thêm không.
     lowStock: product.inventoryQuantity <= product.lowStockThreshold,
     soldCount: product.soldCount,
     updatedAt: product.updatedAt.toISOString(),
