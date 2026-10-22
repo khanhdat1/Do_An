@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { BotOff, Sparkles } from "lucide-react";
+import { BotOff, MessageSquarePlus, Sparkles } from "lucide-react";
 import { useStoreSettings } from "@/components/providers/StoreSettingsProvider";
 import { useToast } from "@/components/providers/ToastProvider";
-import { streamChatMessage } from "@/lib/ai-chat-client";
+import { fetchChatHistory, streamChatMessage } from "@/lib/ai-chat-client";
 import { aiAdvisorSuggestions } from "@/lib/data/ai-advisor";
 import type { AiChatMessage } from "@/types";
 import ChatComposer from "./ChatComposer";
@@ -15,14 +15,34 @@ function newId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** Id hội thoại đang mở, nhớ ở trình duyệt để tải lại trang vẫn tiếp tục được (nội dung nằm ở DB, đọc lại qua API) */
+const CONVERSATION_STORAGE_KEY = "pcz_ai_conversation";
+
+function readStoredConversationId(): string | null {
+  try {
+    return window.localStorage.getItem(CONVERSATION_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function storeConversationId(id: string | null): void {
+  try {
+    if (id) window.localStorage.setItem(CONVERSATION_STORAGE_KEY, id);
+    else window.localStorage.removeItem(CONVERSATION_STORAGE_KEY);
+  } catch {
+    // Trình duyệt chặn localStorage (chế độ riêng tư...): chỉ mất khả năng nối lại sau khi tải lại trang
+  }
+}
+
 interface AiChatViewProps {
   initialQuestion?: string;
 }
 
 /**
- * Một hội thoại đang mở — không có sidebar nhiều hội thoại (cắt phạm vi có chủ đích cho Đợt 2, xem
- * plan). `conversationId` chỉ giữ trong state, tải lại trang là bắt đầu hội thoại mới; hội thoại cũ
- * vẫn còn nguyên trong DB, chỉ là không tự nối lại.
+ * Một hội thoại đang mở — không có sidebar nhiều hội thoại. Id hội thoại nhớ ở localStorage: tải lại trang thì đọc lại
+ * các tin nhắn từ API (chỉ chủ hội thoại đọc được) và hỏi tiếp trong cùng hội thoại; nút "Cuộc trò chuyện mới" bắt đầu
+ * lại từ đầu. Vào trang kèm câu hỏi (`?q=` từ trang chủ) luôn mở hội thoại mới.
  */
 export default function AiChatView({ initialQuestion }: AiChatViewProps) {
   const [messages, setMessages] = useState<AiChatMessage[]>([]);
@@ -47,6 +67,7 @@ export default function AiChatView({ initialQuestion }: AiChatViewProps) {
       {
         onMeta: (data) => {
           conversationIdRef.current = data.conversationId;
+          storeConversationId(data.conversationId);
         },
         onChunk: (chunk) => {
           setMessages((prev) => prev.map((m) => (m.id === assistantMessageId ? { ...m, content: m.content + chunk } : m)));
@@ -70,6 +91,43 @@ export default function AiChatView({ initialQuestion }: AiChatViewProps) {
   function send(text: string) {
     startTurn(text);
   }
+
+  function startNewConversation() {
+    conversationIdRef.current = undefined;
+    storeConversationId(null);
+    setMessages([]);
+  }
+
+  /** Tải lại trang: mở lại hội thoại đang dở (nếu còn và đúng của người đang xem) */
+  useEffect(() => {
+    if (!chatEnabled) return;
+    if (initialQuestion) {
+      // Câu hỏi mới từ trang chủ: bắt đầu hội thoại mới, không nối vào hội thoại cũ
+      storeConversationId(null);
+      return;
+    }
+    const storedId = readStoredConversationId();
+    if (!storedId) return;
+
+    let cancelled = false;
+    fetchChatHistory(storedId)
+      .then((history) => {
+        if (cancelled) return;
+        if (!history) {
+          storeConversationId(null);
+          return;
+        }
+        conversationIdRef.current = history.conversationId;
+        // Khách đã kịp gửi tin mới trong lúc đang tải thì giữ tin đó, không ghi đè
+        setMessages((prev) => (prev.length > 0 ? prev : history.messages));
+      })
+      .catch(() => {
+        // Lỗi mạng: không chặn khách hỏi tiếp, chỉ không nối lại được hội thoại cũ
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [chatEnabled, initialQuestion]);
 
   function handleRetry(assistantMessageId: string) {
     const index = messages.findIndex((m) => m.id === assistantMessageId);
@@ -137,10 +195,22 @@ export default function AiChatView({ initialQuestion }: AiChatViewProps) {
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50">
             <Sparkles className="size-5 text-brand-500" />
           </span>
-          <div>
+          <div className="min-w-0 flex-1">
             <h1 className="font-display text-base font-bold text-slate-900">Trợ lý AI PCZone</h1>
             <p className="text-xs text-slate-500">Tư vấn dựa trên kho hàng thật, không bịa sản phẩm</p>
           </div>
+          {messages.length > 0 ? (
+            <button
+              type="button"
+              onClick={startNewConversation}
+              disabled={sending}
+              className="flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <MessageSquarePlus className="size-4" />
+              <span className="hidden sm:inline">Cuộc trò chuyện mới</span>
+              <span className="sr-only sm:hidden">Cuộc trò chuyện mới</span>
+            </button>
+          ) : null}
         </header>
 
         {messages.length === 0 && !sending ? (

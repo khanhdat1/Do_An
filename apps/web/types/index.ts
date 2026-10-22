@@ -1094,3 +1094,9 @@ export interface PublicSettings {
   payments: PaymentMethods;
   ai: AiToggleSettings;
 }
+
+/** Hội thoại trợ lý AI mở lại sau khi tải lại trang (`GET /api/ai/chat/conversations/:id`) */
+export interface AiChatHistory {
+  conversationId: string;
+  messages: { id: string; role: "user" | "assistant"; content: string; citedProducts: Product[] }[];
+}

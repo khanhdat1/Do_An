@@ -4,8 +4,8 @@
  * đây vì nó luôn gọi `response.json()`; nhưng vẫn tái dùng `renewSession`/`toApiError` từ đó thay vì
  * viết lại logic refresh-401/đọc lỗi JSON.
  */
-import type { Product } from "@/types";
-import { renewSession, toApiError } from "./api-client";
+import type { AiChatHistory, Product } from "@/types";
+import { ApiError, apiFetch, renewSession, toApiError } from "./api-client";
 import { PUBLIC_API_URL } from "./config";
 
 export interface ChatStreamCallbacks {
@@ -118,4 +118,17 @@ export async function streamChatMessage(input: { conversationId?: string; messag
 
   // Kết nối kết thúc mà chưa từng thấy "done"/"error" — coi như mất kết nối giữa chừng
   if (!sawTerminalEvent) callbacks.onError(GENERIC_ERROR);
+}
+
+/**
+ * Mở lại hội thoại đã lưu (trang `/tro-ly-ai` nhớ id ở trình duyệt). `null` khi hội thoại không còn hoặc không phải
+ * của người đang xem (vd đã đăng xuất, đổi tài khoản) — trang tự bắt đầu hội thoại mới.
+ */
+export async function fetchChatHistory(conversationId: string): Promise<AiChatHistory | null> {
+  try {
+    return await apiFetch<AiChatHistory>(`/api/ai/chat/conversations/${encodeURIComponent(conversationId)}`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
 }

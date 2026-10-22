@@ -16,12 +16,15 @@ import { buildProductInclude, type BuildProductRow, keySpecs } from "../mappers/
 import { productInclude, readAllShortSpecs, readSpecifications, toProductDto } from "../mappers/product.mapper.js";
 import { isBuildSlot } from "../pc-build/slots.js";
 import { readStoredSpec } from "../pc-build/spec-store.js";
-import type { ProductDto, SpecRowDto } from "../types/dto.js";
+import type { AiChatHistoryDto, ProductDto, SpecRowDto } from "../types/dto.js";
 import { productIdsInPriceRange } from "./ai-search.service.js";
 import { PUBLIC_FILTER } from "./product.service.js";
 import { assertAiFeatureEnabled } from "./settings.service.js";
 
 export type ChatIdentity = { userId: string } | { sessionId: string };
+
+/** Số tin nhắn gần nhất trả về khi mở lại hội thoại sau khi tải lại trang — đủ cho một phiên tư vấn */
+const RESTORE_MESSAGE_LIMIT = 50;
 
 const RETRIEVAL_LIMIT = 8;
 /** Kiểm soát chi phí/độ trễ mỗi lượt gọi model — không phải giới hạn kỹ thuật cứng (cửa sổ ngữ cảnh Gemini rất lớn) */
@@ -181,4 +184,43 @@ export async function* streamChatReply(turn: PreparedChatTurn): AsyncGenerator<C
   }
 
   yield { type: "done", citedProductIds, citedProducts, messageId };
+}
+
+/** `AiMessage.citedProductIds` là cột JSON — chỉ nhận mảng chuỗi, dữ liệu lạ coi như không trích dẫn gì */
+export function readCitedProductIds(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((id): id is string => typeof id === "string") : [];
+}
+
+/**
+ * Mở lại một hội thoại sau khi tải lại trang (`GET /api/ai/chat/conversations/:id`). Chỉ CHỦ hội thoại đọc được: cùng
+ * tài khoản, hoặc cùng cookie khách vãng lai — id sai hay của người khác đều trả `null` (route báo 404, không lộ id đó
+ * có tồn tại). Thẻ sản phẩm trích dẫn đọc lại từ DB nên giá/tồn kho là số hiện tại; sản phẩm đã ngừng bán thì bỏ qua.
+ */
+export async function getChatHistory(identity: ChatIdentity, conversationId: string): Promise<AiChatHistoryDto | null> {
+  const conversation = await prisma.aiConversation.findFirst({
+    where: { id: conversationId, ...identityWhere(identity) },
+    select: { id: true },
+  });
+  if (!conversation) return null;
+
+  const rows = await prisma.aiMessage.findMany({
+    where: { conversationId: conversation.id, role: { in: [MessageRole.USER, MessageRole.ASSISTANT] } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: RESTORE_MESSAGE_LIMIT,
+    select: { id: true, role: true, content: true, citedProductIds: true },
+  });
+  const oldToNew = [...rows].reverse();
+
+  const products = await loadCandidates([...new Set(oldToNew.flatMap((row) => readCitedProductIds(row.citedProductIds)))]);
+  const byId = new Map(products.map((product) => [product.id, product]));
+
+  return {
+    conversationId: conversation.id,
+    messages: oldToNew.map((row) => ({
+      id: row.id,
+      role: row.role === MessageRole.USER ? "user" : "assistant",
+      content: row.content,
+      citedProducts: readCitedProductIds(row.citedProductIds).flatMap((id) => byId.get(id) ?? []),
+    })),
+  };
 }

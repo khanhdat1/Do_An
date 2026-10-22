@@ -1131,3 +1131,18 @@ export interface PublicSettingsDto {
   payments: PaymentMethodsDto;
   ai: AiToggleSettingsDto;
 }
+
+/** Một tin nhắn khi mở lại hội thoại trợ lý AI (`GET /api/ai/chat/conversations/:id`) */
+export interface AiChatHistoryMessageDto {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  /** Sản phẩm câu trả lời đã trích dẫn, đọc lại từ DB (giá/tồn kho hiện tại); rỗng với tin của khách */
+  citedProducts: ProductDto[];
+}
+
+export interface AiChatHistoryDto {
+  conversationId: string;
+  /** Tối đa 50 tin gần nhất, cũ trước mới sau */
+  messages: AiChatHistoryMessageDto[];
+}

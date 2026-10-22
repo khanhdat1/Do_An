@@ -33,6 +33,24 @@ test.describe("Phân quyền", () => {
     await stranger.dispose();
   });
 
+  test("hội thoại trợ lý AI: không mở lại được hội thoại không phải của mình", async ({ playwright }) => {
+    const guest = await playwright.request.newContext({ baseURL: WEB_URL });
+    const customer = await playwright.request.newContext({ baseURL: WEB_URL });
+
+    // Khách vãng lai chưa có cookie hội thoại, id bất kỳ: 404, không lộ id có tồn tại hay không
+    const guestResponse = await guest.get("/api/ai/chat/conversations/cmzzzzzzzzzzzzzzzzzzzzzzz");
+    expect(guestResponse.status()).toBe(404);
+    expect(guestResponse.headers()["cache-control"]).toContain("no-store");
+
+    await registerCustomerViaApi(customer, "Khách Hỏi AI");
+    expect((await customer.get("/api/ai/chat/conversations/cmzzzzzzzzzzzzzzzzzzzzzzz")).status()).toBe(404);
+    // Id quá dài bị chặn ở bước kiểm tra tham số
+    expect((await customer.get(`/api/ai/chat/conversations/${"x".repeat(60)}`)).status()).toBe(400);
+
+    await guest.dispose();
+    await customer.dispose();
+  });
+
   test("tải ảnh banner: nội dung không phải ảnh bị từ chối dù tự khai là image/png", async ({ request }) => {
     await loginAdminViaApi(request);
     // Bị từ chối thì API tự xoá file vừa nhận — test không để lại gì trong thư mục banner

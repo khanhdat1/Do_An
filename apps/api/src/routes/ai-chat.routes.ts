@@ -2,8 +2,9 @@ import { randomBytes } from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { authenticate } from "../middleware/auth.js";
-import { aiChatLimiter } from "../middleware/security.js";
-import { prepareChatTurn, streamChatReply, type ChatIdentity, type ChatStreamEvent } from "../services/ai-chat.service.js";
+import { NotFoundError } from "../middleware/errors.js";
+import { aiChatLimiter, noStore, searchLimiter } from "../middleware/security.js";
+import { getChatHistory, prepareChatTurn, streamChatReply, type ChatIdentity, type ChatStreamEvent } from "../services/ai-chat.service.js";
 import { GUEST_CHAT_COOKIE, readCookie, setGuestChatCookie } from "../utils/cookies.js";
 
 /**
@@ -36,6 +37,31 @@ function resolveChatIdentity(req: Request, res: Response): ChatIdentity {
   setGuestChatCookie(res, sessionId);
   return { sessionId };
 }
+
+/** Như resolveChatIdentity nhưng chỉ ĐỌC: không có cookie khách thì không có hội thoại nào để mở lại, không cấp cookie mới */
+function existingChatIdentity(req: Request): ChatIdentity | null {
+  if (req.auth) return { userId: req.auth.userId };
+  const existing = readCookie(req, GUEST_CHAT_COOKIE);
+  return existing && isValidGuestSessionId(existing) ? { sessionId: existing } : null;
+}
+
+const conversationParam = z.object({ id: z.string().trim().min(1).max(40) });
+
+/**
+ * GET /api/ai/chat/conversations/:id — mở lại hội thoại sau khi tải lại trang (trang `/tro-ly-ai` nhớ id ở trình duyệt).
+ * Chỉ chủ hội thoại đọc được (tài khoản hoặc cookie khách); id sai, của người khác hay đã đăng xuất đều 404.
+ */
+aiChatRouter.get("/chat/conversations/:id", noStore, authenticate, searchLimiter, async (req, res, next) => {
+  try {
+    const { id } = conversationParam.parse(req.params);
+    const identity = existingChatIdentity(req);
+    const history = identity ? await getChatHistory(identity, id) : null;
+    if (!history) throw new NotFoundError("Không tìm thấy hội thoại");
+    res.json(history);
+  } catch (error) {
+    next(error);
+  }
+});
 
 const sendMessageBody = z.object({
   conversationId: z.string().trim().min(1).max(40).optional(),
