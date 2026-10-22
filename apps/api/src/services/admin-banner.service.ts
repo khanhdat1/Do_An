@@ -33,10 +33,10 @@ export async function createBanner(input: AdminBannerInput, admin: AdminActor): 
   const banner = await prisma.$transaction(async (tx) => {
     const created = await tx.banner.create({
       data: {
-        title: input.title,
-        subtitle: input.subtitle,
+        title: input.title || null,
+        subtitle: input.subtitle || null,
         imageUrl: input.imageUrl,
-        linkUrl: input.linkUrl,
+        linkUrl: input.linkUrl || null,
         displayOrder: input.displayOrder,
         status: input.status,
         startsAt: input.startsAt ? new Date(input.startsAt) : undefined,
@@ -66,10 +66,10 @@ export async function updateBanner(id: string, input: AdminBannerInput, admin: A
     const updated = await tx.banner.update({
       where: { id },
       data: {
-        title: input.title,
-        subtitle: input.subtitle,
+        title: input.title || null,
+        subtitle: input.subtitle || null,
         imageUrl: input.imageUrl,
-        linkUrl: input.linkUrl,
+        linkUrl: input.linkUrl || null,
         displayOrder: input.displayOrder,
         status: input.status,
         startsAt: input.startsAt ? new Date(input.startsAt) : null,
