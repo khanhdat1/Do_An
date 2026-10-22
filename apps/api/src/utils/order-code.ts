@@ -1,4 +1,4 @@
-import type { Prisma } from "@pczone/db";
+import { randomInt } from "node:crypto";
 
 /** "PCZ20260919" — tiền tố theo ngày (giờ máy chủ, đủ dùng cho một mã hiển thị) */
 function todayPrefix(date: Date): string {
@@ -8,14 +8,20 @@ function todayPrefix(date: Date): string {
   return `PCZ${y}${m}${d}`;
 }
 
+/** Chữ và số dễ đọc qua điện thoại: bỏ 0/O, 1/I/L để khách đọc mã cho tổng đài không nhầm */
+export const ORDER_CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+export const ORDER_CODE_SUFFIX_LENGTH = 6;
+
 /**
- * Sinh mã đơn hiển thị cho khách, dạng "PCZ20260919-0001": tiền tố theo ngày + số thứ tự trong ngày, đếm bằng số
- * đơn đã có cùng tiền tố. Có thể trùng nếu hai đơn được tạo cùng lúc; gọi lại với `attempt` tăng dần khi
- * `Order.create` báo lỗi trùng khoá `orderCode` (xem `order.service.ts`) để thử số tiếp theo.
+ * Sinh mã đơn hiển thị cho khách, dạng "PCZ20260919-7K4Q9M": tiền tố theo ngày + 6 ký tự NGẪU NHIÊN (crypto).
+ * Trước đây phần đuôi là số thứ tự trong ngày ("-0001", "-0002"…) nên đoán được mã đơn của người khác — mà tra cứu
+ * đơn công khai chỉ cần mã đơn + số điện thoại. 31^6 ≈ 887 triệu khả năng mỗi ngày; trùng (cực hiếm) thì
+ * `Order.create` báo lỗi trùng khoá và `order.service.ts` sinh mã khác. Mã cũ dạng số thứ tự vẫn tra cứu bình thường.
  */
-export async function generateOrderCode(tx: Prisma.TransactionClient, attempt = 0): Promise<string> {
-  const prefix = todayPrefix(new Date());
-  const count = await tx.order.count({ where: { orderCode: { startsWith: `${prefix}-` } } });
-  const sequence = count + 1 + attempt;
-  return `${prefix}-${String(sequence).padStart(4, "0")}`;
+export function generateOrderCode(now: Date = new Date()): string {
+  let suffix = "";
+  for (let i = 0; i < ORDER_CODE_SUFFIX_LENGTH; i++) {
+    suffix += ORDER_CODE_ALPHABET[randomInt(ORDER_CODE_ALPHABET.length)];
+  }
+  return `${todayPrefix(now)}-${suffix}`;
 }

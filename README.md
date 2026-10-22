@@ -845,7 +845,7 @@ ghi InventoryTransaction + tạo Order + OrderItem"):
 1. Kiểm tra lại từng dòng giỏ hàng còn `ACTIVE` và đủ số lượng — giỏ có thể đã cũ so với lúc khách bấm.
 2. Tính tiền theo giá bán **hiện tại** (không phải giá lúc thêm vào giỏ), phí vận chuyển tính bằng
    `calcShippingFee` (`apps/api/src/utils/shipping.ts`): miễn phí từ 500.000đ, dưới mức đó thu 30.000đ.
-3. Sinh `orderCode` dạng `PCZ20260922-0001` (tiền tố ngày + số thứ tự trong ngày).
+3. Sinh `orderCode` dạng `PCZ20260922-7K4Q9M` (tiền tố ngày + 6 ký tự ngẫu nhiên, không đoán được mã đơn của người khác; mã cũ dạng `-0001` vẫn tra cứu được).
 4. Với mỗi dòng: trừ `Product.inventoryQuantity` bằng một `updateMany` có điều kiện tồn kho ngay trong
    `WHERE` (hai người mua nốt sản phẩm cuối không thể cùng thành công), ghi `InventoryTransaction`
    (`type: EXPORT`), tạo `OrderItem` snapshot tên/ảnh/giá tại thời điểm mua.

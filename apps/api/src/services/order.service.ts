@@ -16,7 +16,7 @@ import { assertPaymentMethodEnabled, getSettings } from "./settings.service.js";
 import { buildPaymentUrl, isVnpayConfigured, type VerifiedCallback } from "./vnpay.service.js";
 import { redeemVoucher, validateVoucherForOrder } from "./voucher.service.js";
 
-/** Số lần thử lại khi hai đơn cùng sinh trùng `orderCode` (cực hiếm — mã sinh theo số đơn trong ngày) */
+/** Số lần thử lại khi hai đơn cùng sinh trùng `orderCode` (cực hiếm — phần đuôi mã là 6 ký tự ngẫu nhiên, xem utils/order-code.ts) */
 const ORDER_CODE_RETRY = 5;
 
 export interface CreateOrderInput {
@@ -134,7 +134,7 @@ async function runCreateOrder(input: CreateOrderInput, shippingConfig: ShippingS
 
     let order: { id: string; orderCode: string } | undefined;
     for (let attempt = 0; attempt < ORDER_CODE_RETRY; attempt++) {
-      const orderCode = await generateOrderCode(tx, attempt);
+      const orderCode = generateOrderCode();
       try {
         order = await tx.order.create({
           data: {
@@ -247,7 +247,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   const settings = await getSettings();
   assertPaymentMethodEnabled(settings.payments, input.paymentMethod);
 
-  // Nhiều khách đặt cùng lúc có thể cùng sinh một `orderCode` (mã theo số đơn trong ngày) → InnoDB báo deadlock (P2034)
+  // Nhiều khách đặt cùng lúc tranh nhau cùng dòng sản phẩm/mã giảm giá → InnoDB có thể báo deadlock (P2034)
   // và huỷ cả transaction. Chạy lại từ đầu: lượt sau đọc lại giỏ + tồn kho, ai hết hàng sẽ nhận 409 như thiết kế thay vì 500
   const { orderId, payUrl } = await retryOnTransactionConflict(() => runCreateOrder(input, settings.shipping));
   const row = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: orderInclude });

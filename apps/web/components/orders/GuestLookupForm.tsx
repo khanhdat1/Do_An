@@ -63,7 +63,7 @@ export default function GuestLookupForm() {
             value={code}
             onChange={(event) => setCode(event.target.value)}
             error={errors.code}
-            placeholder="PCZ20260922-0001"
+            placeholder="PCZ20260922-7K4Q9M"
             autoComplete="off"
           />
           <TextField
