@@ -7,7 +7,7 @@ import Pagination from "@/components/category/Pagination";
 import Breadcrumb from "@/components/product/Breadcrumb";
 import ProductCard from "@/components/product/ProductCard";
 import CategoryIcon from "@/components/ui/CategoryIcon";
-import { getCategory, getProducts } from "@/lib/api";
+import { getCategory, getProductFacets, getProducts } from "@/lib/api";
 import {
   CATEGORY_PAGE_SIZE,
   countActiveFilters,
@@ -37,18 +37,19 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   const { slug } = await params;
   const query = parseCategoryQuery(await searchParams);
 
-  const [category, list] = await Promise.all([
+  const filters = {
+    category: slug,
+    brand: query.brands.length > 0 ? query.brands.join(",") : undefined,
+    minPrice: query.minPrice,
+    maxPrice: query.maxPrice,
+    inStock: query.inStock || undefined,
+    specs: query.specs,
+  };
+
+  const [category, list, facets] = await Promise.all([
     getCategory(slug),
-    getProducts({
-      category: slug,
-      brand: query.brands.length > 0 ? query.brands.join(",") : undefined,
-      minPrice: query.minPrice,
-      maxPrice: query.maxPrice,
-      inStock: query.inStock || undefined,
-      sort: query.sort,
-      page: query.page,
-      pageSize: CATEGORY_PAGE_SIZE,
-    }),
+    getProducts({ ...filters, sort: query.sort, page: query.page, pageSize: CATEGORY_PAGE_SIZE }),
+    getProductFacets(filters),
   ]);
 
   if (!category) notFound();
@@ -103,7 +104,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
         ) : null}
       </header>
 
-      <CategoryShell brands={category.brands} priceRange={category.priceRange} total={list.total}>
+      <CategoryShell brands={category.brands} priceRange={category.priceRange} specGroups={facets.groups} total={list.total}>
         {list.items.length > 0 ? (
           <>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">

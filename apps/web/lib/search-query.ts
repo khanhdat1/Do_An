@@ -19,7 +19,8 @@ export type SearchSortKey = (typeof SEARCH_SORT_OPTIONS)[number]["value"];
 
 export const DEFAULT_SEARCH_SORT: SearchSortKey = "relevance";
 
-export interface SearchQuery extends Omit<CategoryQuery, "sort"> {
+/** Trang tìm kiếm không có bộ lọc thông số: kết quả trộn nhiều loại hàng */
+export interface SearchQuery extends Omit<CategoryQuery, "sort" | "specs"> {
   /** Câu tìm kiếm, đã gọn khoảng trắng; rỗng nếu chưa nhập gì */
   q: string;
   /** Slug danh mục (lá hoặc cha) đang lọc */

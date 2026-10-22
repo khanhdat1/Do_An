@@ -6,12 +6,14 @@ import type {
   Paginated,
   Product,
   ProductDetail,
+  ProductFacets,
   PublicSettings,
   SavedBuild,
   SearchResult,
   Voucher,
 } from "@/types";
 import type { SearchQuery } from "@/lib/search-query";
+import { specQueryParams, type SpecSelections } from "@/lib/category-query";
 import {
   bestSellerProducts,
   featuredProducts,
@@ -113,19 +115,26 @@ export interface ProductQuery {
   maxPrice?: number;
   /** true = chỉ sản phẩm còn hàng */
   inStock?: boolean;
+  /** Bộ lọc thông số; chỉ có tác dụng cùng `category` */
+  specs?: SpecSelections;
   sort?: "newest" | "price-asc" | "price-desc" | "best-selling" | "rating";
   page?: number;
   pageSize?: number;
+}
+
+function productQueryParams({ specs, ...query }: ProductQuery): URLSearchParams {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries({ ...query, ...specQueryParams(specs ?? {}) })) {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  }
+  return params;
 }
 
 /** Danh sách sản phẩm có lọc + phân trang — dùng cho trang danh mục */
 export async function getProducts(
   query: ProductQuery = {},
 ): Promise<Paginated<Product>> {
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(query)) {
-    if (value !== undefined && value !== "") params.set(key, String(value));
-  }
+  const params = productQueryParams(query);
 
   return apiGet<ProductListResponse>(`/api/products?${params.toString()}`, {
     items: [],
@@ -134,6 +143,14 @@ export async function getProducts(
     total: 0,
     totalPages: 1,
   });
+}
+
+/**
+ * Các nhóm lọc thông số của trang danh mục (`GET /api/products/facets`), con số tính theo cùng bộ lọc với danh sách.
+ * API không trả lời được thì không có nhóm nào: trang vẫn lọc được theo hãng, giá.
+ */
+export async function getProductFacets(query: Omit<ProductQuery, "sort" | "page" | "pageSize">): Promise<ProductFacets> {
+  return apiGet<ProductFacets>(`/api/products/facets?${productQueryParams(query).toString()}`, { groups: [] });
 }
 
 /**

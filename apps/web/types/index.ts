@@ -106,6 +106,26 @@ export interface BrandFacet {
   count: number;
 }
 
+/** Một lựa chọn của nhóm lọc thông số. `count` = số sản phẩm có giá trị này và khớp các bộ lọc KHÁC đang bật */
+export interface SpecFacetOption {
+  /** Giá trị đặt lên URL: `?socket=AM5`, `?ram=16`, `?gpu=rtx-4060` */
+  value: string;
+  label: string;
+  count: number;
+}
+
+/** Một nhóm lọc thông số ("Socket", "Dòng CPU"...); `key` là tên tham số trên URL */
+export interface SpecFacetGroup {
+  key: string;
+  label: string;
+  options: SpecFacetOption[];
+}
+
+/** `GET /api/products/facets` */
+export interface ProductFacets {
+  groups: SpecFacetGroup[];
+}
+
 /** Danh mục con hiện thành ô chọn nhanh ở đầu trang danh mục */
 export interface CategoryLink {
   slug: string;

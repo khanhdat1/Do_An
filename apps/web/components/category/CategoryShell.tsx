@@ -9,15 +9,20 @@ import {
   FILTER_PARAMS,
   SORT_OPTIONS,
   countActiveFilters,
+  isSpecFilterKey,
   parseCategoryQuery,
+  toggleSpecValue,
+  type SpecFilterKey,
 } from "@/lib/category-query";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { BrandFacet, CategoryFacet } from "@/types";
+import type { BrandFacet, CategoryFacet, SpecFacetGroup } from "@/types";
 
 interface CategoryShellProps {
   brands: BrandFacet[];
   priceRange: { min: number; max: number } | null;
+  /** Nhóm lọc thông số của danh mục (`GET /api/products/facets`); trang tìm kiếm không có */
+  specGroups?: SpecFacetGroup[];
   /** Số sản phẩm khớp bộ lọc hiện tại (tính ở server) */
   total: number;
   /** Lưới sản phẩm + phân trang, render ở server */
@@ -47,6 +52,7 @@ function describePrice(min?: number, max?: number): string {
 export default function CategoryShell({
   brands,
   priceRange,
+  specGroups,
   total,
   children,
   sortOptions = SORT_OPTIONS,
@@ -63,7 +69,21 @@ export default function CategoryShell({
   // `parseCategoryQuery` chỉ biết các kiểu sắp xếp của trang danh mục: kiểu sắp xếp đang chọn đọc riêng theo danh sách của trang này
   const sort = sortOptions.find((option) => option.value === searchParams.get("sort"))?.value ?? defaultSort;
   const selectedCategory = categories ? (searchParams.get("category") ?? undefined) : undefined;
-  const activeCount = countActiveFilters(query) + (selectedCategory ? 1 : 0);
+  // Chỉ tính giá trị thông số của các nhóm API trả về cho danh mục này: tham số lạ (vd ?socket= ở trang laptop) API bỏ qua
+  const activeSpecs = useMemo(
+    () =>
+      (specGroups ?? []).flatMap((group) =>
+        isSpecFilterKey(group.key)
+          ? (query.specs[group.key] ?? []).map((value) => ({
+              key: group.key as SpecFilterKey,
+              value,
+              text: `${group.label}: ${group.options.find((option) => option.value === value)?.label ?? value}`,
+            }))
+          : [],
+      ),
+    [specGroups, query.specs],
+  );
+  const activeCount = countActiveFilters({ ...query, specs: {} }) + activeSpecs.length + (selectedCategory ? 1 : 0);
   const brandName = useMemo(() => new Map(brands.map((brand) => [brand.slug, brand.name])), [brands]);
   const categoryName = useMemo(() => new Map((categories ?? []).map((category) => [category.slug, category.name])), [categories]);
 
@@ -82,6 +102,13 @@ export default function CategoryShell({
       if (!selected.delete(slug)) selected.add(slug);
       if (selected.size > 0) params.set("brand", [...selected].join(","));
       else params.delete("brand");
+    });
+
+  const toggleSpec = (key: SpecFilterKey, value: string) =>
+    navigate((params) => {
+      const values = toggleSpecValue(query.specs[key], value);
+      if (values.length > 0) params.set(key, values.join(","));
+      else params.delete(key);
     });
 
   const setPrice = (min?: number, max?: number) =>
@@ -122,9 +149,11 @@ export default function CategoryShell({
     <FilterPanel
       brands={brands}
       priceRange={priceRange}
+      specGroups={specGroups}
       query={query}
       activeCount={activeCount}
       onToggleBrand={toggleBrand}
+      onToggleSpec={toggleSpec}
       onPrice={setPrice}
       onInStock={setInStock}
       onClear={clearAll}
@@ -193,7 +222,9 @@ export default function CategoryShell({
 
             <label className="flex items-center gap-2 text-sm text-slate-500">
               <span className="hidden sm:inline">Sắp xếp</span>
+              {/* Trên điện thoại chữ "Sắp xếp" bị ẩn: ô chọn vẫn cần tên cho trình đọc màn hình */}
               <select
+                aria-label="Sắp xếp"
                 value={sort}
                 onChange={(event) => setSort(event.target.value)}
                 className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
@@ -235,6 +266,14 @@ export default function CategoryShell({
                 </button>
               </li>
             ))}
+            {activeSpecs.map((spec) => (
+              <li key={`${spec.key}-${spec.value}`}>
+                <button type="button" onClick={() => toggleSpec(spec.key, spec.value)} className={chip}>
+                  {spec.text}
+                  <X className="size-3.5" aria-label={`Bỏ lọc ${spec.text}`} />
+                </button>
+              </li>
+            ))}
             {hasPrice ? (
               <li>
                 <button type="button" onClick={() => setPrice()} className={chip}>
@@ -247,7 +286,7 @@ export default function CategoryShell({
               <button
                 type="button"
                 onClick={clearAll}
-                className="px-1 text-xs font-semibold text-slate-500 underline-offset-2 transition hover:text-brand-600 hover:underline"
+                className="px-1 text-xs font-semibold text-slate-600 underline-offset-2 transition hover:text-brand-600 hover:underline"
               >
                 Xóa tất cả
               </button>

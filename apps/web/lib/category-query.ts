@@ -20,14 +20,43 @@ export const DEFAULT_SORT: SortKey = "best-selling";
 /** 12 chia hết cho 2, 3, 4: lưới 2 cột (mobile), 3 cột (tablet) và 4 cột (desktop) luôn đầy hàng */
 export const CATEGORY_PAGE_SIZE = 12;
 
+/**
+ * Tham số của bộ lọc thông số kỹ thuật (?socket=AM5,LGA1851&ramType=DDR5), cùng tên với API
+ * (apps/api/src/catalog/spec-filters.ts). Nhóm nào hiện ra, với lựa chọn nào, do `GET /api/products/facets` quyết định.
+ */
+export const SPEC_FILTER_KEYS = [
+  "socket",
+  "chipset",
+  "formFactor",
+  "ramType",
+  "ram",
+  "vram",
+  "storage",
+  "interface",
+  "wattage",
+  "cpuBrand",
+  "cpuLine",
+  "gpu",
+] as const;
+
+export type SpecFilterKey = (typeof SPEC_FILTER_KEYS)[number];
+
+export function isSpecFilterKey(key: string): key is SpecFilterKey {
+  return (SPEC_FILTER_KEYS as readonly string[]).includes(key);
+}
+
+/** Giá trị đang chọn của từng nhóm thông số; trong một nhóm là HOẶC, giữa các nhóm là VÀ */
+export type SpecSelections = Partial<Record<SpecFilterKey, string[]>>;
+
 /** Tên các tham số trên URL mà bộ lọc quản lý (trừ `page`, luôn reset khi đổi bộ lọc) */
-export const FILTER_PARAMS = ["brand", "minPrice", "maxPrice", "inStock"] as const;
+export const FILTER_PARAMS = ["brand", "minPrice", "maxPrice", "inStock", ...SPEC_FILTER_KEYS] as const;
 
 export interface CategoryQuery {
   brands: string[];
   minPrice?: number;
   maxPrice?: number;
   inStock: boolean;
+  specs: SpecSelections;
   sort: SortKey;
   page: number;
 }
@@ -41,6 +70,52 @@ function readInt(value: string | string[] | undefined): number | undefined {
   if (text === undefined || text.trim() === "") return undefined;
   const number = Number(text);
   return Number.isSafeInteger(number) && number >= 0 ? number : undefined;
+}
+
+/** Đúng giới hạn API nhận (chữ, số, dấu chấm, gạch ngang; ≤ 24 ký tự; ≤ 12 giá trị một nhóm): giá trị khác bị bỏ, không làm API báo lỗi */
+const SPEC_VALUE = /^[A-Za-z0-9.-]{1,24}$/;
+const MAX_SPEC_VALUES = 12;
+
+/** "AM5, lga1851,,<x>" → ["AM5", "lga1851"]; nhóm không còn giá trị nào thì không có khoá */
+export function parseSpecSelections(raw: RawParams): SpecSelections {
+  const specs: SpecSelections = {};
+  for (const key of SPEC_FILTER_KEYS) {
+    const values = [
+      ...new Set(
+        (firstValue(raw[key]) ?? "")
+          .split(",")
+          .map((value) => value.trim())
+          .filter((value) => SPEC_VALUE.test(value)),
+      ),
+    ].slice(0, MAX_SPEC_VALUES);
+    if (values.length > 0) specs[key] = values;
+  }
+  return specs;
+}
+
+/** Bật/tắt một giá trị trong nhóm, giữ thứ tự đã chọn */
+export function toggleSpecValue(selected: readonly string[] | undefined, value: string): string[] {
+  const current = selected ?? [];
+  return current.includes(value) ? current.filter((item) => item !== value) : [...current, value];
+}
+
+/**
+ * Lựa chọn còn sản phẩm (hoặc đang chọn) lên trước, lựa chọn đã về 0 xuống cuối, giữ nguyên thứ tự API trong mỗi phần:
+ * chọn hãng CPU "AMD" thì mấy dòng đầu (phần không bị "Xem thêm" giấu) là dòng CPU của AMD, không phải dòng Intel đã khoá.
+ */
+export function orderSpecOptions<T extends { value: string; count: number }>(options: readonly T[], selected: readonly string[]): T[] {
+  const available = (option: T) => option.count > 0 || selected.includes(option.value);
+  return [...options.filter(available), ...options.filter((option) => !available(option))];
+}
+
+/** Tham số gửi API: { socket: "AM5,LGA1851" } */
+export function specQueryParams(specs: SpecSelections): Partial<Record<SpecFilterKey, string>> {
+  const params: Partial<Record<SpecFilterKey, string>> = {};
+  for (const key of SPEC_FILTER_KEYS) {
+    const values = specs[key];
+    if (values && values.length > 0) params[key] = values.join(",");
+  }
+  return params;
 }
 
 /** Đọc `searchParams` của Next thành bộ lọc đã kiểm tra: giá trị lạ trên URL rơi về mặc định, không gây lỗi */
@@ -63,6 +138,7 @@ export function parseCategoryQuery(raw: RawParams): CategoryQuery {
     // Người dùng gõ ngược (từ 9 triệu đến 3 triệu): bỏ cận trên thay vì trả về danh sách rỗng khó hiểu
     maxPrice: minPrice !== undefined && maxPrice !== undefined && maxPrice < minPrice ? undefined : maxPrice,
     inStock: firstValue(raw.inStock) === "true",
+    specs: parseSpecSelections(raw),
     sort: SORT_OPTIONS.find((option) => option.value === firstValue(raw.sort))?.value ?? DEFAULT_SORT,
     page: Math.max(1, readInt(raw.page) ?? 1),
   };
@@ -75,16 +151,21 @@ export function toSearchParams(query: CategoryQuery): URLSearchParams {
   if (query.minPrice !== undefined) params.set("minPrice", String(query.minPrice));
   if (query.maxPrice !== undefined) params.set("maxPrice", String(query.maxPrice));
   if (query.inStock) params.set("inStock", "true");
+  for (const [key, value] of Object.entries(specQueryParams(query.specs))) params.set(key, value);
   if (query.sort !== DEFAULT_SORT) params.set("sort", query.sort);
   return params;
 }
 
-/** Số bộ lọc đang bật (không tính sắp xếp và trang), để hiện con số trên nút "Bộ lọc" */
-export function countActiveFilters(query: Pick<CategoryQuery, "brands" | "minPrice" | "maxPrice" | "inStock">): number {
+/** Số bộ lọc đang bật (không tính sắp xếp và trang), để hiện con số trên nút "Bộ lọc". Mỗi giá trị thông số tính là một. */
+export function countActiveFilters(
+  query: Pick<CategoryQuery, "brands" | "minPrice" | "maxPrice" | "inStock"> & { specs?: SpecSelections },
+): number {
+  const specCount = Object.values(query.specs ?? {}).reduce((sum, values) => sum + (values?.length ?? 0), 0);
   return (
     query.brands.length +
     (query.minPrice !== undefined || query.maxPrice !== undefined ? 1 : 0) +
-    (query.inStock ? 1 : 0)
+    (query.inStock ? 1 : 0) +
+    specCount
   );
 }
 

@@ -2,18 +2,21 @@
 
 import { useState, type FormEvent } from "react";
 import { X } from "lucide-react";
-import { buildPriceBrackets, type CategoryQuery } from "@/lib/category-query";
+import { buildPriceBrackets, isSpecFilterKey, orderSpecOptions, type CategoryQuery, type SpecFilterKey } from "@/lib/category-query";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { BrandFacet, CategoryFacet } from "@/types";
+import type { BrandFacet, CategoryFacet, SpecFacetGroup } from "@/types";
 
 interface FilterPanelProps {
   brands: BrandFacet[];
   priceRange: { min: number; max: number } | null;
-  query: Pick<CategoryQuery, "brands" | "minPrice" | "maxPrice" | "inStock">;
+  /** Nhóm lọc thông số của danh mục (socket, dòng CPU...); không truyền = không có */
+  specGroups?: SpecFacetGroup[];
+  query: Pick<CategoryQuery, "brands" | "minPrice" | "maxPrice" | "inStock"> & Partial<Pick<CategoryQuery, "specs">>;
   /** Số bộ lọc đang bật; 0 thì ẩn nút "Xóa lọc" */
   activeCount: number;
   onToggleBrand: (slug: string) => void;
+  onToggleSpec?: (key: SpecFilterKey, value: string) => void;
   onPrice: (min?: number, max?: number) => void;
   onInStock: (value: boolean) => void;
   onClear: () => void;
@@ -28,6 +31,8 @@ interface FilterPanelProps {
 /** Số hãng hiện sẵn; phần còn lại nằm sau nút "Xem thêm" để cột lọc không dài quá màn hình */
 const BRANDS_SHOWN = 8;
 const CATEGORIES_SHOWN = 8;
+/** Nhóm thông số ngắn hơn: một danh mục có tới 4–5 nhóm */
+const SPEC_OPTIONS_SHOWN = 6;
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -95,13 +100,77 @@ function PriceInputs({
   );
 }
 
-/** Nội dung bộ lọc của trang danh mục: còn hàng, thương hiệu, khoảng giá */
+/**
+ * Một nhóm lọc thông số: chọn nhiều giá trị (HOẶC trong nhóm). Lựa chọn không còn sản phẩm nào với các bộ lọc khác đang
+ * bật thì khoá lại (vẫn hiện để danh sách không nhảy chỗ), trừ khi đang được chọn — để còn bỏ chọn được.
+ */
+function SpecFilterGroup({
+  group,
+  selected,
+  onToggle,
+}: {
+  group: SpecFacetGroup;
+  selected: readonly string[];
+  onToggle: (value: string) => void;
+}) {
+  const chosen = new Set(selected);
+  const options = orderSpecOptions(group.options, selected);
+  const hiddenSelected = options.some((option, index) => index >= SPEC_OPTIONS_SHOWN && chosen.has(option.value));
+  const [expanded, setExpanded] = useState(hiddenSelected);
+  const visible = options.filter((_, index) => expanded || index < SPEC_OPTIONS_SHOWN);
+
+  return (
+    <Section title={group.label}>
+      <ul className="space-y-0.5">
+        {visible.map((option) => {
+          const checked = chosen.has(option.value);
+          const disabled = !checked && option.count === 0;
+          return (
+            <li key={option.value}>
+              {/* Cả dòng (cao 28px) là vùng bấm, như danh sách hãng: đủ chỗ chạm trên điện thoại */}
+              <label
+                className={cn(
+                  "flex min-h-7 items-center gap-2.5 text-sm",
+                  disabled ? "cursor-not-allowed text-slate-500" : "cursor-pointer text-slate-700",
+                )}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  disabled={disabled}
+                  onChange={() => onToggle(option.value)}
+                  className="size-4 accent-brand-500"
+                />
+                <span className="flex-1">{option.label}</span>
+                <span className="text-xs text-slate-500">{option.count}</span>
+              </label>
+            </li>
+          );
+        })}
+      </ul>
+      {group.options.length > SPEC_OPTIONS_SHOWN ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((open) => !open)}
+          aria-expanded={expanded}
+          className="mt-2 text-xs font-semibold text-blue-600 transition hover:text-blue-700"
+        >
+          {expanded ? "Thu gọn" : `Xem thêm ${group.options.length - SPEC_OPTIONS_SHOWN} lựa chọn`}
+        </button>
+      ) : null}
+    </Section>
+  );
+}
+
+/** Nội dung bộ lọc của trang danh mục: còn hàng, thương hiệu, thông số kỹ thuật, khoảng giá */
 export default function FilterPanel({
   brands,
   priceRange,
+  specGroups = [],
   query,
   activeCount,
   onToggleBrand,
+  onToggleSpec,
   onPrice,
   onInStock,
   onClear,
@@ -198,10 +267,10 @@ export default function FilterPanel({
 
       {brands.length > 0 ? (
         <Section title="Thương hiệu">
-          <ul className="space-y-2">
+          <ul className="space-y-0.5">
             {visibleBrands.map((brand) => (
               <li key={brand.slug}>
-                <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
+                <label className="flex min-h-7 cursor-pointer items-center gap-2.5 text-sm text-slate-700">
                   <input
                     type="checkbox"
                     checked={selectedBrands.has(brand.slug)}
@@ -225,6 +294,19 @@ export default function FilterPanel({
           ) : null}
         </Section>
       ) : null}
+
+      {onToggleSpec
+        ? specGroups.map((group) =>
+            isSpecFilterKey(group.key) ? (
+              <SpecFilterGroup
+                key={group.key}
+                group={group}
+                selected={query.specs?.[group.key] ?? []}
+                onToggle={(value) => onToggleSpec(group.key as SpecFilterKey, value)}
+              />
+            ) : null,
+          )
+        : null}
 
       {priceRange ? (
         <Section title="Khoảng giá">

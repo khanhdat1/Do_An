@@ -327,6 +327,7 @@ Hai tầng kiểm thử:
 | ------ | -------- | ----- |
 | GET | `/health` | Kiểm tra API sống |
 | GET | `/api/products` | Danh sách sản phẩm, có lọc & phân trang |
+| GET | `/api/products/facets?category=&…` | Các nhóm lọc thông số kỹ thuật của một danh mục (chỉ nhóm đủ dữ liệu) và số sản phẩm mỗi lựa chọn, tính theo cùng bộ lọc với `/api/products`; danh mục không có bộ lọc thông số trả `groups: []` |
 | GET | `/api/products/best-sellers?limit=4` | Top bán chạy |
 | GET | `/api/products/:slug` | Chi tiết một sản phẩm: ảnh, thông số, mô tả, breadcrumb |
 | GET | `/api/categories` | Cây danh mục đầy đủ |
@@ -445,9 +446,24 @@ Tham số của `/api/products`:
 ?flashSale=true
 ?sort=newest | price-asc | price-desc | best-selling | rating
 ?page=1&pageSize=20        tối đa 60
+
+Bộ lọc thông số (chỉ có tác dụng cùng ?category=, nhiều giá trị cách dấu phẩy):
+  CPU          ?socket=AM5,LGA1851
+  Mainboard    ?socket=  ?chipset=B650  ?formFactor=ATX|mATX|ITX|E-ATX  ?ramType=DDR4|DDR5
+  RAM          ?ramType=DDR5  ?ram=16,32 (GB)
+  VGA          ?vram=8,16 (GB)
+  SSD          ?storage=512|1000|2000 (mức dung lượng)  ?interface=pcie3|pcie4|pcie5
+  Nguồn        ?wattage=duoi-600|600-749|750-999|tu-1000
+  Laptop / PC  ?cpuBrand=intel|amd  ?cpuLine=core-i7,ryzen-7  ?ram=16  ?gpu=rtx-4060,tich-hop  ?storage=512
 ```
 
 `?search=` dùng chung bộ máy với `/api/search` (mục "Tìm kiếm" bên dưới): cũng hiểu không dấu, từ đồng nghĩa và lỗi gõ.
+
+Bộ lọc thông số (`apps/api/src/catalog/`): linh kiện lọc thẳng trên các cột đã chuẩn hoá của `ProductSpec` (có index
+theo `componentType`); laptop / PC lắp sẵn đọc CPU, RAM, card đồ họa, ổ cứng từ bảng thông số thô (`specifications`),
+giữ sẵn trong bộ nhớ API như chỉ mục tìm kiếm (làm mới sau 60 giây). Một nhóm chỉ hiện ở trang danh mục khi ≥ 80% sản
+phẩm của danh mục đọc được giá trị và có ít nhất 2 giá trị khác nhau — vd laptop văn phòng không có nhóm "Card đồ họa"
+vì gần nửa số máy không ghi dòng này. Trong một nhóm các giá trị là HOẶC, giữa các nhóm là VÀ.
 
 Mọi kiểu sắp xếp đều kèm khoá phụ `id`, nên sản phẩm bằng nhau ở khoá chính (cùng giá, cùng số đã bán)
 vẫn có thứ tự cố định giữa hai lần gọi: bấm sang trang 2 không gặp lại sản phẩm đã thấy ở trang 1.
@@ -456,7 +472,9 @@ vẫn có thứ tự cố định giữa hai lần gọi: bấm sang trang 2 kh�
 
 Toàn bộ bộ lọc nằm trên URL, ví dụ `/danh-muc/man-hinh?brand=asus,lg&minPrice=3000000&inStock=true&sort=price-asc&page=2`:
 gửi link là người nhận thấy đúng kết quả đang xem, bấm Back quay lại đúng bộ lọc trước, và trang vẫn được
-dựng ở server. Bộ lọc có: hãng (kèm số sản phẩm), khoảng giá (mức gợi ý tự chia theo giá của danh mục
+dựng ở server. Bộ lọc có: hãng (kèm số sản phẩm), thông số kỹ thuật theo loại hàng (socket, chipset, loại/dung lượng
+RAM, VRAM, dung lượng/chuẩn SSD, công suất nguồn; laptop/PC: hãng và dòng CPU, RAM, card đồ họa, ổ cứng — chọn nhiều
+giá trị, con số cập nhật theo các bộ lọc khác, lựa chọn về 0 bị khoá), khoảng giá (mức gợi ý tự chia theo giá của danh mục
 + ô nhập tay), chỉ hàng còn; sắp xếp; phân trang 12 sản phẩm / trang. Trên mobile bộ lọc là ngăn kéo mở bằng
 nút "Bộ lọc". Danh mục cha (`/danh-muc/linh-kien`) hiện thêm ô chọn nhanh các danh mục con; `/danh-muc` liệt
 kê mọi danh mục.

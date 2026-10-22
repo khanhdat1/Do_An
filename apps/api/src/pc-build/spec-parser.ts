@@ -6,10 +6,10 @@ import { fold, normalize } from "../search/text.js";
 import type { BuildSlot } from "./slots.js";
 import { BOARD_SIZES, type BoardSize, emptySpec, type NormalizedSpec } from "./spec-types.js";
 
-type Lookup = (...labels: string[]) => string | null;
+export type Lookup = (...labels: string[]) => string | null;
 
 /** So nhãn không dấu, không phân biệt hoa thường; truyền nhiều nhãn = thử lần lượt */
-function makeLookup(specifications: Prisma.JsonValue | null): Lookup {
+export function makeLookup(specifications: Prisma.JsonValue | null): Lookup {
   const byLabel = new Map<string, string>();
   for (const row of readSpecifications(specifications)) {
     const key = normalize(row.label);
