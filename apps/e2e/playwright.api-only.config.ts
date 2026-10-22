@@ -1,5 +1,5 @@
 import { defineConfig } from "@playwright/test";
-import { API_PORT, API_URL, E2E_DATABASE_URL, E2E_VNPAY_ENV, WEB_URL } from "./e2e-env";
+import { API_PORT, API_URL, E2E_ADMIN, E2E_DATABASE_URL, E2E_VNPAY_ENV, WEB_URL } from "./e2e-env";
 
 /**
  * Bản rút gọn của `playwright.config.ts` cho các ca kiểm thử chỉ gọi API (TC16–TC26, `order-edge-cases.spec.ts`):
@@ -33,6 +33,8 @@ export default defineConfig({
       env: {
         DATABASE_URL: E2E_DATABASE_URL,
         E2E_DATABASE_URL,
+        // Seed đặt mật khẩu tài khoản quản trị theo biến này (không còn mật khẩu cố định)
+        SEED_ADMIN_PASSWORD: E2E_ADMIN.password,
         API_PORT: String(API_PORT),
         WEB_URL,
         CORS_ORIGIN: WEB_URL,

@@ -1008,11 +1008,12 @@ script **cập nhật** mật khẩu + role + tên thay vì tạo trùng — dù
 tài khoản quản trị nào khi cần, không chỉ lúc tạo lần đầu. Mật khẩu băm bằng bcrypt (cost 12) giống hệt
 đăng nhập khách hàng, không lưu bản gốc.
 
-> **Tài khoản mẫu `admin@pczone.vn` (mục "Tài khoản mẫu" cũ, role `ADMIN`) đã tự động đăng nhập được ở
-> `/admin/login` với toàn quyền** — role `ADMIN` được coi như `OWNER` trong bảng quyền ở trên, không cần
-> chạy script gì thêm để dùng thử. Nhưng mật khẩu `admin123` đã in công khai trong tài liệu này, **nên
-> đổi ngay** bằng đúng lệnh trên (`--email=admin@pczone.vn --role=OWNER` cùng mật khẩu mới) trước khi
-> dùng cho bất cứ việc gì ngoài chạy thử ở máy cá nhân.
+> **Tài khoản mẫu `admin@pczone.vn` không còn mật khẩu cố định.** `npm run db:seed` đặt mật khẩu theo biến
+> `SEED_ADMIN_PASSWORD` nếu có; không có thì tài khoản đã tồn tại được giữ nguyên, còn tài khoản mới nhận một mật
+> khẩu ngẫu nhiên in ra **đúng một lần** lúc seed. Bản seed cũ dùng `admin123` (từng in công khai ở đây), nên:
+> bản chạy thật (`NODE_ENV=production`) **từ chối đăng nhập quản trị bằng `admin123`**, và lúc khởi động API in
+> cảnh báo kèm danh sách tài khoản quản trị còn dùng mật khẩu đó. Đổi bằng đúng lệnh trên (trên máy chủ:
+> `docker compose exec`, mục 14). API cũng từ chối khởi động nếu `JWT_SECRET` vẫn là giá trị mẫu trong `.env.example`.
 
 ### Xác thực 2 bước (2FA / TOTP)
 
@@ -1247,7 +1248,7 @@ quảng cáo "PCPoints" ở trang đăng nhập cũng đã gỡ.
 
 | Email | Mật khẩu | Vai trò | Dùng để |
 | ----- | -------- | ------- | ------- |
-| admin@pczone.vn | admin123 | ADMIN (toàn quyền quản trị) | Đăng nhập cả `/dang-nhap` lẫn `/admin/login` — đổi mật khẩu ngay (mục 11) |
+| admin@pczone.vn | đặt qua `SEED_ADMIN_PASSWORD`, hoặc ngẫu nhiên in ra lúc seed | OWNER (toàn quyền quản trị) | Đăng nhập `/admin/login`; đổi mật khẩu bằng `create-admin.mts` (mục 11). Bản chạy thật chặn mật khẩu cũ `admin123` |
 
 ## 13. Việc còn lại
 

@@ -19,7 +19,7 @@ import {
   StockStatus,
   UserRole,
 } from "@prisma/client";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { productDescriptions } from "./seed-descriptions.js";
 
@@ -734,23 +734,51 @@ async function seedProducts() {
 /*  Tài khoản quản trị                                                        */
 /* -------------------------------------------------------------------------- */
 
-async function seedAdmin() {
-  // Mật khẩu mặc định: admin123 — ĐỔI NGAY sau khi chạy lần đầu.
-  const passwordHash = await bcrypt.hash("admin123", 10);
+const SEED_ADMIN_EMAIL = "admin@pczone.vn";
 
-  await prisma.user.upsert({
-    where: { email: "admin@pczone.vn" },
-    update: { role: UserRole.ADMIN },
-    create: {
-      email: "admin@pczone.vn",
+/**
+ * Tài khoản quản trị mẫu. KHÔNG còn mật khẩu cố định (bản cũ dùng "admin123" in công khai trong README, rồi đi
+ * theo bản dump DB lên máy chủ):
+ * - Có `SEED_ADMIN_PASSWORD` (≥ 8 ký tự): tạo, hoặc đặt lại mật khẩu cho tài khoản đã có (bộ E2E dùng cách này).
+ * - Không có: tài khoản đã có thì giữ nguyên; chưa có thì sinh mật khẩu ngẫu nhiên và in ra MỘT lần duy nhất.
+ * Đổi mật khẩu về sau: `npx tsx src/scripts/create-admin.mts` (apps/api).
+ */
+async function seedAdmin() {
+  const provided = process.env.SEED_ADMIN_PASSWORD?.trim();
+  if (provided !== undefined && provided.length > 0 && provided.length < 8) {
+    throw new Error("SEED_ADMIN_PASSWORD phải có ít nhất 8 ký tự");
+  }
+
+  const existing = await prisma.user.findUnique({ where: { email: SEED_ADMIN_EMAIL }, select: { id: true } });
+  if (existing && !provided) {
+    console.log(`✓ Tài khoản admin: ${SEED_ADMIN_EMAIL} đã có, giữ nguyên mật khẩu`);
+    return;
+  }
+
+  const password = provided || randomBytes(12).toString("base64url");
+  const passwordHash = await bcrypt.hash(password, 12);
+
+  if (existing) {
+    await prisma.user.update({ where: { id: existing.id }, data: { passwordHash, hasPassword: true } });
+    console.log(`✓ Tài khoản admin: ${SEED_ADMIN_EMAIL} — đã đặt mật khẩu theo SEED_ADMIN_PASSWORD`);
+    return;
+  }
+
+  await prisma.user.create({
+    data: {
+      email: SEED_ADMIN_EMAIL,
       passwordHash,
       fullName: "Quản trị viên PCZone",
-      role: UserRole.ADMIN,
+      role: UserRole.OWNER,
       emailVerifiedAt: new Date(),
     },
   });
 
-  console.log("✓ Tài khoản admin: admin@pczone.vn / admin123 (nhớ đổi mật khẩu)");
+  console.log(
+    provided
+      ? `✓ Tài khoản admin: ${SEED_ADMIN_EMAIL} (mật khẩu theo SEED_ADMIN_PASSWORD)`
+      : `✓ Tài khoản admin: ${SEED_ADMIN_EMAIL} / ${password}\n  (mật khẩu ngẫu nhiên, chỉ in một lần — lưu lại ngay, hoặc đổi bằng create-admin.mts)`,
+  );
 }
 
 /* -------------------------------------------------------------------------- */

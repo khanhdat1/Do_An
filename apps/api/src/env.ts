@@ -2,6 +2,7 @@ import { config as loadEnv } from "dotenv";
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isExampleJwtSecret } from "./utils/default-admin.js";
 import { parseUnpaidOrderTimeoutHours } from "./utils/unpaid-order.js";
 
 /**
@@ -52,6 +53,19 @@ function requiredSecret(name: string, minLength: number): string {
   return value;
 }
 
+/** Như requiredSecret, thêm chặn giá trị mẫu của `.env.example` — đủ dài nhưng ai cũng biết (utils/default-admin.ts) */
+function requiredJwtSecret(): string {
+  const value = requiredSecret("JWT_SECRET", 32);
+  if (isExampleJwtSecret(value)) {
+    console.error(
+      `\n✗ JWT_SECRET đang là giá trị mẫu trong .env.example — ai cũng biết khoá này nên có thể giả mạo phiên đăng nhập.\n` +
+        `  Sinh khoá mới: node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"\n`,
+    );
+    process.exit(1);
+  }
+  return value;
+}
+
 const port = Number(process.env.API_PORT ?? 4000);
 
 /**
@@ -82,7 +96,7 @@ export const env = {
   corsOrigins,
 
   /** Khoá ký JWT access token (HS256) */
-  jwtSecret: requiredSecret("JWT_SECRET", 32),
+  jwtSecret: requiredJwtSecret(),
 
   /**
    * URL công khai của API. Dùng dựng "redirect URI" gửi cho Google / Facebook,

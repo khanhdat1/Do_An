@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { deflateSync } from "node:zlib";
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
+import { E2E_ADMIN } from "../e2e-env";
 
 /** Sản phẩm có sẵn trong `packages/db/prisma/seed.ts` — DB kiểm thử được nạp lại từ đúng file đó ở mỗi lượt chạy */
 export const MOUSE = {
@@ -14,7 +15,7 @@ export const PC_ULTRA = { slug: "pc-gaming-pczone-ultra-master-g7", name: "PC Ga
 export const PC_DRAGON = { slug: "pc-gaming-pczone-dragon-knight", name: "PC Gaming PCZone Dragon Knight" };
 
 /** Tài khoản quản trị mẫu do seed.ts tạo (README mục 12) — ở đây chỉ dùng trên DB kiểm thử */
-const SEED_ADMIN = { email: "admin@pczone.vn", password: "admin123" };
+const SEED_ADMIN = E2E_ADMIN;
 
 /** Trùng `DEFAULT_SETTINGS` ở apps/api/src/settings/system-settings.ts — trạng thái đầu của mọi lượt chạy */
 export const DEFAULT_SETTINGS = {

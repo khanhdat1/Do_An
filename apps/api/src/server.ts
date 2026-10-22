@@ -4,6 +4,7 @@ import { warmEmbeddingIndex } from "./ai/embedding-store.js";
 import { createApp } from "./app.js";
 import { env } from "./env.js";
 import { warmSearchIndex } from "./search/index-store.js";
+import { findAdminsWithDefaultPassword } from "./services/admin-auth.service.js";
 import { getProvider, isConfigured, redirectUri } from "./services/oauth.providers.js";
 import { startUnpaidOrderSweeper } from "./services/unpaid-order.service.js";
 import { isVnpayConfigured } from "./services/vnpay.service.js";
@@ -49,6 +50,21 @@ const server = app.listen(env.port, () => {
 
   // Đơn chuyển khoản/MoMo/VNPay bỏ dở không được giữ kho mãi — xem services/unpaid-order.service.ts
   stopUnpaidOrderSweeper = startUnpaidOrderSweeper(unpaidTimeout);
+
+  // Tài khoản quản trị còn mật khẩu mặc định (seed cũ, bản dump DB dev): bản chạy thật đã chặn đăng nhập bằng mật khẩu
+  // này (admin-auth.service.ts), ở đây chỉ báo để chủ website đổi ngay
+  findAdminsWithDefaultPassword()
+    .then((emails) => {
+      if (emails.length === 0) return;
+      console.warn(
+        `  ⚠ Tài khoản quản trị còn dùng mật khẩu mặc định: ${emails.join(", ")}\n` +
+          `    ${env.isDev ? "Bản chạy thật sẽ từ chối đăng nhập bằng mật khẩu này." : "Đăng nhập quản trị bằng mật khẩu này đang bị chặn."} ` +
+          `Đổi bằng: npx tsx src/scripts/create-admin.mts --email=<email> --password=<mật khẩu mới> (apps/api)\n`,
+      );
+    })
+    .catch(() => {
+      // DB chưa lên: không chặn khởi động vì một lời cảnh báo
+    });
 
   // Dựng sẵn chỉ mục tìm kiếm để lượt tìm đầu tiên không phải chờ; DB chưa lên thì lượt tìm đầu sẽ tự dựng
   warmSearchIndex()

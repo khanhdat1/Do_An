@@ -33,6 +33,12 @@ export const E2E_VNPAY = {
   payUrl: `${API_URL}/e2e-vnpay-gia`,
 };
 
+/**
+ * Tài khoản quản trị của DB kiểm thử. Seed không còn mật khẩu cố định: prepare-db.mjs truyền `SEED_ADMIN_PASSWORD` để seed
+ * đặt đúng mật khẩu này (playwright.config.ts, playwright.api-only.config.ts).
+ */
+export const E2E_ADMIN = { email: "admin@pczone.vn", password: "E2e-Admin-2026" };
+
 /** Biến môi trường VNPay giả truyền cho API kiểm thử (playwright.config.ts, playwright.api-only.config.ts) */
 export const E2E_VNPAY_ENV = {
   VNPAY_TMN_CODE: E2E_VNPAY.tmnCode,

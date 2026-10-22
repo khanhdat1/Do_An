@@ -1,6 +1,6 @@
 import { createHmac, randomInt } from "node:crypto";
 import { expect, request as playwrightRequest, test, type APIRequestContext, type APIResponse } from "@playwright/test";
-import { API_URL, E2E_VNPAY, WEB_URL } from "../e2e-env";
+import { API_URL, E2E_ADMIN, E2E_VNPAY, WEB_URL } from "../e2e-env";
 import { randomPassword, TEST_ADDRESS, uniqueEmail } from "./helpers";
 
 /**
@@ -16,7 +16,7 @@ import { randomPassword, TEST_ADDRESS, uniqueEmail } from "./helpers";
  * để một điều kiện sai không che mất các điều kiện còn lại.
  */
 
-const SEED_ADMIN = { email: "admin@pczone.vn", password: "admin123" };
+const SEED_ADMIN = E2E_ADMIN;
 /** Sản phẩm mẫu trong seed.ts, không test nào khác dùng: TC16 riêng một sản phẩm, TC17–TC23 dùng chung sản phẩm thứ hai */
 const RACE_PRODUCT_SLUG = "ssd-samsung-990-pro-2tb";
 const FLOW_PRODUCT_SLUG = "ram-corsair-vengeance-rgb-ddr5-32gb";

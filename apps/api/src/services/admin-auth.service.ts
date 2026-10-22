@@ -2,7 +2,9 @@ import bcrypt from "bcryptjs";
 import { generateSecret, generateURI, verify as verifyTotp } from "otplib";
 import QRCode from "qrcode";
 import { prisma, type User } from "@pczone/db";
+import { env } from "../env.js";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "../middleware/errors.js";
+import { DEFAULT_ADMIN_PASSWORD_MESSAGE, isDefaultAdminLoginBlocked, KNOWN_DEFAULT_ADMIN_PASSWORDS } from "../utils/default-admin.js";
 import { logAdminAction } from "./audit-log.service.js";
 import {
   BCRYPT_COST,
@@ -49,12 +51,35 @@ export async function loginAdmin(
     throw new ForbiddenError("Tài khoản của bạn đã bị khoá. Vui lòng liên hệ chủ website để được hỗ trợ.");
   }
 
+  // Chỉ kiểm SAU khi mật khẩu đã đúng — người lạ không dò được tài khoản nào còn dùng mật khẩu mặc định
+  if (isDefaultAdminLoginBlocked(!env.isDev, input.password)) {
+    throw new ForbiddenError(DEFAULT_ADMIN_PASSWORD_MESSAGE);
+  }
+
   if (found.totpEnabledAt) {
     return { status: "2fa-required", pendingToken: sign2faPendingToken(found.id) };
   }
 
   const session = await issueAdminSession(found, context, input.remember ?? true);
   return { status: "ok", session };
+}
+
+/** Email các tài khoản quản trị đang hoạt động còn dùng mật khẩu mặc định — `server.ts` in cảnh báo lúc khởi động */
+export async function findAdminsWithDefaultPassword(): Promise<string[]> {
+  const admins = await prisma.user.findMany({
+    where: { role: { not: "CUSTOMER" }, isActive: true },
+    select: { email: true, passwordHash: true },
+  });
+  const flagged: string[] = [];
+  for (const admin of admins) {
+    for (const password of KNOWN_DEFAULT_ADMIN_PASSWORDS) {
+      if (await bcrypt.compare(password, admin.passwordHash)) {
+        flagged.push(admin.email);
+        break;
+      }
+    }
+  }
+  return flagged;
 }
 
 /** Bước 2 (chỉ khi tài khoản đã bật 2FA): xác minh mã 6 số rồi mới cấp phiên thật */
