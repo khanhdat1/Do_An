@@ -688,3 +688,46 @@ test("TC26 - một khách đặt hai đơn cùng lúc với mã chỉ dùng 1 l�
   expect.soft(stockAfter, "kho chỉ trừ cho 1 đơn").toBe(stockBefore - 1);
   expect.soft(usageAfterCleanup, "huỷ đơn trả lại lượt mã").toBe(usageBefore);
 });
+
+test("TC27 - một khách bấm đặt hàng nhiều lần cùng lúc (không dùng mã): chỉ tạo đúng một đơn từ một giỏ", async () => {
+  const admin = await loginAdmin();
+  const id = await productId(admin, FLOW_PRODUCT_SLUG);
+  await setStock(admin, id, 5);
+  const customer = await newCustomer("tc27");
+
+  const stockBefore = await stockOf(admin, id);
+  await addToCart(customer.api, id);
+
+  const results = await race(
+    placeOrder(customer.api, customer.addressId),
+    placeOrder(customer.api, customer.addressId),
+    placeOrder(customer.api, customer.addressId),
+  );
+  const createdCodes = results
+    .filter((result) => result.status === 201)
+    .map((result) => (result.body as { order: { orderCode: string } }).order.orderCode);
+  const stockAfter = await stockOf(admin, id);
+  const mine = await customer.api.get("/api/orders");
+  expect(mine.ok(), await mine.text()).toBe(true);
+  const myOrderCount = ((await mine.json()) as { total: number }).total;
+
+  // Dọn: huỷ mọi đơn vừa tạo để trả kho cho các ca sau
+  const cancelStatuses: number[] = [];
+  for (const code of createdCodes) {
+    const cancel = await customer.api.post(`/api/orders/${encodeURIComponent(code)}/cancel`, { data: {} });
+    cancelStatuses.push(cancel.status());
+  }
+
+  report("TC27", {
+    maHttp: results.map((result) => result.status),
+    phanHoiLoi: results.filter((result) => result.status !== 201).map((result) => result.body),
+    donTaoDuoc: createdCodes,
+    soDonCuaKhach: myOrderCount,
+    tonKho: { truocDat: stockBefore, sauDat: stockAfter },
+    maHttpHuyDon: cancelStatuses,
+  });
+
+  expect.soft(sortedStatuses(results), "đúng một đơn được tạo, các request kia 409").toEqual([201, 409, 409]);
+  expect.soft(myOrderCount, "khách chỉ có 1 đơn").toBe(1);
+  expect.soft(stockAfter, "kho chỉ trừ cho 1 đơn").toBe(stockBefore - 1);
+});

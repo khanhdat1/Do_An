@@ -108,6 +108,15 @@ async function runCreateOrder(input: CreateOrderInput, shippingConfig: ShippingS
       }
     }
 
+    // Giành giỏ hàng TRƯỚC mọi bước khác: hai lượt bấm "Đặt hàng" cùng lúc đều đọc được cùng một giỏ (đọc thường
+    // không khoá dòng) và trước đây tạo ra hai đơn, trừ kho hai lần. DELETE đọc bản mới nhất và khoá các dòng giỏ:
+    // lượt sau phải chờ lượt trước xong, lúc đó các dòng đã bị xoá nên số dòng xoá được không khớp → 409, cả
+    // transaction của nó bị huỷ. Chỉ xoá đúng các dòng vừa đọc — sản phẩm khách vừa thêm ở tab khác vẫn nằm lại giỏ.
+    const claimed = await tx.cartItem.deleteMany({ where: { id: { in: cart.items.map((item) => item.id) } } });
+    if (claimed.count !== cart.items.length) {
+      throw new ConflictError("Giỏ hàng vừa được dùng để đặt một đơn khác. Vui lòng xem lại trong mục Đơn hàng của tôi.");
+    }
+
     const subtotal = cart.items.reduce(
       (sum, item) => sum + Number(item.product.sellingPrice) * item.quantity,
       0,
@@ -217,8 +226,7 @@ async function runCreateOrder(input: CreateOrderInput, shippingConfig: ShippingS
       await tx.payment.update({ where: { id: payment.id }, data: { payUrl } });
     }
 
-    await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
-
+    // Các dòng giỏ đã được xoá ngay từ đầu (bước "giành giỏ hàng" ở trên)
     return { orderId: order.id, payUrl };
   });
 }
