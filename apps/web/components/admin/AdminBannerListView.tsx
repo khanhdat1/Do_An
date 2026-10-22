@@ -7,7 +7,6 @@ import { CloudOff, ImageOff, LoaderCircle, Plus, ShieldAlert } from "lucide-reac
 import AdminBadge from "@/components/admin/AdminBadge";
 import { useAdminAuth } from "@/components/providers/AdminAuthProvider";
 import { adminApiFetch } from "@/lib/admin-api-client";
-import { isRuntimeUpload } from "@/lib/uploaded-images";
 import type { AdminBanner } from "@/types";
 
 type State = { status: "loading" } | { status: "error" } | { status: "ready"; items: AdminBanner[] };
@@ -124,7 +123,6 @@ export default function AdminBannerListView() {
                           fill
                           sizes="80px"
                           className="object-cover"
-                          unoptimized={isRuntimeUpload(banner.imageUrl)}
                         />
                       </div>
                       <div className="min-w-0">

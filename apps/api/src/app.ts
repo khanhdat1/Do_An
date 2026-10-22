@@ -37,6 +37,7 @@ import { searchRouter } from "./routes/search.routes.js";
 import { settingsRouter } from "./routes/settings.routes.js";
 import { vouchersRouter } from "./routes/vouchers.routes.js";
 import { wishlistRouter } from "./routes/wishlist.routes.js";
+import { BANNER_PUBLIC_PREFIX } from "./utils/banners.js";
 import { PRODUCT_UPLOAD_PUBLIC_PREFIX, PRODUCT_UPLOAD_SUBDIR } from "./utils/product-images.js";
 
 export function createApp() {
@@ -71,6 +72,8 @@ export function createApp() {
     PRODUCT_UPLOAD_PUBLIC_PREFIX,
     express.static(join(env.images.productDir, PRODUCT_UPLOAD_SUBDIR), { index: false, dotfiles: "ignore", immutable: true, maxAge: "30d" }),
   );
+  // Banner quản trị tải lên lúc đang chạy (routes/admin-banners.routes.ts) — cùng lý do và cùng cách như ảnh sản phẩm ở trên
+  app.use(BANNER_PUBLIC_PREFIX, express.static(env.images.bannerDir, { index: false, dotfiles: "ignore", immutable: true, maxAge: "30d" }));
 
   app.use("/api/products", productsRouter);
   // Cùng tiền tố với productsRouter (giống auth+oauth cùng dùng /api/auth) — không đụng nhau vì

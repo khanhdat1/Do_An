@@ -1,4 +1,4 @@
-import { prisma, type Prisma, type Voucher } from "@pczone/db";
+import { Prisma, prisma, type Voucher } from "@pczone/db";
 import { toVoucherDto } from "../mappers/voucher.mapper.js";
 import { ConflictError, NotFoundError } from "../middleware/errors.js";
 import type { VoucherDto, VoucherPreviewResultDto } from "../types/dto.js";
@@ -54,6 +54,21 @@ export function computeDiscountAmount(rule: DiscountRule, subtotal: number): num
   return Math.max(0, Math.min(Math.round(amount), Math.max(0, subtotal)));
 }
 
+const PER_USER_LIMIT_MESSAGE = "Bạn đã dùng hết lượt cho mã giảm giá này";
+
+/**
+ * Số lượt một người đã dùng một mã, đọc bằng `SELECT ... FOR UPDATE`. Transaction tạo đơn chạy ở REPEATABLE READ:
+ * `count()` thường đọc ẢNH CHỤP từ câu đọc đầu tiên của transaction, nên không thấy lượt dùng mà đơn khác của cùng
+ * người vừa commit trong lúc chờ khoá. Đọc có khoá thì InnoDB luôn đọc bản mới nhất đã commit (và giữ khoá tới hết
+ * transaction). Prisma không có `FOR UPDATE` nên viết SQL thô — bảng/cột đúng tên model vì schema không dùng @@map.
+ */
+async function countRedemptionsLocked(db: Db, voucherId: string, userId: string): Promise<number> {
+  const rows = await db.$queryRaw<{ used: bigint | number }[]>(
+    Prisma.sql`SELECT COUNT(*) AS used FROM \`VoucherRedemption\` WHERE voucherId = ${voucherId} AND userId = ${userId} FOR UPDATE`,
+  );
+  return Number(rows[0]?.used ?? 0);
+}
+
 /**
  * Kiểm tra đầy đủ một mã cho một đơn cụ thể — CHỈ ĐỌC, không ghi gì. Nhận `db` kiểu
  * `Prisma.TransactionClient` (như `address.service.ts`) nên gọi được cả độc lập (`prisma` singleton,
@@ -83,9 +98,11 @@ export async function validateVoucherForOrder(
     throw new ConflictError("Mã giảm giá đã hết lượt sử dụng");
   }
 
+  // Đọc thường, chỉ để báo sớm (kể cả lúc xem trước). Chặn thật — kể cả khi một người đặt hai đơn cùng lúc — nằm ở
+  // `redeemVoucher`, đếm lại sau khi đã giữ khoá dòng mã
   const usedByMe = await db.voucherRedemption.count({ where: { voucherId: voucher.id, userId: params.userId } });
   if (usedByMe >= voucher.perUserLimit) {
-    throw new ConflictError("Bạn đã dùng hết lượt cho mã giảm giá này");
+    throw new ConflictError(PER_USER_LIMIT_MESSAGE);
   }
 
   const discountAmount = computeDiscountAmount(
@@ -104,10 +121,21 @@ export async function validateVoucherForOrder(
  * Áp dụng thật: gọi SAU KHI đơn đã tạo xong (cần `orderCode`), trong CÙNG transaction với
  * `order.service.ts`. Tăng `usageCount` bằng `updateMany` có điều kiện tồn tại ngay trong `WHERE` —
  * cùng idiom chống race đã dùng để trừ kho: hai người dùng nốt lượt cuối cùng không thể cùng thành công.
+ *
+ * Giới hạn MỖI NGƯỜI (`perUserLimit`) không viết được thành điều kiện trên dòng mã (phải đếm bảng khác), nên làm
+ * nguyên tử bằng khoá: bước tăng `usageCount` khoá dòng mã tới hết transaction, mọi lượt dùng (và hoàn lượt khi huỷ đơn)
+ * của cùng mã phải xếp hàng sau nó. Đếm lại lượt đã dùng NGAY SAU khi giữ khoá, bằng đọc có khoá: cùng một người đặt
+ * hai đơn cùng lúc thì đơn sau chờ đơn trước commit, đếm ra đủ lượt → 409, cả transaction (kể cả `usageCount` vừa
+ * tăng) bị huỷ.
  */
 export async function redeemVoucher(
   db: Db,
-  params: { voucher: Pick<Voucher, "id" | "usageLimit">; userId: string; orderCode: string; discountAmount: number },
+  params: {
+    voucher: Pick<Voucher, "id" | "usageLimit" | "perUserLimit">;
+    userId: string;
+    orderCode: string;
+    discountAmount: number;
+  },
 ): Promise<void> {
   const updated = await db.voucher.updateMany({
     where: {
@@ -118,6 +146,10 @@ export async function redeemVoucher(
   });
   if (updated.count === 0) {
     throw new ConflictError("Mã giảm giá vừa hết lượt sử dụng. Vui lòng bỏ mã và thử lại.");
+  }
+
+  if ((await countRedemptionsLocked(db, params.voucher.id, params.userId)) >= params.voucher.perUserLimit) {
+    throw new ConflictError(PER_USER_LIMIT_MESSAGE);
   }
 
   await db.voucherRedemption.create({

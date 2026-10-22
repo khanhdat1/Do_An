@@ -12,6 +12,7 @@ import {
   claimOrderTransition,
   claimOrderTransitionOrThrow,
   ORDER_CHANGED_MESSAGE,
+  paymentMayArriveAfterCancel,
   restockOrderItems,
 } from "./order-cancellation.service.js";
 
@@ -68,6 +69,7 @@ const ORDER = {
   id: "o1",
   orderCode: "PCZ20261019-0001",
   status: "PENDING" as const,
+  paymentMethod: "COD" as const,
   voucherId: "v1",
   // productId null: dòng hàng của sản phẩm đã bị xoá khỏi catalog — bỏ qua khi hoàn kho
   items: [
@@ -87,13 +89,13 @@ console.log("\n[1] cancelOrderInTx — đơn đã bị thao tác khác đổi tr
   check("chỉ có đúng lượt giành đơn, không hoàn kho/hoàn mã/ghi lịch sử", ops(), ["order.updateMany"]);
 }
 
-console.log("\n[2] cancelOrderInTx — giành được đơn");
+console.log("\n[2] cancelOrderInTx — giành được đơn (COD)");
 {
   const { tx, calls, ops } = fakeTx(1);
   const result = await cancelOrderInTx(tx, ORDER, OPTIONS);
   check("trả true", result, true);
   check(
-    "thứ tự: giành đơn → hoàn mã → hoàn kho từng dòng → lịch sử → huỷ lượt thanh toán chờ",
+    "thứ tự: giành đơn → hoàn mã → hoàn kho từng dòng → lịch sử → huỷ lượt thanh toán chờ (COD)",
     ops(),
     [
       "order.updateMany",
@@ -145,9 +147,35 @@ console.log("\n[3] cancelOrderInTx — các tuỳ chọn");
   const history = admin.calls.find((call) => call.op === "orderStatusHistory.create")!.args.data as Record<string, unknown>;
   check("lịch sử ghi người thực hiện", history.changedBy, "u1");
 
-  const auto = fakeTx(1);
-  await cancelOrderInTx(auto.tx, ORDER, { ...OPTIONS, cancelPendingPayments: false });
-  check("cancelPendingPayments: false -> giữ nguyên lượt thanh toán", auto.ops().includes("payment.updateMany"), false);
+}
+
+console.log("\n[3b] Lượt thanh toán còn chờ khi huỷ — cùng một cách cho khách, nhân viên và hệ thống tự huỷ");
+{
+  check(
+    "tiền còn có thể về sau khi huỷ: chuyển khoản, MoMo, VNPay — không phải COD",
+    (["BANK_TRANSFER", "MOMO", "VNPAY", "COD"] as const).map(paymentMayArriveAfterCancel),
+    [true, true, true, false],
+  );
+
+  for (const paymentMethod of ["BANK_TRANSFER", "MOMO", "VNPAY"] as const) {
+    for (const requireUnpaid of [true, false]) {
+      const run = fakeTx(1);
+      await cancelOrderInTx(run.tx, { ...ORDER, paymentMethod }, { ...OPTIONS, requireUnpaid });
+      check(
+        `${paymentMethod} (${requireUnpaid ? "khách/hệ thống" : "nhân viên"} huỷ) -> giữ lượt thanh toán PENDING để còn ghi nhận tiền về muộn`,
+        run.ops().includes("payment.updateMany"),
+        false,
+      );
+    }
+  }
+
+  const cod = fakeTx(1);
+  await cancelOrderInTx(cod.tx, ORDER, OPTIONS);
+  const cancelPayments = cod.calls.find((call) => call.op === "payment.updateMany")?.args;
+  check("COD -> lượt thanh toán còn chờ chuyển CANCELLED", cancelPayments, {
+    where: { orderId: "o1", status: "PENDING" },
+    data: { status: "CANCELLED" },
+  });
 }
 
 console.log("\n[4] claimOrderTransition / claimOrderTransitionOrThrow");

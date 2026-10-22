@@ -1,10 +1,11 @@
 import { defineConfig } from "@playwright/test";
-import { API_PORT, API_URL, E2E_DATABASE_URL, E2E_IMAGE_DIR, WEB_PORT, WEB_URL } from "./e2e-env";
+import { API_PORT, API_URL, E2E_BANNER_DIR, E2E_DATABASE_URL, E2E_IMAGE_DIR, E2E_VNPAY_ENV, WEB_PORT, WEB_URL } from "./e2e-env";
 
 /**
  * Kiểm thử đầu-cuối PCZone: tự bật MỘT bộ API + web riêng trên DB kiểm thử (xem `e2e-env.ts`), chạy xong tự tắt.
- * Không gọi dịch vụ thật nào: AI (tốn quota Gemini), email Resend, VNPay, chuyển khoản/MoMo, Google/Facebook đều để
- * trống cấu hình — biến truyền ở đây được ưu tiên hơn `.env`.
+ * Không gọi dịch vụ thật nào: AI (tốn quota Gemini), email Resend, chuyển khoản/MoMo, Google/Facebook đều để trống cấu
+ * hình; VNPay dùng khoá GIẢ (`E2E_VNPAY` trong e2e-env.ts — kiểm thử tự ký IPN, không gọi VNPay) — biến truyền ở đây
+ * được ưu tiên hơn `.env`.
  */
 export default defineConfig({
   testDir: "./tests",
@@ -45,10 +46,10 @@ export default defineConfig({
         CORS_ORIGIN: WEB_URL,
         API_PUBLIC_URL: API_URL,
         IMAGE_STORAGE_DIR: E2E_IMAGE_DIR,
+        BANNER_IMAGE_DIR: E2E_BANNER_DIR,
         OPENAI_API_KEY: "",
         RESEND_API_KEY: "",
-        VNPAY_TMN_CODE: "",
-        VNPAY_HASH_SECRET: "",
+        ...E2E_VNPAY_ENV,
         BANK_ID: "",
         BANK_ACCOUNT_NUMBER: "",
         BANK_ACCOUNT_NAME: "",

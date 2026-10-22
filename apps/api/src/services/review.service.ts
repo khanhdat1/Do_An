@@ -2,6 +2,7 @@ import { prisma, type Prisma } from "@pczone/db";
 import { reviewInclude, toReviewDto } from "../mappers/review.mapper.js";
 import { BadRequestError, ConflictError, NotFoundError } from "../middleware/errors.js";
 import type { Paginated, ReviewDto, ReviewEligibilityDto } from "../types/dto.js";
+import { isUniqueViolation } from "../utils/prisma-errors.js";
 
 /** `Prisma.TransactionClient` là kiểu con của `PrismaClient` nên nhận cả hai — xem address.service.ts */
 type Db = Prisma.TransactionClient;
@@ -51,6 +52,15 @@ export async function getReviewEligibility(userId: string, productSlug: string):
   return { canReview: eligibleOrderId !== null, hasReviewed: reviewCount > 0 };
 }
 
+/**
+ * Lỗi khi ghi đánh giá → lỗi ném ra cho người gọi: CHỈ trùng khoá (P2002 — hai tab cùng gửi đánh giá cho cùng một đơn,
+ * @@unique chặn ở DB) mới thành 409; lỗi khác (mất kết nối DB, sai dữ liệu...) giữ nguyên để ra 500 và có log, không bị
+ * báo nhầm thành "đã đánh giá rồi".
+ */
+export function reviewCreateError(error: unknown): unknown {
+  return isUniqueViolation(error) ? new ConflictError("Đơn hàng này đã được dùng để đánh giá sản phẩm rồi") : error;
+}
+
 export interface CreateReviewInput {
   rating: number;
   title?: string;
@@ -80,8 +90,8 @@ export async function createReview(userId: string, productSlug: string, input: C
       },
       include: reviewInclude,
     })
-    .catch(() => {
-      throw new ConflictError("Đơn hàng này đã được dùng để đánh giá sản phẩm rồi");
+    .catch((error: unknown) => {
+      throw reviewCreateError(error);
     });
 
   return toReviewDto(review);

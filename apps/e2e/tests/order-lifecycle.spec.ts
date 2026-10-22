@@ -49,11 +49,12 @@ test("vòng đời đơn hàng: đặt hàng → quản trị xử lý → giao 
     // 10% của 3.490.000đ = 349.000đ, bị chặn ở mức giảm tối đa 300.000đ; miễn phí vận chuyển → 3.190.000đ
     await expect(customer.getByText("-300.000đ").first()).toBeVisible();
 
-    // Phương thức chưa dùng được bị ẩn hẳn, không hiện mờ — máy kiểm thử để trống khoá VNPay/chuyển khoản/MoMo nên chỉ còn COD
+    // Phương thức chưa dùng được bị ẩn hẳn, không hiện mờ — máy kiểm thử để trống khoá chuyển khoản/MoMo nên chỉ còn COD
+    // và VNPay (khoá giả, xem E2E_VNPAY trong e2e-env.ts)
     const paymentMethods = customer.getByRole("radiogroup", { name: "Phương thức thanh toán" });
     await expect(paymentMethods.getByText("Thanh toán khi nhận hàng")).toBeVisible();
-    await expect(paymentMethods.getByRole("radio")).toHaveCount(1);
-    await expect(customer.getByText("Thanh toán qua VNPay")).toHaveCount(0);
+    await expect(paymentMethods.getByText("Thanh toán qua VNPay")).toBeVisible();
+    await expect(paymentMethods.getByRole("radio")).toHaveCount(2);
 
     await customer.getByRole("button", { name: "Đặt hàng", exact: true }).click();
     await customer.waitForURL(/\/don-hang\/[^/?]+$/);

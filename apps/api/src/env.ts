@@ -143,8 +143,8 @@ export const env = {
   },
 
   /**
-   * Đơn chuyển khoản ngân hàng/MoMo chưa được xác nhận đã nhận tiền quá `UNPAID_ORDER_TIMEOUT_HOURS` giờ (mặc định 24)
-   * thì tự huỷ và hoàn kho — không để đơn bỏ dở giữ hàng mãi (`services/unpaid-order.service.ts`). `0` = tắt.
+   * Đơn chuyển khoản ngân hàng/MoMo/VNPay chưa nhận được tiền quá `UNPAID_ORDER_TIMEOUT_HOURS` giờ (mặc định 24) thì
+   * tự huỷ và hoàn kho — không để đơn bỏ dở giữ hàng mãi (`services/unpaid-order.service.ts`). `0` = tắt.
    */
   orders: {
     unpaidTimeoutHours: parseUnpaidOrderTimeoutHours(process.env.UNPAID_ORDER_TIMEOUT_HOURS),
@@ -157,6 +157,12 @@ export const env = {
    */
   images: {
     productDir: resolve(here, "../../..", optional("IMAGE_STORAGE_DIR") ?? "apps/web/public/images/products"),
+    /**
+     * Nơi API ghi ảnh banner quản trị tải lên (`routes/admin-banners.routes.ts`) và tự phục vụ ở `/images/banners/*`
+     * (app.ts). Mặc định nằm trong public/ của web như trước; `BANNER_IMAGE_DIR` chủ yếu để kiểm thử E2E ghi ra thư
+     * mục tạm, không lẫn vào ảnh thật của máy dev. Tương đối thì tính từ gốc monorepo.
+     */
+    bannerDir: resolve(here, "../../..", optional("BANNER_IMAGE_DIR") ?? "apps/web/public/images/banners"),
   },
 
   /**

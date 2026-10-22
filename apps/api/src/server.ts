@@ -43,11 +43,11 @@ const server = app.listen(env.port, () => {
   console.log(
     unpaidTimeout === null
       ? `  Tự huỷ đơn chưa trả:  đã tắt (UNPAID_ORDER_TIMEOUT_HOURS=0)`
-      : `  Tự huỷ đơn chưa trả:  chuyển khoản/MoMo quá ${formatTimeout(unpaidTimeout)} chưa xác nhận tiền`,
+      : `  Tự huỷ đơn chưa trả:  chuyển khoản/MoMo/VNPay quá ${formatTimeout(unpaidTimeout)} chưa nhận tiền`,
   );
   console.log("");
 
-  // Đơn chuyển khoản/MoMo bỏ dở không được giữ kho mãi — xem services/unpaid-order.service.ts
+  // Đơn chuyển khoản/MoMo/VNPay bỏ dở không được giữ kho mãi — xem services/unpaid-order.service.ts
   stopUnpaidOrderSweeper = startUnpaidOrderSweeper(unpaidTimeout);
 
   // Dựng sẵn chỉ mục tìm kiếm để lượt tìm đầu tiên không phải chờ; DB chưa lên thì lượt tìm đầu sẽ tự dựng

@@ -1,16 +1,16 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
 import { unlink } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { Router, type NextFunction, type Request, type Response } from "express";
 import multer from "multer";
 import { z } from "zod";
+import { env } from "../env.js";
 import { authenticateAdmin, requireAuth } from "../middleware/auth.js";
 import { adminWriteLimiter, noStore } from "../middleware/security.js";
 import { requirePermission } from "../middleware/permissions.js";
 import { BadRequestError } from "../middleware/errors.js";
 import { createBanner, deleteBanner, getBannerForAdmin, listBannersForAdmin, updateBanner } from "../services/admin-banner.service.js";
+import { BANNER_LINK_MESSAGE, BANNER_PUBLIC_PREFIX, isSafeBannerLink } from "../utils/banners.js";
 import { fileMatchesImageSignature } from "../utils/image-signature.js";
 
 /** Quản trị banner trang chủ (Đợt 6 phần 2 — nội dung). */
@@ -18,11 +18,9 @@ export const adminBannersRouter = Router();
 
 adminBannersRouter.use(noStore, authenticateAdmin, requireAuth);
 
-// `apps/api/src/routes` -> lên 4 cấp là gốc monorepo -> vào apps/web/public/images/banners.
-// Cùng cách tính đường dẫn tương đối crawler đang dùng để ghi ảnh sản phẩm (IMAGE_STORAGE_DIR),
-// chỉ khác là viết cứng ở đây vì banner không cần chỉnh qua biến môi trường.
-const here = dirname(fileURLToPath(import.meta.url));
-const BANNER_IMAGE_DIR = resolve(here, "../../../../apps/web/public/images/banners");
+// Mặc định apps/web/public/images/banners (env.images.bannerDir). API tự phục vụ thư mục này ở /images/banners/* (app.ts):
+// `next start` chỉ phục vụ file có sẵn trong public/ lúc khởi động, ảnh tải lên sau đó web chuyển tiếp sang API
+const BANNER_IMAGE_DIR = env.images.bannerDir;
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const EXT_BY_MIME: Record<string, string> = {
   "image/jpeg": ".jpg",
@@ -67,7 +65,7 @@ adminBannersRouter.post("/upload-image", requirePermission("content:write"), adm
       await unlink(req.file.path).catch(() => {});
       throw new BadRequestError("Tệp tải lên không phải ảnh JPEG/PNG/WEBP/GIF hợp lệ");
     }
-    res.status(201).json({ url: `/images/banners/${req.file.filename}` });
+    res.status(201).json({ url: `${BANNER_PUBLIC_PREFIX}/${req.file.filename}` });
   } catch (error) {
     next(error);
   }
@@ -77,7 +75,13 @@ const bannerInputBody = z.object({
   title: z.string().trim().max(200).optional(),
   subtitle: z.string().trim().max(300).optional(),
   imageUrl: z.string().trim().min(1).max(500),
-  linkUrl: z.string().trim().max(500).optional(),
+  // Để trống = banner không dẫn đi đâu
+  linkUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((value) => value === "" || isSafeBannerLink(value), BANNER_LINK_MESSAGE)
+    .optional(),
   displayOrder: z.coerce.number().int(),
   status: z.enum(["DRAFT", "PUBLISHED"]),
   startsAt: z.string().optional(),

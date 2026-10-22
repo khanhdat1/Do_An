@@ -1,8 +1,8 @@
 import { defineConfig } from "@playwright/test";
-import { API_PORT, API_URL, E2E_DATABASE_URL, WEB_URL } from "./e2e-env";
+import { API_PORT, API_URL, E2E_DATABASE_URL, E2E_VNPAY_ENV, WEB_URL } from "./e2e-env";
 
 /**
- * Bản rút gọn của `playwright.config.ts` cho các ca kiểm thử chỉ gọi API (TC16–TC23, `order-edge-cases.spec.ts`):
+ * Bản rút gọn của `playwright.config.ts` cho các ca kiểm thử chỉ gọi API (TC16–TC26, `order-edge-cases.spec.ts`):
  * chỉ bật API trên DB kiểm thử `pczone_e2e` (có bước chuẩn bị DB y như cấu hình chính), KHÔNG build/bật web — chạy
  * nhanh trên máy yếu. Request gửi thẳng tới API kèm header Origin của web kiểm thử, đúng như trình duyệt gửi qua proxy.
  *
@@ -39,8 +39,7 @@ export default defineConfig({
         API_PUBLIC_URL: API_URL,
         OPENAI_API_KEY: "",
         RESEND_API_KEY: "",
-        VNPAY_TMN_CODE: "",
-        VNPAY_HASH_SECRET: "",
+        ...E2E_VNPAY_ENV,
         BANK_ID: "",
         BANK_ACCOUNT_NUMBER: "",
         BANK_ACCOUNT_NAME: "",

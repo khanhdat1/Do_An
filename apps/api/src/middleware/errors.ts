@@ -2,54 +2,59 @@ import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import { env } from "../env.js";
 
-/** Lỗi có mã HTTP đi kèm, để controller ném ra thay vì tự res.status() */
+/**
+ * Lỗi có mã HTTP đi kèm, để controller ném ra thay vì tự res.status(). `code` là mã máy đọc được trả ở trường `error`
+ * của JSON (cùng kiểu với VALIDATION_ERROR/INTERNAL_ERROR của `errorHandler`); `name` là tên lớp con thật
+ * (NotFoundError...) để log/stack trace nói đúng loại lỗi.
+ */
 export class HttpError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    public readonly code: string,
   ) {
     super(message);
-    this.name = "HttpError";
+    this.name = new.target.name;
   }
 }
 
 export class NotFoundError extends HttpError {
   constructor(message = "Không tìm thấy tài nguyên") {
-    super(404, message);
+    super(404, message, "NOT_FOUND");
   }
 }
 
 export class BadRequestError extends HttpError {
   constructor(message = "Dữ liệu gửi lên không hợp lệ") {
-    super(400, message);
+    super(400, message, "BAD_REQUEST");
   }
 }
 
 /** Chưa đăng nhập, token sai hoặc hết hạn */
 export class UnauthorizedError extends HttpError {
   constructor(message = "Bạn cần đăng nhập để thực hiện thao tác này") {
-    super(401, message);
+    super(401, message, "UNAUTHORIZED");
   }
 }
 
 /** Đã đăng nhập nhưng không được phép (tài khoản bị khoá, sai quyền...) */
 export class ForbiddenError extends HttpError {
   constructor(message = "Bạn không có quyền thực hiện thao tác này") {
-    super(403, message);
+    super(403, message, "FORBIDDEN");
   }
 }
 
 /** Xung đột trạng thái: email đã tồn tại, hết hàng, vượt tồn kho... */
 export class ConflictError extends HttpError {
   constructor(message = "Yêu cầu xung đột với trạng thái hiện tại") {
-    super(409, message);
+    super(409, message, "CONFLICT");
   }
 }
 
 /** Một dịch vụ ngoài (gửi email...) từ chối/không phản hồi — khác lỗi 500 chung chung, người dùng biết rõ nên làm gì tiếp (thử lại sau) */
 export class ServiceUnavailableError extends HttpError {
   constructor(message = "Dịch vụ tạm thời không khả dụng, vui lòng thử lại sau") {
-    super(503, message);
+    super(503, message, "SERVICE_UNAVAILABLE");
   }
 }
 
@@ -96,7 +101,7 @@ export function errorHandler(
   }
 
   if (error instanceof HttpError) {
-    res.status(error.status).json({ error: error.name, message: error.message });
+    res.status(error.status).json({ error: error.code, message: error.message });
     return;
   }
 

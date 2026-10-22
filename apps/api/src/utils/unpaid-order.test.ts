@@ -1,5 +1,5 @@
 /**
- * Kiểm thử phần thuần của việc tự huỷ đơn chuyển khoản/MoMo quá hạn thanh toán (đọc cấu hình, điều kiện lọc đơn,
+ * Kiểm thử phần thuần của việc tự huỷ đơn chuyển khoản/MoMo/VNPay quá hạn thanh toán (đọc cấu hình, điều kiện lọc đơn,
  * lý do huỷ) — không cần DB. Chạy: npx tsx src/utils/unpaid-order.test.ts
  */
 import {
@@ -39,14 +39,21 @@ console.log("\n[1] parseUnpaidOrderTimeoutHours — đọc UNPAID_ORDER_TIMEOUT_
   check("Infinity -> mặc định", parseUnpaidOrderTimeoutHours("Infinity"), 24);
 }
 
-console.log("\n[2] staleUnpaidOrderWhere — chỉ đơn chuyển khoản/MoMo còn chờ, chưa trả tiền, quá hạn");
+console.log("\n[2] staleUnpaidOrderWhere — chỉ đơn chuyển khoản/MoMo/VNPay còn chờ, chưa trả tiền, quá hạn");
 {
   const now = new Date("2026-10-19T12:00:00.000Z");
   const where = staleUnpaidOrderWhere(now, 24);
   check("đơn còn chờ xác nhận", where.status, "PENDING");
   check("chưa thanh toán", where.paymentStatus, "PENDING");
-  check("đúng hai phương thức chuyển khoản tay — không COD, không VNPay", where.paymentMethod, { in: ["BANK_TRANSFER", "MOMO"] });
+  check("phương thức trả tiền trước: chuyển khoản, MoMo, VNPay — không COD", where.paymentMethod, {
+    in: ["BANK_TRANSFER", "MOMO", "VNPAY"],
+  });
   check("tạo trước đúng 24 giờ", (where.createdAt as { lt: Date }).lt.toISOString(), "2026-10-18T12:00:00.000Z");
+  check(
+    "không có lượt thanh toán nào tạo sau mốc (VNPay bấm \"Thanh toán lại\" thì tính hạn từ lượt mới nhất)",
+    JSON.parse(JSON.stringify(where.payments)),
+    { none: { createdAt: { gte: "2026-10-18T12:00:00.000Z" } } },
+  );
   check(
     "hạn số lẻ 0.5 giờ -> 30 phút",
     ((staleUnpaidOrderWhere(now, 0.5).createdAt as { lt: Date }).lt).toISOString(),
@@ -62,12 +69,15 @@ console.log("\n[3] formatTimeout / autoCancelReason — lý do huỷ khách đ�
 
   const bank = autoCancelReason("BANK_TRANSFER", 24);
   const momo = autoCancelReason("MOMO", 48);
+  const vnpay = autoCancelReason("VNPAY", 24);
   check("nói rõ hệ thống tự huỷ", bank.startsWith("Hệ thống tự huỷ"), true);
   check("chuyển khoản ngân hàng: nêu thời hạn và phương thức", bank.includes("quá 24 giờ chưa nhận được thanh toán chuyển khoản ngân hàng"), true);
   check("MoMo: nêu thời hạn và phương thức", momo.includes("quá 48 giờ chưa nhận được thanh toán chuyển khoản MoMo"), true);
-  check("hướng dẫn khách đã chuyển tiền liên hệ cửa hàng", bank.includes("liên hệ cửa hàng"), true);
+  check("VNPay: nêu thời hạn và phương thức", vnpay.includes("quá 24 giờ chưa nhận được thanh toán qua VNPay"), true);
+  check("hướng dẫn khách đã chuyển tiền liên hệ cửa hàng", bank.includes("Nếu bạn đã chuyển tiền, vui lòng liên hệ cửa hàng"), true);
+  check("VNPay: khách đã thanh toán thì liên hệ cửa hàng", vnpay.includes("Nếu bạn đã thanh toán, vui lòng liên hệ cửa hàng"), true);
   // Order.cancelReason là VarChar(300)
-  check("vừa cột cancelReason (≤ 300 ký tự)", Math.max(bank.length, momo.length) <= 300, true);
+  check("vừa cột cancelReason (≤ 300 ký tự)", Math.max(bank.length, momo.length, vnpay.length) <= 300, true);
 }
 
 console.log(`\n${passed} đạt, ${failed} lỗi`);

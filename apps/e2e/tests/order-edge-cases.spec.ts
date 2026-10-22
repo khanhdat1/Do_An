@@ -1,10 +1,12 @@
+import { createHmac, randomInt } from "node:crypto";
 import { expect, request as playwrightRequest, test, type APIRequestContext, type APIResponse } from "@playwright/test";
-import { API_URL, WEB_URL } from "../e2e-env";
+import { API_URL, E2E_VNPAY, WEB_URL } from "../e2e-env";
 import { randomPassword, TEST_ADDRESS, uniqueEmail } from "./helpers";
 
 /**
  * Các ca kiểm thử bổ sung cho đơn hàng (Bảng 5.9 của báo cáo, TC16–TC20; TC21–TC23: hai thao tác cùng lúc trên một
- * đơn) — gọi thẳng API, không qua giao diện.
+ * đơn; TC24–TC25: VNPay báo kết quả cùng lúc với thao tác khác; TC26: một khách đặt hai đơn cùng lúc với mã giảm giá
+ * giới hạn lượt mỗi người) — gọi thẳng API, không qua giao diện.
  * Mỗi khách/quản trị là một APIRequestContext riêng (cookie phiên riêng). Gọi thẳng tới API_URL (không qua proxy
  * của web) nên chạy được cả với cấu hình chính lẫn `playwright.api-only.config.ts`; header Origin là của web kiểm
  * thử vì originGuard chỉ cho phép Origin nằm trong CORS_ORIGIN.
@@ -42,6 +44,8 @@ interface AdminOrder {
   discountAmount: number;
   voucherCode?: string;
   statusHistory: StatusEvent[];
+  payments: { status: string }[];
+  canMarkRefunded: boolean;
 }
 
 const newContext = () => playwrightRequest.newContext({ baseURL: API_URL, extraHTTPHeaders: { Origin: WEB_URL } });
@@ -479,4 +483,208 @@ test("TC23 - nhân viên bấm hoàn hàng hai lần cùng lúc: chỉ một phi
   expect.soft(stockAfter, "kho hoàn đúng một lần").toBe(stockBefore);
   expect.soft(returnRows, "đúng 1 dòng sổ kho RETURN").toHaveLength(1);
   expect.soft(returnEvents, "đúng 1 dòng lịch sử Đã hoàn").toHaveLength(1);
+});
+
+/**
+ * Ký bộ tham số `vnp_*` đúng thuật toán VNPay mà API dùng để xác minh (apps/api/src/services/vnpay.service.ts): sắp
+ * xếp theo tên, mã hoá từng giá trị ("%20" → "+"), HMAC-SHA512 bằng khoá giả của môi trường kiểm thử.
+ */
+function signVnpay(params: Record<string, string>): string {
+  const data = Object.keys(params)
+    .sort()
+    .map((key) => `${key}=${encodeURIComponent(params[key]).replace(/%20/g, "+")}`)
+    .join("&");
+  return createHmac("sha512", E2E_VNPAY.hashSecret).update(data, "utf-8").digest("hex");
+}
+
+/** "VNPay báo thanh toán thành công" cho đúng lượt thanh toán trong `payUrl` — y như dữ liệu VNPay gửi tới IPN/return */
+function vnpaySuccessQuery(payUrl: string): Record<string, string> {
+  const pay = new URL(payUrl).searchParams;
+  const params: Record<string, string> = {
+    vnp_TmnCode: E2E_VNPAY.tmnCode,
+    vnp_TxnRef: pay.get("vnp_TxnRef") ?? "",
+    vnp_Amount: pay.get("vnp_Amount") ?? "",
+    vnp_ResponseCode: "00",
+    vnp_TransactionStatus: "00",
+    vnp_TransactionNo: String(randomInt(10_000_000, 99_999_999)),
+    vnp_BankCode: "NCB",
+    vnp_PayDate: "20261022120000",
+  };
+  return { ...params, vnp_SecureHash: signVnpay(params) };
+}
+
+/** Đặt đơn VNPay (giỏ đã có hàng) — trả mã đơn + URL thanh toán API dựng sẵn */
+async function placeVnpayOrderOk(api: APIRequestContext, addressId: string): Promise<{ orderCode: string; payUrl: string }> {
+  const response = await api.post("/api/orders", { data: { addressId, paymentMethod: "VNPAY" } });
+  expect(response.status(), await response.text()).toBe(201);
+  const body = (await response.json()) as { order: { orderCode: string }; payUrl?: string };
+  expect(body.payUrl, "đơn VNPay phải có payUrl").toBeTruthy();
+  return { orderCode: body.order.orderCode, payUrl: body.payUrl! };
+}
+
+const ipnOf = (result: { body: unknown }) => (result.body as { RspCode?: string }).RspCode ?? result.body;
+const RECONCILE_NOTE = "cần đối soát";
+
+test("TC24 - IPN VNPay báo đã trả tiền đúng lúc khách huỷ đơn: không hồi sinh đơn đã huỷ, kho không lệch", async () => {
+  const rounds = Number(process.env.E2E_TC24_ROUNDS ?? 4);
+  const admin = await loginAdmin();
+  const gateway = await newContext(); // "server VNPay": không cookie, gọi thẳng IPN
+  const id = await productId(admin, FLOW_PRODUCT_SLUG);
+  await setStock(admin, id, rounds + 2);
+  const customer = await newCustomer("tc24");
+
+  const outcomes: Record<string, unknown>[] = [];
+  for (let round = 1; round <= rounds; round++) {
+    const stockBefore = await stockOf(admin, id);
+    await addToCart(customer.api, id);
+    const { orderCode, payUrl } = await placeVnpayOrderOk(customer.api, customer.addressId);
+    const stockAfterOrder = await stockOf(admin, id);
+
+    const [cancel, ipn] = await race(
+      customer.api.post(`/api/orders/${encodeURIComponent(orderCode)}/cancel`, { data: {} }),
+      gateway.get("/api/payments/vnpay/ipn", { params: vnpaySuccessQuery(payUrl) }),
+    );
+    const after = await adminOrder(admin, orderCode);
+    const stockAfter = await stockOf(admin, id);
+    const restockRows = rowsOfOrder(await inventoryRows(admin, id), orderCode).filter((row) => row.quantityChange > 0);
+    const cancelEvents = after.statusHistory.filter((event) => event.status === "CANCELLED");
+    const confirmEvents = after.statusHistory.filter((event) => event.status === "CONFIRMED");
+    const reconcileEvents = after.statusHistory.filter((event) => event.note?.includes(RECONCILE_NOTE));
+
+    const outcome = {
+      vong: round,
+      orderCode,
+      maHttpHuy: cancel.status,
+      ipnRspCode: ipnOf(ipn),
+      trangThaiSau: after.status,
+      paymentStatusSau: after.paymentStatus,
+      luotThanhToan: after.payments.map((payment) => payment.status),
+      tonKho: { truocDat: stockBefore, sauDat: stockAfterOrder, sau: stockAfter },
+      soDongHoanKho: restockRows.length,
+      lichSu: after.statusHistory.map(({ status, note }) => ({ status, note })),
+    };
+    outcomes.push(outcome);
+    report("TC24", outcome);
+
+    // Thứ tự nào cũng được — miễn là đơn, kho và tiền khớp nhau
+    expect.soft(ipnOf(ipn), `vòng ${round}: IPN được ghi nhận (RspCode 00)`).toBe("00");
+    expect.soft(after.paymentStatus, `vòng ${round}: tiền đã về được ghi nhận`).toBe("PAID");
+    expect.soft(after.payments.map((payment) => payment.status), `vòng ${round}: lượt thanh toán PAID`).toEqual(["PAID"]);
+    expect.soft(["CANCELLED", "CONFIRMED"], `vòng ${round}: trạng thái cuối`).toContain(after.status);
+    if (after.status === "CANCELLED") {
+      // Lượt huỷ thắng: kho hoàn đúng một lần, IPN tới sau chỉ ghi nhận tiền để đối soát — KHÔNG lên CONFIRMED
+      expect.soft(cancel.status, `vòng ${round}: huỷ thành công`).toBe(200);
+      expect.soft(stockAfter, `vòng ${round}: kho hoàn đúng một lần`).toBe(stockBefore);
+      expect.soft(restockRows, `vòng ${round}: đúng 1 dòng sổ kho hoàn`).toHaveLength(1);
+      expect.soft(confirmEvents, `vòng ${round}: không có dòng lịch sử Đã xác nhận`).toHaveLength(0);
+      expect.soft(reconcileEvents, `vòng ${round}: lịch sử ghi cần đối soát`).toHaveLength(1);
+      expect.soft(after.canMarkRefunded, `vòng ${round}: nhân viên đánh dấu hoàn tiền được`).toBe(true);
+    } else {
+      // IPN thắng: đơn đã thanh toán nên khách không huỷ được nữa, kho giữ nguyên mức đã trừ
+      expect.soft(cancel.status, `vòng ${round}: huỷ bị từ chối`).toBe(409);
+      expect.soft(stockAfter, `vòng ${round}: kho không hoàn`).toBe(stockBefore - 1);
+      expect.soft(restockRows, `vòng ${round}: không có dòng sổ kho hoàn`).toHaveLength(0);
+      expect.soft(cancelEvents, `vòng ${round}: không có dòng lịch sử Đã huỷ`).toHaveLength(0);
+      expect.soft(confirmEvents, `vòng ${round}: đúng 1 dòng lịch sử Đã xác nhận`).toHaveLength(1);
+    }
+  }
+  report("TC24", {
+    tongKet: outcomes.reduce<Record<string, number>>((count, outcome) => {
+      const key = String(outcome.trangThaiSau);
+      count[key] = (count[key] ?? 0) + 1;
+      return count;
+    }, {}),
+  });
+});
+
+test("TC25 - VNPay gọi IPN hai lần và chuyển trình duyệt về cùng lúc: chỉ ghi nhận đúng một lần", async () => {
+  const admin = await loginAdmin();
+  const gateway = await newContext();
+  const id = await productId(admin, FLOW_PRODUCT_SLUG);
+  await setStock(admin, id, 5);
+  const customer = await newCustomer("tc25");
+
+  await addToCart(customer.api, id);
+  const { orderCode, payUrl } = await placeVnpayOrderOk(customer.api, customer.addressId);
+  const query = vnpaySuccessQuery(payUrl);
+
+  const [ipn1, ipn2, back] = await Promise.all([
+    gateway.get("/api/payments/vnpay/ipn", { params: query }),
+    gateway.get("/api/payments/vnpay/ipn", { params: query }),
+    customer.api.get("/api/payments/vnpay/return", { params: query, maxRedirects: 0 }),
+  ]);
+  const ipnCodes = [((await ipn1.json()) as { RspCode: string }).RspCode, ((await ipn2.json()) as { RspCode: string }).RspCode];
+  const location = back.headers()["location"] ?? "";
+  const after = await adminOrder(admin, orderCode);
+  const confirmEvents = after.statusHistory.filter((event) => event.status === "CONFIRMED");
+
+  report("TC25", {
+    orderCode,
+    ipnRspCode: ipnCodes,
+    returnHttp: back.status(),
+    returnChuyenToi: location,
+    trangThaiSau: after.status,
+    paymentStatusSau: after.paymentStatus,
+    luotThanhToan: after.payments.map((payment) => payment.status),
+    lichSu: after.statusHistory.map(({ status, note }) => ({ status, note })),
+  });
+
+  expect.soft(after.status).toBe("CONFIRMED");
+  expect.soft(after.paymentStatus).toBe("PAID");
+  expect.soft(after.payments.map((payment) => payment.status), "một lượt thanh toán, PAID").toEqual(["PAID"]);
+  expect.soft(confirmEvents, "đúng 1 dòng lịch sử Đã xác nhận").toHaveLength(1);
+  expect.soft(ipnCodes.every((code) => code === "00" || code === "02"), "IPN chỉ trả 00 (ghi nhận) hoặc 02 (đã xử lý)").toBe(true);
+  expect.soft(ipnCodes.filter((code) => code === "00").length, "nhiều nhất một IPN được ghi nhận").toBeLessThanOrEqual(1);
+  expect.soft(back.status(), "return chuyển trình duyệt đi").toBe(302);
+  expect.soft(location, "return đưa khách về trang đơn, báo thành công").toContain(`/don-hang/${orderCode}?pay=success`);
+});
+
+test("TC26 - một khách đặt hai đơn cùng lúc với mã chỉ dùng 1 lần/người: chỉ một đơn được dùng mã", async () => {
+  const admin = await loginAdmin();
+  const id = await productId(admin, FLOW_PRODUCT_SLUG);
+  await setStock(admin, id, 5);
+  const customer = await newCustomer("tc26");
+
+  const stockBefore = await stockOf(admin, id);
+  const usageBefore = await voucherUsage(admin, VOUCHER_CODE);
+  await addToCart(customer.api, id);
+
+  const results = await race(
+    placeOrder(customer.api, customer.addressId, VOUCHER_CODE),
+    placeOrder(customer.api, customer.addressId, VOUCHER_CODE),
+  );
+  const createdCodes = results
+    .filter((result) => result.status === 201)
+    .map((result) => (result.body as { order: { orderCode: string } }).order.orderCode);
+  const usageAfter = await voucherUsage(admin, VOUCHER_CODE);
+  const stockAfter = await stockOf(admin, id);
+  const mine = await customer.api.get("/api/orders");
+  expect(mine.ok(), await mine.text()).toBe(true);
+  const myOrderCount = ((await mine.json()) as { total: number }).total;
+  const created = await Promise.all(createdCodes.map((code) => adminOrder(admin, code)));
+
+  // Dọn: huỷ mọi đơn vừa tạo để trả lượt mã — các lượt chạy sau (và TC17/TC21) không bị lệch usageCount
+  const cancelStatuses: number[] = [];
+  for (const code of createdCodes) {
+    const cancel = await customer.api.post(`/api/orders/${encodeURIComponent(code)}/cancel`, { data: {} });
+    cancelStatuses.push(cancel.status());
+  }
+  const usageAfterCleanup = await voucherUsage(admin, VOUCHER_CODE);
+
+  report("TC26", {
+    maHttp: results.map((result) => result.status),
+    phanHoiLoi: results.filter((result) => result.status !== 201).map((result) => result.body),
+    donTaoDuoc: created.map((order) => ({ orderCode: order.orderCode, maGiamGia: order.voucherCode, giamGia: order.discountAmount })),
+    soDonCuaKhach: myOrderCount,
+    usageCount: { truocDat: usageBefore, sauDat: usageAfter, sauKhiHuyDon: usageAfterCleanup },
+    tonKho: { truocDat: stockBefore, sauDat: stockAfter },
+    maHttpHuyDon: cancelStatuses,
+  });
+
+  expect.soft(sortedStatuses(results), "đúng một đơn được tạo, request kia 409").toEqual([201, 409]);
+  expect.soft(myOrderCount, "khách chỉ có 1 đơn").toBe(1);
+  expect.soft(usageAfter, "mã chỉ bị dùng thêm đúng 1 lượt").toBe(usageBefore + 1);
+  expect.soft(created.map((order) => order.voucherCode), "đơn tạo được có dùng mã").toEqual([VOUCHER_CODE]);
+  expect.soft(stockAfter, "kho chỉ trừ cho 1 đơn").toBe(stockBefore - 1);
+  expect.soft(usageAfterCleanup, "huỷ đơn trả lại lượt mã").toBe(usageBefore);
 });

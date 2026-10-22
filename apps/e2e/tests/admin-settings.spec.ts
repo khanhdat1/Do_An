@@ -37,12 +37,14 @@ test("đổi phí vận chuyển → giỏ hàng của khách áp dụng ngay; k
     await expect(summary).toContainText("3.535.000đ");
     await shopperContext.close();
 
-    // Máy kiểm thử không cấu hình VNPay/chuyển khoản/MoMo → COD là phương thức duy nhất khách dùng được
+    // Máy kiểm thử chỉ cấu hình COD và VNPay (khoá giả) → tắt cả hai là không còn phương thức nào khách dùng được
     await page.locator("#settings-payment-cod").uncheck();
+    await page.locator("#settings-payment-vnpay").uncheck();
     await page.getByRole("button", { name: "Lưu cài đặt" }).click();
     await expect(page.getByText("Phải bật ít nhất một phương thức thanh toán đã được cấu hình").first()).toBeVisible();
     const after = await page.request.get("/api/settings");
-    expect(((await after.json()) as { payments: { cod: boolean } }).payments.cod).toBe(true);
+    const payments = ((await after.json()) as { payments: { cod: boolean; vnpay: boolean } }).payments;
+    expect([payments.cod, payments.vnpay]).toEqual([true, true]);
   } finally {
     const restored = await page.request.put("/api/admin/settings", { data: originalSettings });
     expect(restored.ok(), await restored.text()).toBe(true);

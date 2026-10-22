@@ -11,7 +11,7 @@ import { calcShippingFee } from "../utils/shipping.js";
 import { ORDER_GROUP_STATUSES } from "./account.service.js";
 import { createAddress, type AddressInput } from "./address.service.js";
 import { isBankTransferConfigured, isMomoConfigured } from "./manual-payment.service.js";
-import { cancelOrderInTx, ORDER_CHANGED_MESSAGE } from "./order-cancellation.service.js";
+import { cancelOrderInTx, claimOrderTransition, ORDER_CHANGED_MESSAGE } from "./order-cancellation.service.js";
 import { assertPaymentMethodEnabled, getSettings } from "./settings.service.js";
 import { buildPaymentUrl, isVnpayConfigured, type VerifiedCallback } from "./vnpay.service.js";
 import { redeemVoucher, validateVoucherForOrder } from "./voucher.service.js";
@@ -352,9 +352,49 @@ export type ApplyVnpayResult =
   | { kind: "applied"; order: OrderDto; success: boolean };
 
 /**
+ * Ghi nhận tiền VNPay đã về cho đơn, trong transaction của `applyVnpayCallback` (lượt thanh toán đã được giành xong).
+ *
+ * Đơn còn chờ thì xác nhận luôn — bằng cập nhật CÓ ĐIỀU KIỆN (`claimOrderTransition`, đơn vẫn PENDING + chưa thanh
+ * toán), không đọc rồi ghi đè: khách tự huỷ / nhân viên huỷ / hệ thống tự huỷ đơn quá hạn đúng lúc IPN tới thì InnoDB bắt
+ * lượt này chờ lượt huỷ xong rồi kiểm lại điều kiện trên bản mới nhất → không khớp, đơn đã huỷ (kho đã hoàn) KHÔNG bị hồi
+ * sinh thành CONFIRMED. Không giành được (đơn vừa bị huỷ, hoặc đã được xác nhận qua một lượt thanh toán khác) thì tiền
+ * vẫn đã thật sự bị trừ của khách: ghi nhận đã có tiền (trang quản trị hiện "Đánh dấu đã hoàn tiền") nhưng giữ nguyên
+ * trạng thái đơn, lịch sử ghi "cần đối soát".
+ */
+export async function recordVnpayPaid(tx: Prisma.TransactionClient, orderId: string): Promise<void> {
+  const now = new Date();
+  const confirmed = await claimOrderTransition(
+    tx,
+    { id: orderId, status: "PENDING" },
+    { status: "CONFIRMED", confirmedAt: now, paymentStatus: "PAID" },
+    { paymentStatus: "PENDING" },
+  );
+  if (confirmed) {
+    await tx.orderStatusHistory.create({
+      data: { orderId, fromStatus: "PENDING", toStatus: "CONFIRMED", note: "Thanh toán VNPay thành công" },
+    });
+    return;
+  }
+
+  await tx.order.update({ where: { id: orderId }, data: { paymentStatus: "PAID" } });
+  // Đọc SAU khi chính transaction này vừa ghi dòng đơn: InnoDB trả bản mới nhất của dòng mình đã ghi (gồm trạng thái
+  // lượt huỷ vừa commit), không phải ảnh chụp cũ từ đầu transaction
+  const { status } = await tx.order.findUniqueOrThrow({ where: { id: orderId }, select: { status: true } });
+  await tx.orderStatusHistory.create({
+    data: {
+      orderId,
+      fromStatus: status,
+      toStatus: status,
+      note: "Nhận được thanh toán VNPay sau khi đơn đã đổi trạng thái — cần đối soát thủ công",
+    },
+  });
+}
+
+/**
  * Ghi nhận kết quả VNPay gửi về (return hoặc IPN — dùng chung một hàm, xem `payments.routes.ts`). Idempotent:
  * một `Payment` chỉ áp dụng đúng một lần (`status` khỏi PENDING là coi như xong), vì VNPay có thể gọi IPN nhiều
- * lần hoặc cả return lẫn IPN cùng tới đích.
+ * lần hoặc cả return lẫn IPN cùng tới đích — kể cả ĐÚNG CÙNG LÚC: lượt thanh toán được giành bằng cập nhật có điều
+ * kiện `status = PENDING`, lượt tới sau thấy count = 0 và trả `already_processed`, không ghi lịch sử hai lần.
  */
 export async function applyVnpayCallback(callback: VerifiedCallback): Promise<ApplyVnpayResult> {
   if (!callback.paymentId) return { kind: "not_found" };
@@ -362,55 +402,44 @@ export async function applyVnpayCallback(callback: VerifiedCallback): Promise<Ap
   const payment = await prisma.payment.findUnique({ where: { id: callback.paymentId } });
   if (!payment) return { kind: "not_found" };
 
-  if (payment.status !== "PENDING") {
-    const row = await prisma.order.findUniqueOrThrow({ where: { id: payment.orderId }, include: orderInclude });
-    return { kind: "already_processed", order: toOrderDto(row), success: payment.status === "PAID" };
-  }
+  const orderId = payment.orderId;
+  const alreadyProcessed = async (): Promise<ApplyVnpayResult> => {
+    const [latest, row] = await Promise.all([
+      prisma.payment.findUniqueOrThrow({ where: { id: payment.id }, select: { status: true } }),
+      prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: orderInclude }),
+    ]);
+    return { kind: "already_processed", order: toOrderDto(row), success: latest.status === "PAID" };
+  };
+
+  if (payment.status !== "PENDING") return alreadyProcessed();
 
   // Số tiền lệch với lượt thử đã tạo: không tin dữ liệu này, không đổi trạng thái thành công
   if (callback.amount !== undefined && Math.round(callback.amount) !== Math.round(Number(payment.amount))) {
-    const row = await prisma.order.findUniqueOrThrow({ where: { id: payment.orderId }, include: orderInclude });
+    const row = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: orderInclude });
     return { kind: "amount_mismatch", order: toOrderDto(row) };
   }
 
-  const orderId = payment.orderId;
-
-  await prisma.$transaction(async (tx) => {
-    await tx.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: callback.success ? "PAID" : "FAILED",
-        transactionNo: callback.transactionNo,
-        bankCode: callback.bankCode,
-        responseCode: callback.responseCode,
-        gatewayData: callback.raw,
-        paidAt: callback.success ? new Date() : undefined,
-      },
-    });
-
-    if (callback.success) {
-      const before = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
-      // Bình thường đơn còn PENDING chờ thanh toán; nếu khách đã tự huỷ đúng lúc IPN tới muộn thì
-      // vẫn ghi nhận đã nhận được tiền nhưng KHÔNG hồi sinh đơn đã huỷ — để lại dấu vết cho việc đối soát thủ công.
-      const stillPending = before.status === "PENDING";
-
-      await tx.order.update({
-        where: { id: orderId },
-        data: { paymentStatus: "PAID", ...(stillPending ? { status: "CONFIRMED", confirmedAt: new Date() } : {}) },
-      });
-      await tx.orderStatusHistory.create({
+  const applied = await retryOnTransactionConflict(() =>
+    prisma.$transaction(async (tx) => {
+      const { count } = await tx.payment.updateMany({
+        where: { id: payment.id, status: "PENDING" },
         data: {
-          orderId,
-          fromStatus: before.status,
-          toStatus: stillPending ? "CONFIRMED" : before.status,
-          note: stillPending
-            ? "Thanh toán VNPay thành công"
-            : "Nhận được thanh toán VNPay sau khi đơn đã đổi trạng thái — cần đối soát thủ công",
+          status: callback.success ? "PAID" : "FAILED",
+          transactionNo: callback.transactionNo,
+          bankCode: callback.bankCode,
+          responseCode: callback.responseCode,
+          gatewayData: callback.raw,
+          paidAt: callback.success ? new Date() : undefined,
         },
       });
-    }
-    // Thất bại: KHÔNG đổi Order.status/paymentStatus — đơn vẫn PENDING để khách thử thanh toán lại
-  });
+      if (count === 0) return false; // một callback khác của cùng lượt thanh toán vừa xử lý xong
+
+      if (callback.success) await recordVnpayPaid(tx, orderId);
+      // Thất bại: KHÔNG đổi Order.status/paymentStatus — đơn vẫn PENDING để khách thử thanh toán lại
+      return true;
+    }),
+  );
+  if (!applied) return alreadyProcessed();
 
   const row = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: orderInclude });
   return { kind: "applied", order: toOrderDto(row), success: callback.success };

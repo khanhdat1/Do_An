@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { isRuntimeUpload } from "@/lib/uploaded-images";
 import type { Banner } from "@/types";
 
 const AUTO_ADVANCE_MS = 6000;
@@ -21,7 +20,6 @@ function BannerSlide({ banner, active }: { banner: Banner; active: boolean }) {
         sizes="100vw"
         className="object-cover"
         priority={active}
-        unoptimized={isRuntimeUpload(banner.imageUrl)}
       />
       {banner.title || banner.subtitle ? (
         <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent p-4 sm:p-6">

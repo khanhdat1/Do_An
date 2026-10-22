@@ -1,4 +1,4 @@
-import type { OrderStatus, Prisma } from "@pczone/db";
+import type { OrderStatus, PaymentMethod, Prisma } from "@pczone/db";
 import { ConflictError } from "../middleware/errors.js";
 
 /**
@@ -90,6 +90,17 @@ export async function releaseOrderVoucher(
   await tx.voucherRedemption.deleteMany({ where: { voucherId: order.voucherId, orderId: order.orderCode } });
 }
 
+/**
+ * Tiền có thể về SAU khi đơn đã huỷ không: chuyển khoản/MoMo do khách tự chuyển (có thể chuyển sát lúc đơn bị huỷ, tiền
+ * về muộn), VNPay thì cổng có thể báo kết quả (IPN) muộn cho lượt khách đang thanh toán dở. Những đơn này GIỮ lượt thanh
+ * toán ở PENDING khi huỷ — nhân viên vẫn "Xác nhận đã nhận tiền" được (`confirmOrderPayment`), IPN muộn vẫn ghi nhận được
+ * (`applyVnpayCallback`): đơn giữ nguyên Đã huỷ, lịch sử ghi "cần đối soát", rồi nhân viên "Đánh dấu đã hoàn tiền".
+ * COD thu tiền lúc giao hàng — đơn đã huỷ thì không bao giờ có tiền về, huỷ luôn lượt thanh toán.
+ */
+export function paymentMayArriveAfterCancel(method: PaymentMethod): boolean {
+  return method !== "COD";
+}
+
 export interface CancelOrderOptions {
   /** Ghi vào `Order.cancelReason` (khách thấy ở trang chi tiết đơn) */
   reason?: string;
@@ -101,20 +112,26 @@ export interface CancelOrderOptions {
   changedBy?: string;
   /** Chỉ huỷ khi đơn vẫn CHƯA thanh toán — chặn luôn trường hợp nhân viên vừa xác nhận tiền đúng lúc khách bấm huỷ */
   requireUnpaid?: boolean;
-  /** Đổi các lượt thanh toán còn chờ sang CANCELLED (mặc định có) */
-  cancelPendingPayments?: boolean;
 }
 
 /**
  * Huỷ đơn trong transaction của hàm gọi: giành đơn bằng cập nhật có điều kiện TRƯỚC, rồi mới hoàn mã + hoàn kho,
- * ghi lịch sử. Trả `false` (không làm gì cả) nếu đơn đã bị thao tác khác đổi trạng thái.
+ * ghi lịch sử. Trả `false` (không làm gì cả) nếu đơn đã bị thao tác khác đổi trạng thái. Lượt thanh toán còn chờ: xem
+ * `paymentMayArriveAfterCancel` — cùng một cách cho khách tự huỷ, nhân viên huỷ và hệ thống tự huỷ đơn quá hạn.
  *
  * Hoàn mã TRƯỚC hoàn kho: lúc đặt hàng `createOrder` khoá dòng mã giảm giá rồi mới tới dòng sản phẩm, đi cùng thứ
  * tự đó thì một lượt đặt hàng và một lượt huỷ dùng chung mã + sản phẩm không khoá chéo nhau (deadlock).
  */
 export async function cancelOrderInTx(
   tx: Prisma.TransactionClient,
-  order: { id: string; orderCode: string; status: OrderStatus; voucherId: string | null; items: OrderLine[] },
+  order: {
+    id: string;
+    orderCode: string;
+    status: OrderStatus;
+    paymentMethod: PaymentMethod;
+    voucherId: string | null;
+    items: OrderLine[];
+  },
   options: CancelOrderOptions,
 ): Promise<boolean> {
   const claimed = await claimOrderTransition(
@@ -137,8 +154,7 @@ export async function cancelOrderInTx(
       note: options.historyNote,
     },
   });
-  if (options.cancelPendingPayments ?? true) {
-    // Lượt thử VNPay còn treo (khách bấm huỷ trong lúc đang ở trang VNPay) không còn ý nghĩa
+  if (!paymentMayArriveAfterCancel(order.paymentMethod)) {
     await tx.payment.updateMany({ where: { orderId: order.id, status: "PENDING" }, data: { status: "CANCELLED" } });
   }
   return true;

@@ -4,14 +4,17 @@ import { autoCancelReason, staleUnpaidOrderWhere } from "../utils/unpaid-order.j
 import { cancelOrderInTx } from "./order-cancellation.service.js";
 
 /**
- * Tự huỷ đơn chuyển khoản ngân hàng/MoMo bỏ dở: đặt hàng đã trừ kho ngay, nhưng khách không chuyển tiền (hoặc nhân
- * viên không xác nhận) thì hàng bị giữ mãi, không ai mua được. Quá hạn (`env.orders.unpaidTimeoutHours`, mặc định
- * 24 giờ) thì huỷ đúng như khách tự huỷ: hoàn kho, hoàn lượt mã giảm giá, ghi lịch sử với lý do rõ ràng.
+ * Tự huỷ đơn chuyển khoản ngân hàng/MoMo/VNPay bỏ dở: đặt hàng đã trừ kho ngay, nhưng khách không chuyển tiền (hoặc
+ * nhân viên không xác nhận, hoặc khách bỏ dở ở cổng VNPay) thì hàng bị giữ mãi, không ai mua được. Quá hạn
+ * (`env.orders.unpaidTimeoutHours`, mặc định 24 giờ) thì huỷ đúng như khách tự huỷ: hoàn kho, hoàn lượt mã giảm giá,
+ * ghi lịch sử với lý do rõ ràng.
  *
  * Chạy bằng `setInterval` ngay trong tiến trình API (`startUnpaidOrderSweeper`, gọi từ server.ts) — không cần cron hay
  * hàng đợi riêng. Chạy lặp hay nhiều tiến trình API cùng quét một lúc đều an toàn: mỗi đơn được huỷ trong transaction
  * riêng bằng cập nhật có điều kiện (`cancelOrderInTx`), tiến trình nào giành được đơn trước thì làm, các tiến trình
- * còn lại thấy count = 0 và bỏ qua; nhân viên vừa xác nhận tiền đúng lúc đó thì đơn đã PAID, cũng bị bỏ qua.
+ * còn lại thấy count = 0 và bỏ qua; nhân viên vừa xác nhận tiền / IPN VNPay vừa báo thành công đúng lúc đó thì đơn đã
+ * PAID, cũng bị bỏ qua — còn nếu lượt huỷ giành được đơn trước thì IPN tới sau chỉ ghi nhận đã có tiền để đối soát
+ * (`applyVnpayCallback`), không hồi sinh đơn.
  */
 
 /** Bao lâu quét một lần — đơn bị huỷ trễ tối đa chừng này so với đúng hạn, không đáng kể khi hạn tính bằng giờ */
@@ -38,11 +41,9 @@ export async function cancelStaleUnpaidOrders(timeoutHours: number, now = new Da
             reason,
             historyNote: reason,
             stockNote: `Hoàn kho do hệ thống tự huỷ đơn ${order.orderCode} quá hạn thanh toán`,
+            // Lượt thanh toán giữ PENDING (`paymentMayArriveAfterCancel`): tiền khách chuyển sát hạn / IPN VNPay về muộn
+            // vẫn ghi nhận được sau khi đơn bị huỷ. Đơn đã huỷ thì trang của khách không còn hiện QR chuyển khoản nữa.
             requireUnpaid: true,
-            // GIỮ lượt thanh toán ở PENDING (khác khách tự huỷ): tiền khách chuyển sát hạn vẫn có thể về sau khi đơn bị
-            // huỷ — nhân viên vẫn bấm "Xác nhận đã nhận tiền" được (đơn giữ CANCELLED, lịch sử ghi "cần đối soát"),
-            // rồi "Đánh dấu đã hoàn tiền". Đơn đã huỷ thì trang của khách không còn hiện QR chuyển khoản nữa.
-            cancelPendingPayments: false,
           }),
         ),
       );

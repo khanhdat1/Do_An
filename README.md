@@ -885,8 +885,10 @@ theo tên, mã hoá từng giá trị rồi ký HMAC-SHA512 bằng hash secret.
 ```
 
 `return` và `ipn` dùng chung một hàm áp dụng kết quả (`applyVnpayCallback` trong `order.service.ts`),
-idempotent theo `Payment.id` (`vnp_TxnRef`): gọi lại nhiều lần (VNPay có thể gọi IPN lặp) không xử lý hai
-lần. Thanh toán thành công thì `Order.status` tự chuyển `PENDING → CONFIRMED`; thất bại thì đơn giữ
+idempotent theo `Payment.id` (`vnp_TxnRef`): gọi lại nhiều lần (VNPay có thể gọi IPN lặp), kể cả return và IPN
+tới đúng cùng lúc, không xử lý hai lần (lượt thanh toán được giành bằng cập nhật có điều kiện). Thanh toán thành
+công thì `Order.status` tự chuyển `PENDING → CONFIRMED` — cũng bằng cập nhật có điều kiện, nên IPN tới đúng lúc
+khách (hoặc hệ thống) vừa huỷ đơn không hồi sinh đơn đã hoàn kho, chỉ ghi nhận đã có tiền để đối soát; thất bại thì đơn giữ
 nguyên `PENDING` để khách thử lại (`POST /api/orders/:orderCode/pay` — mỗi lượt thử là một dòng `Payment`
 riêng, đúng lý do tách bảng này khỏi `Order` ở `csdl.md` mục 4.4).
 
@@ -911,13 +913,14 @@ cho tới khi được xác nhận (mã hoá trong `OrderDto.bankTransfer`/`momo
 "Xác nhận đã nhận tiền" chuyển `Payment.status → PAID` và `Order.status → CONFIRMED` (logic dùng chung
 với nhánh thành công của `applyVnpayCallback`, chỉ khác là do người bấm thay vì VNPay gọi về).
 
-**Đơn bỏ dở không giữ kho mãi**: đơn chuyển khoản/MoMo vẫn chưa được xác nhận đã nhận tiền sau
-`UNPAID_ORDER_TIMEOUT_HOURS` giờ (mặc định 24, `0` = tắt) thì API tự huỷ — hoàn kho, hoàn lượt mã giảm giá, ghi
-lịch sử "Hệ thống tự huỷ: quá 24 giờ chưa nhận được thanh toán…". Vòng quét chạy ngay trong tiến trình API (5 phút
-một lần, `services/unpaid-order.service.ts`), không cần cron; nhiều tiến trình cùng quét vẫn an toàn vì mỗi đơn
-được huỷ bằng cập nhật có điều kiện. Không đụng đơn COD/VNPay. Lượt thanh toán của đơn bị tự huỷ vẫn để "chờ", nên
-tiền khách chuyển sát hạn mà về muộn vẫn ghi nhận được (đơn giữ nguyên Đã huỷ, lịch sử ghi "cần đối soát") rồi
-"Đánh dấu đã hoàn tiền".
+**Đơn bỏ dở không giữ kho mãi**: đơn chuyển khoản/MoMo/VNPay vẫn chưa nhận được tiền sau
+`UNPAID_ORDER_TIMEOUT_HOURS` giờ (mặc định 24, `0` = tắt; VNPay tính từ lần bấm "Thanh toán lại" gần nhất) thì API tự
+huỷ — hoàn kho, hoàn lượt mã giảm giá, ghi lịch sử "Hệ thống tự huỷ: quá 24 giờ chưa nhận được thanh toán…". Vòng quét
+chạy ngay trong tiến trình API (5 phút một lần, `services/unpaid-order.service.ts`), không cần cron; nhiều tiến trình
+cùng quét vẫn an toàn vì mỗi đơn được huỷ bằng cập nhật có điều kiện. Không đụng đơn COD. Đơn chuyển khoản/MoMo/VNPay
+bị huỷ (khách tự huỷ, nhân viên huỷ hay hệ thống tự huỷ) đều giữ lượt thanh toán ở "chờ", nên tiền khách chuyển sát
+hạn mà về muộn, hay IPN VNPay tới đúng lúc đơn bị huỷ, vẫn ghi nhận được (đơn giữ nguyên Đã huỷ — không hồi sinh, kho
+không bị trừ lại — lịch sử ghi "cần đối soát") rồi "Đánh dấu đã hoàn tiền".
 
 **Đơn COD** cũng được ghi nhận tay: nhân viên giao hàng thu tiền lúc giao, nên khi đơn **đang giao hoặc đã giao**
 trang chi tiết đơn có nút "Xác nhận đã thu tiền COD" — chỉ chuyển `Payment`/`Order.paymentStatus → PAID` (ghi

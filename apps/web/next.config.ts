@@ -35,10 +35,11 @@ const nextConfig: NextConfig = {
     // sang API — chỉ cần chia sẻ MỘT địa chỉ, cookie đăng nhập/giỏ hàng vẫn cùng tên miền
     return [
       { source: "/api/:path*", destination: `${apiUrl}/api/:path*` },
-      // Ảnh sản phẩm quản trị viên tải lên lúc đang chạy: `next start` chỉ phục vụ file có sẵn trong public/ lúc khởi
-      // động, file mới không có ở đó thì rơi xuống quy tắc này (rewrites dạng mảng chạy SAU khi tìm file tĩnh) và lấy
-      // từ API — nơi ghi file (apps/api/src/app.ts). Bộ tối ưu ảnh /_next/image cũng đi qua đây.
+      // Ảnh sản phẩm và banner quản trị viên tải lên lúc đang chạy: `next start` chỉ phục vụ file có sẵn trong public/
+      // lúc khởi động, file mới không có ở đó thì rơi xuống quy tắc này (rewrites dạng mảng chạy SAU khi tìm file tĩnh)
+      // và lấy từ API — nơi ghi file (apps/api/src/app.ts). Bộ tối ưu ảnh /_next/image cũng đi qua đây.
       { source: "/images/products/uploads/:path*", destination: `${apiUrl}/images/products/uploads/:path*` },
+      { source: "/images/banners/:path*", destination: `${apiUrl}/images/banners/:path*` },
     ];
   },
   images: {
