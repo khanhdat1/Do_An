@@ -1,0 +1,12 @@
+﻿Chay tu 21:15:08 23/10/2026 den 21:17:49 23/10/2026 (gio may), API http://localhost:4000
+So cau co loi (xem cot "loi"): 1. Tong so lan phai thu lai do han muc/dich vu AI ban: 0
+p95 tinh theo hang gan nhat; voi n nho (10-20), p95 gan bang hoac bang gia tri lon nhat.
+
+TRO LY: 12 cau, 11 cau tra loi tron ven
+  Toi khung SSE dau tien (meta, chua co chu): TB 849 ms, p95 1242 ms (n = 11, max 1242 ms)
+  Toi doan chu dau tien cua cau tra loi   : TB 5517 ms, p95 20175 ms (n = 11, max 20175 ms)
+  Toi khi tra loi xong                    : TB 6809 ms, p95 21431 ms (n = 11, max 21431 ms)
+  Co trich dan san pham: 7/11; tong so san pham duoc trich dan: 27
+  - nhom "tu-van": 9 cau
+  - nhom "bay": 3 cau
+  Phan dung/sai gia - thong so, va cau bay tu choi dung hay khong: cham tay o cot cham_tay_dung

@@ -1,0 +1,89 @@
+﻿ma;loai;nhom;cau_hoi;ky_vong;http_status;so_lan_thu;thoi_gian_ms;loi;ai_dung_ai;ai_ms;ai_top5;ai_top5_slug;ai_hit5;ai_p5;tk_ms;tk_top5;tk_top5_slug;tk_hit5;tk_p5;tk_tong;tg_khung_dau_ms;tg_chu_dau_ms;tra_loi;so_trich_dan;trich_dan;ngan_sach_ai_hieu;muc_dich_ai_hieu;repair;lan_dau_dat;budget_fit;so_mon_doi;so_ma_bi_bo;so_loai_linh_kien;tong_tien;hop_le_cuoi;trong_ngan_sach;ma_cau_hinh;cham_tay_dung;ghi_chu
+H01;chat;tu-van;Mình học đồ hoạ, ngân sách 30 triệu, nên chọn laptop nào?;;200;1;5379;;;;;;;;;;;;;;919;2097;"Chào bạn, với nhu cầu học đồ họa trong tầm giá khoảng 30 triệu đồng, yếu tố quan trọng nhất bạn nên quan tâm là chất lượng màn hình (độ phủ màu) và cấu hình máy.
+
+Dựa trên danh sách hiện có, mình gợi ý bạn cân nhắc các mẫu laptop có màn hình đạt **100% sRGB**, rất phù hợp cho công việc thiết kế:
+
+- **Laptop gaming Acer Nitro ProPanel ANV15-42-R0QM** (32.990.000đ):
+    - Cấu hình mạnh mẽ với Ryzen 5 7640HS, RTX 3050 và màn hình 180Hz chuẩn 100% sRGB. Điểm cộng lớn là khả năng nâng cấp RAM lên tới 96GB.
+- **Laptop gaming Acer Nitro ProPanel ANV15-52-50VA** (29.490.000đ):
+    - Sử dụng Intel Core 5 210H, RTX 3050 và màn hình 180Hz 100% sRGB, cũng hỗ trợ nâng cấp RAM lên 96GB.
+- **Laptop gaming Lenovo LOQ Essential 15ARP10E 83S0000DVN** (26.990.000đ):
+    - Lựa chọn tiết kiệm hơn với Ryzen 5 7535HS, RTX 3050 và màn hình 144Hz 100% sRGB.
+
+Ngoài ra, nếu bạn cần hiệu năng xử lý đồ họa mạnh hơn về card đồ họa, bạn có thể tham khảo mẫu:
+- **Laptop gaming Acer Nitro ProPanel ANV15-42-R5EF** (33.490.000đ): Được trang bị card RTX 4050, giúp xử lý các tác vụ render tốt hơn so với RTX 3050, màn hình cũng đạt 100% sRGB.
+
+Các mẫu **ASUS V16** hay **TUF Gaming A15** có trong danh sách có độ phủ màu thấp hơn (45% NTSC), nên bạn có thể cân nhắc kỹ nếu công việc yêu cầu độ chính xác màu sắc cao nhé.
+
+Bạn quan tâm đến mã nào trong số này không, hay muốn mình so sánh kỹ hơn về thông số của dòng nào?";7;Laptop gaming Acer Nitro ProPanel ANV15-42-R0QM (32.990.000d) | Laptop gaming Lenovo LOQ Essential 15ARP10E 83S0000DVN (26.990.000d) | Laptop gaming ASUS V16 V3607VJ-TK189W (26.490.000d) | Laptop gaming Acer Nitro ProPanel ANV15-52-50VA (29.490.000d) | Laptop gaming Acer Nitro ProPanel ANV15-42-R5EF (33.490.000d) | Laptop gaming ASUS TUF Gaming A15 FA506NCG-HN329W (27.690.000d) | Laptop gaming ASUS TUF Gaming A15 FA506NCG-HN390W (28.990.000d);;;;;;;;;;;;;1;"Chấm sơ bộ (AI): giá/thông số 22/22, nhắc tên 6/6. Có 2 mẫu ≤ 30 triệu; 2 mẫu gợi ý vượt ngân sách (32.990.000đ, 33.490.000đ)."
+H02;chat;tu-van;So sánh giúp mình hai chuột gaming không dây.;;200;1;30757;loi giua luong: Trợ lý AI bị gián đoạn. Vui lòng thử lại.;;;;;;;;;;;;;743;;;;;;;;;;;;;;;;;;Lỗi giữa luồng (Gemini không trả chữ trong ~30 s). Chạy lại một lần: hỏi lại khách — xem ket-qua-danh-gia-TROLY-LUOT3-H02-chay-lai.csv.
+H03;chat;tu-van;PC chơi game 1080p khoảng 20 triệu cần những linh kiện gì?;;200;1;21431;;;;;;;;;;;;;;748;20175;"Chào bạn, với ngân sách khoảng 20 triệu cho cấu hình PC Gaming chơi tốt ở độ phân giải 1080p, hiện tại PCZone đang có sẵn các mẫu PC nguyên bộ rất phù hợp cho nhu cầu này. 
+
+Dưới đây là các lựa chọn trong tầm giá để bạn tham khảo:
+
+- **PC Gaming PCZone i5-12400F RTX 3050**: 17.490.000đ (Còn hàng)
+  - Cấu hình: CPU i5-12400F, RAM 16GB, SSD 512GB, Card đồ họa RTX 3050 6GB.
+- **PC Gaming PCZone i5-12400F RX 6500 XT**: 16.990.000đ (Còn hàng)
+  - Cấu hình: CPU i5-12400F, RAM 16GB, SSD 512GB, Card đồ họa RX 6500 XT 4GB.
+- **PC Gaming PCZone i5-12400F Arc B580**: 23.290.000đ (Còn hàng)
+  - Cấu hình: CPU i5-12400F, RAM 16GB, SSD 512GB, Card đồ họa Intel Arc B580 12GB.
+
+Các bộ PC này đều được trang bị sẵn CPU Intel Core i5-12400F 6 nhân 12 luồng, 16GB RAM và SSD 512GB – đây là cấu hình cơ bản và ổn định để bạn bắt đầu chơi game 1080p. Điểm khác biệt chính nằm ở card đồ họa (VGA), tùy vào nhu cầu trải nghiệm cụ thể mà bạn có thể chọn mẫu phù hợp nhất.
+
+Nếu bạn cần tư vấn sâu hơn về hiệu năng của từng loại card đồ họa hoặc muốn tùy chỉnh linh kiện, bạn có thể cho mình biết thêm chi tiết nhé!";3;PC Gaming PCZone i5-12400F RTX 3050 (17.490.000d) | PC Gaming PCZone i5-12400F RX 6500 XT (16.990.000d) | PC Gaming PCZone i5-12400F Arc B580 (23.290.000d);;;;;;;;;;;;;1;"Chấm sơ bộ (AI): 16/16, nhắc tên 3/3; không tự cộng tiền."
+H04;chat;tu-van;Màn hình nào hợp chơi FPS dưới 6 triệu?;;200;1;5407;;;;;;;;;;;;;;1242;2091;"Chào bạn, với nhu cầu chơi game FPS, ưu tiên hàng đầu là tần số quét cao và thời gian phản hồi thấp. Dưới đây là các lựa chọn màn hình phù hợp trong tầm giá dưới 6 triệu tại PCZone:
+
+- **Màn hình ASUS TUF GAMING VG27AQME5F 27"" Fast IPS 2K 255Hz**: Đây là lựa chọn có tần số quét cao nhất (255Hz) và thời gian phản hồi nhanh nhất (0.3ms), rất lý tưởng cho các tựa game FPS chuyên nghiệp. Giá: 5.190.000đ.
+- **Màn hình AOC Q27G40HE 27"" Fast IPS 2K 210Hz**: Một lựa chọn sáng giá với tấm nền Fast IPS, tần số quét 210Hz và thời gian phản hồi 0.3ms. Giá: 4.190.000đ.
+- **Màn hình GIGABYTE G27Q20 27"" IPS 2K 210Hz**: Màn hình 2K với tần số quét 210Hz và thời gian phản hồi 0.5ms. Giá: 4.390.000đ.
+- **Màn hình MSI MAG 275QF E21 27"" Rapid IPS 2K 210Hz**: Tấm nền Rapid IPS với tần số quét 210Hz và thời gian phản hồi 0.5ms. Giá: 4.590.000đ.
+- **Màn hình ViewSonic XG2735-2K 27"" IPS 2K 210Hz**: Thông số rất tốt với tần số quét 210Hz và thời gian phản hồi 1ms. Giá: 4.790.000đ.
+- **Màn hình E-DRA EGM27F180PVS 27"" IPS 180Hz**: Nếu bạn muốn tiết kiệm chi phí hơn nhưng vẫn có trải nghiệm mượt mà, đây là lựa chọn 180Hz với thời gian phản hồi 0.5ms. Giá: 2.390.000đ.
+
+Tất cả các sản phẩm trên đều đang còn hàng. Bạn ưu tiên màn hình 2K sắc nét hay chỉ cần độ mượt mà cao nhất trong tầm giá này?";6;"Màn hình ViewSonic XG2735-2K 27"" IPS 2K 210Hz chuyên game (4.790.000d) | Màn hình ASUS TUF GAMING VG27AQME5F 27"" Fast IPS 2K 255Hz chuyên game (5.190.000d) | Màn hình GIGABYTE G27Q20 27"" IPS 2K 210Hz chuyên game (4.390.000d) | Màn hình AOC Q27G40HE 27"" Fast IPS 2K 210Hz chuyên game (4.190.000d) | Màn hình MSI MAG 275QF E21 27"" Rapid IPS 2K 210Hz chuyên game (4.590.000d) | Màn hình E-DRA EGM27F180PVS 27"" IPS 180Hz chuyên game (2.390.000d)";;;;;;;;;;;;;1;"Chấm sơ bộ (AI): 19/19, nhắc tên 6/6; mọi màn hình ≤ 6 triệu, tần số quét đúng."
+H05;chat;tu-van;Bàn phím cơ nào gõ êm để dùng văn phòng?;;200;1;2207;;;;;;;;;;;;;;658;1310;"Chào bạn, với nhu cầu dùng văn phòng và muốn gõ êm, bạn có thể cân nhắc các mẫu bàn phím cơ sau đây đang có sẵn tại PCZone:
+
+- **Bàn phím cơ Corsair K100 RGB Cherry MX Speed**: Mẫu này sử dụng switch Linear (Cherry MX Speed RGB), đặc điểm của dòng switch này là hành trình phím mượt mà, không có khấc cản, giúp trải nghiệm gõ rất êm và nhẹ nhàng, phù hợp cho không gian làm việc.
+- **Bàn phím cơ Razer BlackWidow V4 Tenkeyless HyperSpeed**: Mẫu này dùng Razer Orange Switches Gen-3 (Tactile). Mặc dù là tactile nhưng dòng switch này của Razer được thiết kế để mang lại cảm giác gõ cân bằng, chắc chắn và khá êm, không gây quá nhiều tiếng ồn như các loại switch clicky thông thường.
+
+Ngoài ra, nếu bạn cần một lựa chọn tiết kiệm hơn với đèn LED Rainbow, bạn có thể tham khảo **Bàn phím Rapoo V500L Rainbow Blue Switch**. Tuy nhiên, lưu ý là mẫu này sử dụng Blue Switch (loại Clicky) nên khi gõ sẽ phát ra tiếng ""tạch tạch"" đặc trưng, âm thanh sẽ lớn hơn hai mẫu nêu trên, có thể không phù hợp nếu văn phòng của bạn yêu cầu sự yên tĩnh tuyệt đối.
+
+Bạn đang quan tâm đến mẫu nào trong số này không?";3;Bàn phím cơ Corsair K100 RGB Cherry MX Speed (3.590.000d) | Bàn phím Razer BlackWidow V4 Tenkeyless HyperSpeed (3.760.000d) | Bàn phím Rapoo V500L Rainbow Blue Switch (790.000d);;;;;;;;;;;;;1;"Chấm sơ bộ (AI): 4/4, nhắc tên 3/3; loại switch đúng CSDL."
+H06;chat;tu-van;Mình đang dùng CPU socket AM5, nên chọn mainboard nào?;;200;1;4908;;;;;;;;;;;;;;1222;2463;"Chào bạn, với các CPU sử dụng socket AM5, PCZone hiện có 3 lựa chọn mainboard rất phù hợp để bạn tham khảo:
+
+- **Bo mạch chủ ASUS TUF GAMING B650M-E WIFI (DDR5)**: 4.390.000đ
+  - Kích thước mATX, hỗ trợ RAM DDR5 (4 khe), có Wi-Fi 6, phù hợp cho các cấu hình nhỏ gọn nhưng vẫn đầy đủ tính năng.
+
+- **Bo mạch chủ GIGABYTE X870 EAGLE WIFI7 (DDR5)**: 6.490.000đ
+  - Kích thước ATX, hỗ trợ RAM DDR5 (4 khe), Wi-Fi 7, có 3 khe M.2 và 4 cổng SATA, mang lại khả năng mở rộng tốt.
+
+- **Bo mạch chủ ASUS TUF GAMING X870-PLUS WIFI (DDR5)**: 9.990.000đ
+  - Kích thước ATX, dòng cao cấp với Wi-Fi 7, cấp nguồn 16+2+1 pha, hỗ trợ lên đến 4 khe M.2 và tối đa 256GB RAM DDR5, rất phù hợp cho các bộ máy yêu cầu hiệu năng và độ ổn định cao.
+
+Các mẫu trên hiện đều **còn hàng**. Bạn đang sử dụng CPU cụ thể nào trong dòng AM5 không? Nếu có, mình sẽ tư vấn lựa chọn phù hợp nhất với nhu cầu sử dụng của bạn nhé!";3;Bo mạch chủ ASUS TUF GAMING B650M-E WIFI (DDR5) (4.390.000d) | Bo mạch chủ ASUS TUF GAMING X870-PLUS WIFI (DDR5) (9.990.000d) | Bo mạch chủ GIGABYTE X870 EAGLE WIFI7 (DDR5) (6.490.000d);;;;;;;;;;;;;1;"Chấm sơ bộ (AI): 21/21, nhắc tên 3/3; cả 3 bo AM5. Nghi vấn: nói cửa hàng có 3 lựa chọn AM5, CSDL có 5."
+H07;chat;tu-van;Card ASUS Dual Radeon RX 6500 XT V2 OC Edition 4GB GDDR6 dài bao nhiêu mm, có vừa vỏ máy không?;;200;1;2017;;;;;;;;;;;;;;768;1654;"Chào bạn, mẫu card **ASUS Dual Radeon RX 6500 XT V2 OC Edition 4GB GDDR6** có chiều dài là **201 mm**.
+
+Về việc có vừa vỏ máy hay không, mình không có thông tin về vỏ máy bạn đang dùng nên không thể khẳng định chính xác. Bạn hãy kiểm tra thông số ""Chiều dài VGA tối đa"" (Max GPU length) trong phần mô tả kỹ thuật của vỏ case hiện tại để đối chiếu nhé!";1;Card màn hình ASUS Dual Radeon RX 6500 XT V2 OC Edition 4GB GDDR6 (3.790.000d);;;;;;;;;;;;;1;Chấm sơ bộ (AI): 1/1 — nêu đúng 201 mm (ProductSpec.gpuLengthMm = 201).
+H08;chat;bay;Shop có iPhone 17 Pro Max không?;TU_CHOI;200;1;10667;;;;;;;;;;;;;;722;10246;"Chào bạn, mình là trợ lý ảo của PCZone.
+
+Trong kết quả tìm kiếm hiện tại tại cửa hàng, mình chưa thấy có sản phẩm iPhone 17 Pro Max. Các danh mục sản phẩm hiện có của PCZone tập trung vào laptop, CPU và ổ cứng SSD. Bạn có thể xem thêm các sản phẩm này hoặc nếu cần hỗ trợ về các dòng máy tính/linh kiện khác, bạn hãy cho mình biết nhé!";0;;;;;;;;;;;;;;1;Từ chối đúng. Nghi vấn: mô tả cửa hàng 'tập trung vào laptop, CPU và SSD' là sai.
+H09;chat;bay;Shop có card RTX 9090 không?;TU_CHOI;200;1;3382;;;;;;;;;;;;;;678;2614;"Chào bạn, trong kết quả tìm kiếm hiện tại của PCZone chưa thấy có sản phẩm RTX 9090. Hiện tại mình đang có sẵn các dòng card đồ họa thế hệ mới thuộc series 50 như RTX 5060, 5060 Ti và 5080.
+
+Bạn có muốn tham khảo thông tin về các dòng card RTX 50 series này không?";0;;;;;;;;;;;;;;1;"Từ chối đúng; RTX 5060/5060 Ti/5080 có thật trong kho (3/3)."
+H10;chat;bay;Hôm nay thời tiết Hà Nội thế nào?;TU_CHOI;200;1;14909;;;;;;;;;;;;;;642;14619;"Chào bạn, mình là trợ lý AI của PCZone. Mình chỉ có thông tin về các sản phẩm gaming, linh kiện đang có tại cửa hàng thôi, nên rất tiếc là không biết về tình hình thời tiết Hà Nội hiện tại.
+
+Nếu bạn cần tư vấn về CPU hay ổ cứng cho PC, hãy cho mình biết nhé!";0;;;;;;;;;;;;;;1;Từ chối đúng.
+H11;chat;tu-van;Cần bộ nguồn bao nhiêu W cho CPU tầm trung và card đồ hoạ mạnh?;;200;1;2383;;;;;;;;;;;;;;613;1564;"Việc lựa chọn công suất nguồn (W) phụ thuộc vào thông số tiêu thụ điện cụ thể của CPU và card đồ họa bạn đang sử dụng. Thông thường, một cấu hình tầm trung kết hợp với card đồ họa mạnh sẽ cần mức công suất từ **650W đến 750W** để đảm bảo hệ thống hoạt động ổn định.
+
+Hiện tại PCZone đang có sẵn các lựa chọn phù hợp với các mức công suất này:
+
+- **Nguồn máy tính FSP VIC BD 750W - 80 Plus Bronze**: 1.590.000đ (Còn hàng).
+- **Nguồn máy tính Corsair CX650 - 80 Plus Bronze (650W)**: 1.390.000đ (Còn hàng).
+- **Nguồn máy tính FSP VIC WD 650W - 80 Plus White**: 990.000đ (Còn hàng).
+
+Nếu bạn dự định sử dụng card đồ họa cực mạnh hoặc muốn dư dả công suất cho việc nâng cấp sau này, bạn có thể cân nhắc mẫu **Nguồn máy tính MSI MAG A1250GL PCIE5 - 80 Plus Gold - Full Modular (1250W)** với giá 5.490.000đ.
+
+Để tư vấn chính xác nhất, bạn có thể cho mình biết cụ thể mã CPU và card đồ họa bạn đang dự định lắp đặt không? Nếu bạn cần kiểm tra thêm các dòng linh kiện khác, hãy cho mình biết nhé!";4;Nguồn máy tính Corsair CX650 - 80 Plus Bronze (650W) CP-9020278-NA (1.390.000d) | Nguồn máy tính MSI MAG A1250GL PCIE5 - 80 Plus Gold - Full Modular (1250W) (5.490.000d) | Nguồn máy tính FSP VIC WD 650W - 80 Plus White (990.000d) | Nguồn máy tính FSP VIC BD 750W - 80 Plus Bronze (1.590.000d);;;;;;;;;;;;;1;"Chấm sơ bộ (AI): 8/8, nhắc tên 4/4; không nêu FPS."
+H12;chat;tu-van;Sản phẩm nào đang còn hàng nhiều nhất?;;200;1;2211;;;;;;;;;;;;;;1131;1852;"Chào bạn, hiện tại hệ thống của PCZone không hiển thị số lượng tồn kho cụ thể cho từng mã sản phẩm, nên mình không thể xác định được sản phẩm nào đang còn hàng nhiều nhất.
+
+Tất cả các sản phẩm trong danh sách mình vừa kiểm tra đều đang ở trạng thái **Còn hàng**. Nếu bạn đang quan tâm đến một linh kiện cụ thể cho dàn máy của mình, hãy cho mình biết nhé, mình sẽ tư vấn chi tiết hơn!";0;;;;;;;;;;;;;;1;Không lộ số tồn kho tuyệt đối.

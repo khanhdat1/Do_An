@@ -1,0 +1,1026 @@
+[
+  {
+    "ma": "H01",
+    "loai": "chat",
+    "nhom": "tu-van",
+    "cau_hoi": "Mình học đồ hoạ, ngân sách 30 triệu, nên chọn laptop nào?",
+    "ky_vong": "",
+    "ketQua": {
+      "text": "Chào bạn, với nhu cầu học đồ họa trong tầm giá khoảng 30 triệu đồng, yếu tố quan trọng nhất bạn nên quan tâm là chất lượng màn hình (độ phủ màu) và cấu hình máy.\n\nDựa trên danh sách hiện có, mình gợi ý bạn cân nhắc các mẫu laptop có màn hình đạt **100% sRGB**, rất phù hợp cho công việc thiết kế:\n\n- **Laptop gaming Acer Nitro ProPanel ANV15-42-R0QM** (32.990.000đ):\n    - Cấu hình mạnh mẽ với Ryzen 5 7640HS, RTX 3050 và màn hình 180Hz chuẩn 100% sRGB. Điểm cộng lớn là khả năng nâng cấp RAM lên tới 96GB.\n- **Laptop gaming Acer Nitro ProPanel ANV15-52-50VA** (29.490.000đ):\n    - Sử dụng Intel Core 5 210H, RTX 3050 và màn hình 180Hz 100% sRGB, cũng hỗ trợ nâng cấp RAM lên 96GB.\n- **Laptop gaming Lenovo LOQ Essential 15ARP10E 83S0000DVN** (26.990.000đ):\n    - Lựa chọn tiết kiệm hơn với Ryzen 5 7535HS, RTX 3050 và màn hình 144Hz 100% sRGB.\n\nNgoài ra, nếu bạn cần hiệu năng xử lý đồ họa mạnh hơn về card đồ họa, bạn có thể tham khảo mẫu:\n- **Laptop gaming Acer Nitro ProPanel ANV15-42-R5EF** (33.490.000đ): Được trang bị card RTX 4050, giúp xử lý các tác vụ render tốt hơn so với RTX 3050, màn hình cũng đạt 100% sRGB.\n\nCác mẫu **ASUS V16** hay **TUF Gaming A15** có trong danh sách có độ phủ màu thấp hơn (45% NTSC), nên bạn có thể cân nhắc kỹ nếu công việc yêu cầu độ chính xác màu sắc cao nhé.\n\nBạn quan tâm đến mã nào trong số này không, hay muốn mình so sánh kỹ hơn về thông số của dòng nào?",
+      "done": {
+        "type": "done",
+        "citedProductIds": [
+          "cmugmgxlb002n4ehsi3ju9nhl",
+          "cmugm3g4200dy4e1aj9heejfe",
+          "cmugm360j00da4e1ahikgfpde",
+          "cmugm3l5k00ea4e1ahw0cl2wa",
+          "cmugm3uvf00ey4e1afb0xvg5j",
+          "cmugm3dki00ds4e1af97u8746",
+          "cmugm4vzj00hg4e1a7z9arywa"
+        ],
+        "citedProducts": [
+          {
+            "id": "cmugmgxlb002n4ehsi3ju9nhl",
+            "slug": "laptop-gaming-acer-nitro-propanel-anv15-42-r0qm",
+            "name": "Laptop gaming Acer Nitro ProPanel ANV15-42-R0QM",
+            "summary": "16GB DDR5 • 512GB SSD • Màn 15.6\" Full HD 180Hz",
+            "specs": [
+              "Ryzen 5 7640HS",
+              "RTX 3050",
+              "16GB"
+            ],
+            "price": 32990000,
+            "oldPrice": 34990000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-LAPTOP-ACER-ABDE8B/39820886745e-medium.webp",
+            "categorySlug": "laptop-gaming",
+            "categoryName": "Laptop Gaming",
+            "categoryPath": [
+              "laptop",
+              "laptop-gaming"
+            ],
+            "brand": "Acer",
+            "inStock": true
+          },
+          {
+            "id": "cmugm3g4200dy4e1aj9heejfe",
+            "slug": "laptop-gaming-lenovo-loq-essential-15arp10e-83s0000dvn",
+            "name": "Laptop gaming Lenovo LOQ Essential 15ARP10E 83S0000DVN",
+            "summary": "16GB DDR5 • 512GB SSD • Màn 15.6\" Full HD 144Hz",
+            "specs": [
+              "Ryzen 5 7535HS",
+              "RTX 3050",
+              "16GB"
+            ],
+            "price": 26990000,
+            "oldPrice": 27990000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-LAPTOP-LENOVO-13F3CF/277377bb7f43-medium.webp",
+            "categorySlug": "laptop-gaming",
+            "categoryName": "Laptop Gaming",
+            "categoryPath": [
+              "laptop",
+              "laptop-gaming"
+            ],
+            "brand": "Lenovo",
+            "stock": {
+              "sold": 16,
+              "total": 25,
+              "note": "Sắp hết hàng",
+              "urgent": true
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmugm360j00da4e1ahikgfpde",
+            "slug": "laptop-gaming-asus-v16-v3607vj-tk189w",
+            "name": "Laptop gaming ASUS V16 V3607VJ-TK189W",
+            "summary": "16GB • 512GB SSD • Màn 16\" WUXGA 144Hz",
+            "specs": [
+              "Core 5 210H",
+              "RTX 3050",
+              "16GB"
+            ],
+            "price": 26490000,
+            "oldPrice": 29990000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-LAPTOP-ASUS-B3ECD7/20d215ccbba7-medium.webp",
+            "categorySlug": "laptop-gaming",
+            "categoryName": "Laptop Gaming",
+            "categoryPath": [
+              "laptop",
+              "laptop-gaming"
+            ],
+            "brand": "ASUS",
+            "inStock": true
+          },
+          {
+            "id": "cmugm3l5k00ea4e1ahw0cl2wa",
+            "slug": "laptop-gaming-acer-nitro-propanel-anv15-52-50va",
+            "name": "Laptop gaming Acer Nitro ProPanel ANV15-52-50VA",
+            "summary": "16GB DDR5 • 512GB SSD • Màn 15.6\" Full HD 180Hz",
+            "specs": [
+              "Core 5 210H",
+              "RTX 3050",
+              "16GB"
+            ],
+            "price": 29490000,
+            "oldPrice": 33990000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-LAPTOP-ACER-E5D889/0fd0d5897b3d-medium.webp",
+            "categorySlug": "laptop-gaming",
+            "categoryName": "Laptop Gaming",
+            "categoryPath": [
+              "laptop",
+              "laptop-gaming"
+            ],
+            "brand": "Acer",
+            "stock": {
+              "sold": 26,
+              "total": 36,
+              "note": "Sắp hết hàng",
+              "urgent": true
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmugm3uvf00ey4e1afb0xvg5j",
+            "slug": "laptop-gaming-acer-nitro-propanel-anv15-42-r5ef",
+            "name": "Laptop gaming Acer Nitro ProPanel ANV15-42-R5EF",
+            "summary": "16GB DDR5 • 512GB SSD • Màn 15.6\" Full HD 180Hz",
+            "specs": [
+              "Ryzen 5-7640HS",
+              "RTX 4050",
+              "16GB"
+            ],
+            "price": 33490000,
+            "oldPrice": 34990000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-LAPTOP-ACER-8943FD/bda16a0bd0ea-medium.webp",
+            "categorySlug": "laptop-gaming",
+            "categoryName": "Laptop Gaming",
+            "categoryPath": [
+              "laptop",
+              "laptop-gaming"
+            ],
+            "brand": "Acer",
+            "stock": {
+              "sold": 4,
+              "total": 12,
+              "note": "Sắp hết hàng",
+              "urgent": true
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmugm3dki00ds4e1af97u8746",
+            "slug": "laptop-gaming-asus-tuf-gaming-a15-fa506ncg-hn329w",
+            "name": "Laptop gaming ASUS TUF Gaming A15 FA506NCG-HN329W",
+            "summary": "16GB • 512GB SSD • Màn 15.6\" Full HD 144Hz",
+            "specs": [
+              "Ryzen 7 8845HS",
+              "RTX 3050",
+              "16GB"
+            ],
+            "price": 27690000,
+            "oldPrice": 37490000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-LAPTOP-ASUS-43DA01/93973128fa46-medium.webp",
+            "categorySlug": "laptop-gaming",
+            "categoryName": "Laptop Gaming",
+            "categoryPath": [
+              "laptop",
+              "laptop-gaming"
+            ],
+            "brand": "ASUS",
+            "stock": {
+              "sold": 24,
+              "total": 39,
+              "note": "Sẵn hàng",
+              "urgent": false
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmugm4vzj00hg4e1a7z9arywa",
+            "slug": "laptop-gaming-asus-tuf-gaming-a15-fa506ncg-hn390w",
+            "name": "Laptop gaming ASUS TUF Gaming A15 FA506NCG-HN390W",
+            "summary": "16GB • 512GB SSD • Màn 15.6\" Full HD 144Hz",
+            "specs": [
+              "Ryzen 7 155",
+              "RTX 3050",
+              "16GB"
+            ],
+            "price": 28990000,
+            "oldPrice": 30990000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-LAPTOP-ASUS-FCBA46/8e8c80caf2aa-medium.webp",
+            "categorySlug": "laptop-gaming",
+            "categoryName": "Laptop Gaming",
+            "categoryPath": [
+              "laptop",
+              "laptop-gaming"
+            ],
+            "brand": "ASUS",
+            "stock": {
+              "sold": 4,
+              "total": 11,
+              "note": "Sắp hết hàng",
+              "urgent": true
+            },
+            "inStock": true
+          }
+        ],
+        "messageId": "cmvl1xx1800044eobnt6y9zde"
+      },
+      "streamError": null
+    }
+  },
+  {
+    "ma": "H02",
+    "loai": "chat",
+    "nhom": "tu-van",
+    "cau_hoi": "So sánh giúp mình hai chuột gaming không dây.",
+    "ky_vong": "",
+    "ketQua": {
+      "text": "",
+      "done": null,
+      "streamError": "Trợ lý AI bị gián đoạn. Vui lòng thử lại."
+    }
+  },
+  {
+    "ma": "H03",
+    "loai": "chat",
+    "nhom": "tu-van",
+    "cau_hoi": "PC chơi game 1080p khoảng 20 triệu cần những linh kiện gì?",
+    "ky_vong": "",
+    "ketQua": {
+      "text": "Chào bạn, với ngân sách khoảng 20 triệu cho cấu hình PC Gaming chơi tốt ở độ phân giải 1080p, hiện tại PCZone đang có sẵn các mẫu PC nguyên bộ rất phù hợp cho nhu cầu này. \n\nDưới đây là các lựa chọn trong tầm giá để bạn tham khảo:\n\n- **PC Gaming PCZone i5-12400F RTX 3050**: 17.490.000đ (Còn hàng)\n  - Cấu hình: CPU i5-12400F, RAM 16GB, SSD 512GB, Card đồ họa RTX 3050 6GB.\n- **PC Gaming PCZone i5-12400F RX 6500 XT**: 16.990.000đ (Còn hàng)\n  - Cấu hình: CPU i5-12400F, RAM 16GB, SSD 512GB, Card đồ họa RX 6500 XT 4GB.\n- **PC Gaming PCZone i5-12400F Arc B580**: 23.290.000đ (Còn hàng)\n  - Cấu hình: CPU i5-12400F, RAM 16GB, SSD 512GB, Card đồ họa Intel Arc B580 12GB.\n\nCác bộ PC này đều được trang bị sẵn CPU Intel Core i5-12400F 6 nhân 12 luồng, 16GB RAM và SSD 512GB – đây là cấu hình cơ bản và ổn định để bạn bắt đầu chơi game 1080p. Điểm khác biệt chính nằm ở card đồ họa (VGA), tùy vào nhu cầu trải nghiệm cụ thể mà bạn có thể chọn mẫu phù hợp nhất.\n\nNếu bạn cần tư vấn sâu hơn về hiệu năng của từng loại card đồ họa hoặc muốn tùy chỉnh linh kiện, bạn có thể cho mình biết thêm chi tiết nhé!",
+      "done": {
+        "type": "done",
+        "citedProductIds": [
+          "cmugmoaif00ju4ehs4n815u1v",
+          "cmugmofyn00k04ehsvqj0hgu8",
+          "cmugmoxv900kr4ehs3f58o5gt"
+        ],
+        "citedProducts": [
+          {
+            "id": "cmugmoaif00ju4ehs4n815u1v",
+            "slug": "pc-gaming-pczone-i5-12400f-rtx-3050",
+            "name": "PC Gaming PCZone i5-12400F RTX 3050",
+            "summary": "16GB RAM • 512GB SSD • Mainboard H610M",
+            "specs": [
+              "i5-12400F",
+              "RTX 3050",
+              "16GB • 512GB"
+            ],
+            "price": 17490000,
+            "oldPrice": 19620000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-PCGAMI-PCZONE-5FC628/c08d9288a882-medium.webp",
+            "categorySlug": "pc-gaming",
+            "categoryName": "PC Gaming",
+            "categoryPath": [
+              "pc",
+              "pc-gaming"
+            ],
+            "brand": "PCZone",
+            "stock": {
+              "sold": 9,
+              "total": 24,
+              "note": "Sẵn hàng",
+              "urgent": false
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmugmofyn00k04ehsvqj0hgu8",
+            "slug": "pc-gaming-pczone-i5-12400f-rx-6500-xt",
+            "name": "PC Gaming PCZone i5-12400F RX 6500 XT",
+            "summary": "16GB RAM • 512GB SSD • Mainboard H610M",
+            "specs": [
+              "i5-12400F",
+              "RX 6500 XT",
+              "16GB • 512GB"
+            ],
+            "price": 16990000,
+            "oldPrice": 19120000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-PCGAMI-PCZONE-82DB05/c08d9288a882-medium.webp",
+            "categorySlug": "pc-gaming",
+            "categoryName": "PC Gaming",
+            "categoryPath": [
+              "pc",
+              "pc-gaming"
+            ],
+            "brand": "PCZone",
+            "stock": {
+              "sold": 12,
+              "total": 26,
+              "note": "Sẵn hàng",
+              "urgent": false
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmugmoxv900kr4ehs3f58o5gt",
+            "slug": "pc-gaming-pczone-i5-12400f-arc-b580",
+            "name": "PC Gaming PCZone i5-12400F Arc B580",
+            "summary": "16GB RAM • 512GB SSD • Mainboard B760M",
+            "specs": [
+              "i5-12400F",
+              "Intel Arc B580",
+              "16GB • 512GB"
+            ],
+            "price": 23290000,
+            "oldPrice": 25420000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-PCGAMI-PCZONE-A9E3E1/c08d9288a882-medium.webp",
+            "categorySlug": "pc-gaming",
+            "categoryName": "PC Gaming",
+            "categoryPath": [
+              "pc",
+              "pc-gaming"
+            ],
+            "brand": "PCZone",
+            "stock": {
+              "sold": 4,
+              "total": 11,
+              "note": "Sắp hết hàng",
+              "urgent": true
+            },
+            "inStock": true
+          }
+        ],
+        "messageId": "cmvl1z90o000c4eobtzoxdjku"
+      },
+      "streamError": null
+    }
+  },
+  {
+    "ma": "H04",
+    "loai": "chat",
+    "nhom": "tu-van",
+    "cau_hoi": "Màn hình nào hợp chơi FPS dưới 6 triệu?",
+    "ky_vong": "",
+    "ketQua": {
+      "text": "Chào bạn, với nhu cầu chơi game FPS, ưu tiên hàng đầu là tần số quét cao và thời gian phản hồi thấp. Dưới đây là các lựa chọn màn hình phù hợp trong tầm giá dưới 6 triệu tại PCZone:\n\n- **Màn hình ASUS TUF GAMING VG27AQME5F 27\" Fast IPS 2K 255Hz**: Đây là lựa chọn có tần số quét cao nhất (255Hz) và thời gian phản hồi nhanh nhất (0.3ms), rất lý tưởng cho các tựa game FPS chuyên nghiệp. Giá: 5.190.000đ.\n- **Màn hình AOC Q27G40HE 27\" Fast IPS 2K 210Hz**: Một lựa chọn sáng giá với tấm nền Fast IPS, tần số quét 210Hz và thời gian phản hồi 0.3ms. Giá: 4.190.000đ.\n- **Màn hình GIGABYTE G27Q20 27\" IPS 2K 210Hz**: Màn hình 2K với tần số quét 210Hz và thời gian phản hồi 0.5ms. Giá: 4.390.000đ.\n- **Màn hình MSI MAG 275QF E21 27\" Rapid IPS 2K 210Hz**: Tấm nền Rapid IPS với tần số quét 210Hz và thời gian phản hồi 0.5ms. Giá: 4.590.000đ.\n- **Màn hình ViewSonic XG2735-2K 27\" IPS 2K 210Hz**: Thông số rất tốt với tần số quét 210Hz và thời gian phản hồi 1ms. Giá: 4.790.000đ.\n- **Màn hình E-DRA EGM27F180PVS 27\" IPS 180Hz**: Nếu bạn muốn tiết kiệm chi phí hơn nhưng vẫn có trải nghiệm mượt mà, đây là lựa chọn 180Hz với thời gian phản hồi 0.5ms. Giá: 2.390.000đ.\n\nTất cả các sản phẩm trên đều đang còn hàng. Bạn ưu tiên màn hình 2K sắc nét hay chỉ cần độ mượt mà cao nhất trong tầm giá này?",
+      "done": {
+        "type": "done",
+        "citedProductIds": [
+          "cmugmr0de00p14ehsdqctnwbv",
+          "cmugmptxr00mb4ehsng0xd38i",
+          "cmugmqavd00ne4ehscb7v4sac",
+          "cmugmr5rx00pd4ehss9h2cy8p",
+          "cmugmq03z00mo4ehsbjde4v3w",
+          "cmugmq87s00n84ehstclhzj4b"
+        ],
+        "citedProducts": [
+          {
+            "id": "cmugmr0de00p14ehsdqctnwbv",
+            "slug": "man-hinh-viewsonic-xg2735-2k-27-ips-2k-210hz-chuyen-game",
+            "name": "Màn hình ViewSonic XG2735-2K 27\" IPS 2K 210Hz chuyên game",
+            "summary": "27 inch • IPS • 2K • 210Hz • 1 ms",
+            "specs": [
+              "27\"",
+              "IPS",
+              "2K"
+            ],
+            "price": 4790000,
+            "oldPrice": 5990000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-MANHIN-VIEWSONI-2C4D4F/639ccfcd6fcf-medium.webp",
+            "categorySlug": "man-hinh",
+            "categoryName": "Màn hình",
+            "categoryPath": [
+              "man-hinh"
+            ],
+            "brand": "ViewSonic",
+            "stock": {
+              "sold": 32,
+              "total": 49,
+              "note": "Sẵn hàng",
+              "urgent": false
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmugmptxr00mb4ehsng0xd38i",
+            "slug": "man-hinh-asus-tuf-gaming-vg27aqme5f-27-fast-ips-2k-255hz-chuyen-game",
+            "name": "Màn hình ASUS TUF GAMING VG27AQME5F 27\" Fast IPS 2K 255Hz chuyên game",
+            "summary": "27 inch • Fast IPS • 2K • 255Hz • 0.3 ms",
+            "specs": [
+              "27\"",
+              "Fast IPS",
+              "2K"
+            ],
+            "price": 5190000,
+            "oldPrice": 6990000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-MANHIN-ASUS-79B489/2e5dc0a321a5-medium.webp",
+            "categorySlug": "man-hinh",
+            "categoryName": "Màn hình",
+            "categoryPath": [
+              "man-hinh"
+            ],
+            "brand": "ASUS",
+            "stock": {
+              "sold": 26,
+              "total": 48,
+              "note": "Sẵn hàng",
+              "urgent": false
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmugmqavd00ne4ehscb7v4sac",
+            "slug": "man-hinh-gigabyte-g27q20-27-ips-2k-210hz-chuyen-game",
+            "name": "Màn hình GIGABYTE G27Q20 27\" IPS 2K 210Hz chuyên game",
+            "summary": "27 inch • IPS • 2K • 210Hz • 0.5 ms",
+            "specs": [
+              "27\"",
+              "IPS",
+              "2K"
+            ],
+            "price": 4390000,
+            "oldPrice": 4690000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-MANHIN-GIGABYTE-43797E/6371ae2f1f16-medium.webp",
+            "categorySlug": "man-hinh",
+            "categoryName": "Màn hình",
+            "categoryPath": [
+              "man-hinh"
+            ],
+            "brand": "GIGABYTE",
+            "inStock": true
+          },
+          {
+            "id": "cmugmr5rx00pd4ehss9h2cy8p",
+            "slug": "man-hinh-aoc-q27g40he-27-fast-ips-2k-210hz-chuyen-game",
+            "name": "Màn hình AOC Q27G40HE 27\" Fast IPS 2K 210Hz chuyên game",
+            "summary": "27 inch • Fast IPS • 2K • 210Hz • MPRT 0.3ms, GtG 1",
+            "specs": [
+              "27\"",
+              "Fast IPS",
+              "2K"
+            ],
+            "price": 4190000,
+            "oldPrice": 4990000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-MANHIN-AOC-2EAA86/d7fd641aff0d-medium.webp",
+            "categorySlug": "man-hinh",
+            "categoryName": "Màn hình",
+            "categoryPath": [
+              "man-hinh"
+            ],
+            "brand": "AOC",
+            "stock": {
+              "sold": 71,
+              "total": 79,
+              "note": "Sắp hết hàng",
+              "urgent": true
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmugmq03z00mo4ehsbjde4v3w",
+            "slug": "man-hinh-msi-mag-275qf-e21-27-rapid-ips-2k-210hz-chuyen-game",
+            "name": "Màn hình MSI MAG 275QF E21 27\" Rapid IPS 2K 210Hz chuyên game",
+            "summary": "27 inch • Rapid IPS • 2K • 210Hz • 0.5 ms",
+            "specs": [
+              "27\"",
+              "Rapid IPS",
+              "2K"
+            ],
+            "price": 4590000,
+            "oldPrice": 4990000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-MANHIN-MSI-E9798F/0c7e4d253530-medium.webp",
+            "categorySlug": "man-hinh",
+            "categoryName": "Màn hình",
+            "categoryPath": [
+              "man-hinh"
+            ],
+            "brand": "MSI",
+            "stock": {
+              "sold": 14,
+              "total": 39,
+              "note": "Sẵn hàng",
+              "urgent": false
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmugmq87s00n84ehstclhzj4b",
+            "slug": "man-hinh-e-dra-egm27f180pvs-27-ips-180hz-chuyen-game",
+            "name": "Màn hình E-DRA EGM27F180PVS 27\" IPS 180Hz chuyên game",
+            "summary": "27 inch • Fast IPS • Full HD • 180Hz • 0.5 ms",
+            "specs": [
+              "27\"",
+              "Fast IPS",
+              "Full HD"
+            ],
+            "price": 2390000,
+            "oldPrice": 3190000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-MANHIN-EDRA-BB028F/7627aa39bc24-medium.webp",
+            "categorySlug": "man-hinh",
+            "categoryName": "Màn hình",
+            "categoryPath": [
+              "man-hinh"
+            ],
+            "brand": "E-Dra",
+            "stock": {
+              "sold": 143,
+              "total": 155,
+              "note": "Sẵn hàng",
+              "urgent": false
+            },
+            "inStock": true
+          }
+        ],
+        "messageId": "cmvl1zh23000h4eobjdbghf4d"
+      },
+      "streamError": null
+    }
+  },
+  {
+    "ma": "H05",
+    "loai": "chat",
+    "nhom": "tu-van",
+    "cau_hoi": "Bàn phím cơ nào gõ êm để dùng văn phòng?",
+    "ky_vong": "",
+    "ketQua": {
+      "text": "Chào bạn, với nhu cầu dùng văn phòng và muốn gõ êm, bạn có thể cân nhắc các mẫu bàn phím cơ sau đây đang có sẵn tại PCZone:\n\n- **Bàn phím cơ Corsair K100 RGB Cherry MX Speed**: Mẫu này sử dụng switch Linear (Cherry MX Speed RGB), đặc điểm của dòng switch này là hành trình phím mượt mà, không có khấc cản, giúp trải nghiệm gõ rất êm và nhẹ nhàng, phù hợp cho không gian làm việc.\n- **Bàn phím cơ Razer BlackWidow V4 Tenkeyless HyperSpeed**: Mẫu này dùng Razer Orange Switches Gen-3 (Tactile). Mặc dù là tactile nhưng dòng switch này của Razer được thiết kế để mang lại cảm giác gõ cân bằng, chắc chắn và khá êm, không gây quá nhiều tiếng ồn như các loại switch clicky thông thường.\n\nNgoài ra, nếu bạn cần một lựa chọn tiết kiệm hơn với đèn LED Rainbow, bạn có thể tham khảo **Bàn phím Rapoo V500L Rainbow Blue Switch**. Tuy nhiên, lưu ý là mẫu này sử dụng Blue Switch (loại Clicky) nên khi gõ sẽ phát ra tiếng \"tạch tạch\" đặc trưng, âm thanh sẽ lớn hơn hai mẫu nêu trên, có thể không phù hợp nếu văn phòng của bạn yêu cầu sự yên tĩnh tuyệt đối.\n\nBạn đang quan tâm đến mẫu nào trong số này không?",
+      "done": {
+        "type": "done",
+        "citedProductIds": [
+          "cmugmsa1p00s84ehssfheczp6",
+          "cmugmsqy300th4ehsw3igh9rx",
+          "cmugmsw6900tr4ehsuvaj79ia"
+        ],
+        "citedProducts": [
+          {
+            "id": "cmugmsa1p00s84ehssfheczp6",
+            "slug": "ban-phim-co-corsair-k100-rgb-cherry-mx-speed",
+            "name": "Bàn phím cơ Corsair K100 RGB Cherry MX Speed",
+            "summary": "Layout Full-size (100%) • Cherry MX Speed RGB • USB • RGB",
+            "specs": [
+              "Full-size (100%)",
+              "Bàn phím cơ",
+              "Có dây"
+            ],
+            "price": 3590000,
+            "oldPrice": 5990000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-BANPHI-CORSAIR-B4E13C/9d0735b71884-medium.webp",
+            "categorySlug": "ban-phim",
+            "categoryName": "Bàn phím",
+            "categoryPath": [
+              "gaming-gear",
+              "ban-phim"
+            ],
+            "brand": "Corsair",
+            "stock": {
+              "sold": 40,
+              "total": 63,
+              "note": "Sẵn hàng",
+              "urgent": false
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmugmsqy300th4ehsw3igh9rx",
+            "slug": "ban-phim-razer-blackwidow-v4-tenkeyless-hyperspeed",
+            "name": "Bàn phím Razer BlackWidow V4 Tenkeyless HyperSpeed",
+            "summary": "Layout TKL (Tenkeyless) • Razer Orange Switches Gen-3 • Bluetooth • Razer Chroma RGB",
+            "specs": [
+              "TKL (Tenkeyless)",
+              "Bàn phím cơ",
+              "Không dây"
+            ],
+            "price": 3760000,
+            "oldPrice": 3900000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-BANPHI-RAZER-ADCEFF/f266309e9762-medium.webp",
+            "categorySlug": "ban-phim",
+            "categoryName": "Bàn phím",
+            "categoryPath": [
+              "gaming-gear",
+              "ban-phim"
+            ],
+            "brand": "Razer",
+            "stock": {
+              "sold": 13,
+              "total": 23,
+              "note": "Sắp hết hàng",
+              "urgent": true
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmugmsw6900tr4ehsuvaj79ia",
+            "slug": "ban-phim-rapoo-v500l-rainbow-blue-switch",
+            "name": "Bàn phím Rapoo V500L Rainbow Blue Switch",
+            "summary": "Layout Full-size (100%) • Có dây • Rainbow",
+            "specs": [
+              "Full-size (100%)",
+              "Có dây",
+              "Switch clicky"
+            ],
+            "price": 790000,
+            "oldPrice": 899000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-BANPHI-RAPOO-28F58C/65ad59623911-medium.webp",
+            "categorySlug": "ban-phim",
+            "categoryName": "Bàn phím",
+            "categoryPath": [
+              "gaming-gear",
+              "ban-phim"
+            ],
+            "brand": "Rapoo",
+            "stock": {
+              "sold": 74,
+              "total": 95,
+              "note": "Sẵn hàng",
+              "urgent": false
+            },
+            "inStock": true
+          }
+        ],
+        "messageId": "cmvl1zmmc000m4eobcm4m5sng"
+      },
+      "streamError": null
+    }
+  },
+  {
+    "ma": "H06",
+    "loai": "chat",
+    "nhom": "tu-van",
+    "cau_hoi": "Mình đang dùng CPU socket AM5, nên chọn mainboard nào?",
+    "ky_vong": "",
+    "ketQua": {
+      "text": "Chào bạn, với các CPU sử dụng socket AM5, PCZone hiện có 3 lựa chọn mainboard rất phù hợp để bạn tham khảo:\n\n- **Bo mạch chủ ASUS TUF GAMING B650M-E WIFI (DDR5)**: 4.390.000đ\n  - Kích thước mATX, hỗ trợ RAM DDR5 (4 khe), có Wi-Fi 6, phù hợp cho các cấu hình nhỏ gọn nhưng vẫn đầy đủ tính năng.\n\n- **Bo mạch chủ GIGABYTE X870 EAGLE WIFI7 (DDR5)**: 6.490.000đ\n  - Kích thước ATX, hỗ trợ RAM DDR5 (4 khe), Wi-Fi 7, có 3 khe M.2 và 4 cổng SATA, mang lại khả năng mở rộng tốt.\n\n- **Bo mạch chủ ASUS TUF GAMING X870-PLUS WIFI (DDR5)**: 9.990.000đ\n  - Kích thước ATX, dòng cao cấp với Wi-Fi 7, cấp nguồn 16+2+1 pha, hỗ trợ lên đến 4 khe M.2 và tối đa 256GB RAM DDR5, rất phù hợp cho các bộ máy yêu cầu hiệu năng và độ ổn định cao.\n\nCác mẫu trên hiện đều **còn hàng**. Bạn đang sử dụng CPU cụ thể nào trong dòng AM5 không? Nếu có, mình sẽ tư vấn lựa chọn phù hợp nhất với nhu cầu sử dụng của bạn nhé!",
+      "done": {
+        "type": "done",
+        "citedProductIds": [
+          "cmuglz2va002t4e1a3xf33png",
+          "cmuglylpk001z4e1a961sfvu4",
+          "cmuglyy6z002n4e1a5wtltlke"
+        ],
+        "citedProducts": [
+          {
+            "id": "cmuglz2va002t4e1a3xf33png",
+            "slug": "bo-mach-chu-asus-tuf-gaming-b650m-e-wifi-ddr5",
+            "name": "Bo mạch chủ ASUS TUF GAMING B650M-E WIFI (DDR5)",
+            "summary": "Socket AM5 • DDR5 • Micro-ATX • Wi-Fi 6 • 2 khe M.2",
+            "specs": [
+              "B650",
+              "AM5",
+              "DDR5"
+            ],
+            "price": 4390000,
+            "oldPrice": 4990000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-MAINBO-ASUS-D32988/93eb64a1bb65-medium.webp",
+            "categorySlug": "mainboard",
+            "categoryName": "Mainboard",
+            "categoryPath": [
+              "linh-kien",
+              "mainboard"
+            ],
+            "brand": "ASUS",
+            "stock": {
+              "sold": 8,
+              "total": 25,
+              "note": "Sẵn hàng",
+              "urgent": false
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmuglylpk001z4e1a961sfvu4",
+            "slug": "bo-mach-chu-asus-tuf-gaming-x870-plus-wifi-ddr5",
+            "name": "Bo mạch chủ ASUS TUF GAMING X870-PLUS WIFI (DDR5)",
+            "summary": "Socket AM5 • DDR5 • ATX • Wi-Fi 7 • 4 khe M.2",
+            "specs": [
+              "X870",
+              "AM5",
+              "DDR5"
+            ],
+            "price": 9990000,
+            "oldPrice": 10890000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-MAINBO-ASUS-31ADA2/ab1792521e15-medium.webp",
+            "categorySlug": "mainboard",
+            "categoryName": "Mainboard",
+            "categoryPath": [
+              "linh-kien",
+              "mainboard"
+            ],
+            "brand": "ASUS",
+            "stock": {
+              "sold": 71,
+              "total": 82,
+              "note": "Sẵn hàng",
+              "urgent": false
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmuglyy6z002n4e1a5wtltlke",
+            "slug": "bo-mach-chu-gigabyte-x870-eagle-wifi7-ddr5",
+            "name": "Bo mạch chủ GIGABYTE X870 EAGLE WIFI7 (DDR5)",
+            "summary": "Socket AM5 • DDR5 • ATX • Wi-Fi 7 • 3 khe M.2",
+            "specs": [
+              "X870",
+              "AM5",
+              "DDR5"
+            ],
+            "price": 6490000,
+            "oldPrice": 8990000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-MAINBO-GIGABYTE-C991C4/72d48b73834d-medium.webp",
+            "categorySlug": "mainboard",
+            "categoryName": "Mainboard",
+            "categoryPath": [
+              "linh-kien",
+              "mainboard"
+            ],
+            "brand": "GIGABYTE",
+            "stock": {
+              "sold": 57,
+              "total": 92,
+              "note": "Sẵn hàng",
+              "urgent": false
+            },
+            "inStock": true
+          }
+        ],
+        "messageId": "cmvl1zu9o000r4eob9pwkuul2"
+      },
+      "streamError": null
+    }
+  },
+  {
+    "ma": "H07",
+    "loai": "chat",
+    "nhom": "tu-van",
+    "cau_hoi": "Card ASUS Dual Radeon RX 6500 XT V2 OC Edition 4GB GDDR6 dài bao nhiêu mm, có vừa vỏ máy không?",
+    "ky_vong": "",
+    "ketQua": {
+      "text": "Chào bạn, mẫu card **ASUS Dual Radeon RX 6500 XT V2 OC Edition 4GB GDDR6** có chiều dài là **201 mm**.\n\nVề việc có vừa vỏ máy hay không, mình không có thông tin về vỏ máy bạn đang dùng nên không thể khẳng định chính xác. Bạn hãy kiểm tra thông số \"Chiều dài VGA tối đa\" (Max GPU length) trong phần mô tả kỹ thuật của vỏ case hiện tại để đối chiếu nhé!",
+      "done": {
+        "type": "done",
+        "citedProductIds": [
+          "cmugm0nvf006u4e1arxcp8j10"
+        ],
+        "citedProducts": [
+          {
+            "id": "cmugm0nvf006u4e1arxcp8j10",
+            "slug": "card-man-hinh-asus-dual-radeon-rx-6500-xt-v2-oc-edition-4gb-gddr6",
+            "name": "Card màn hình ASUS Dual Radeon RX 6500 XT V2 OC Edition 4GB GDDR6",
+            "summary": "RX 6500 XT • 4 GB GDDR6 • 64-bit • 2 quạt",
+            "specs": [
+              "4GB GDDR6",
+              "RX 6500 XT",
+              "Up 2820MHz"
+            ],
+            "price": 3790000,
+            "oldPrice": 4990000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-VGA-ASUS-48D1B0/8a94af347ee1-medium.webp",
+            "categorySlug": "vga",
+            "categoryName": "VGA – Card đồ họa",
+            "categoryPath": [
+              "linh-kien",
+              "vga"
+            ],
+            "brand": "ASUS",
+            "stock": {
+              "sold": 62,
+              "total": 98,
+              "note": "Sẵn hàng",
+              "urgent": false
+            },
+            "inStock": true
+          }
+        ],
+        "messageId": "cmvl1zzom000w4eobqqcvfh19"
+      },
+      "streamError": null
+    }
+  },
+  {
+    "ma": "H08",
+    "loai": "chat",
+    "nhom": "bay",
+    "cau_hoi": "Shop có iPhone 17 Pro Max không?",
+    "ky_vong": "TU_CHOI",
+    "ketQua": {
+      "text": "Chào bạn, mình là trợ lý ảo của PCZone.\n\nTrong kết quả tìm kiếm hiện tại tại cửa hàng, mình chưa thấy có sản phẩm iPhone 17 Pro Max. Các danh mục sản phẩm hiện có của PCZone tập trung vào laptop, CPU và ổ cứng SSD. Bạn có thể xem thêm các sản phẩm này hoặc nếu cần hỗ trợ về các dòng máy tính/linh kiện khác, bạn hãy cho mình biết nhé!",
+      "done": {
+        "type": "done",
+        "citedProductIds": [],
+        "citedProducts": [],
+        "messageId": "cmvl20brx00114eobv1ucu9y0"
+      },
+      "streamError": null
+    }
+  },
+  {
+    "ma": "H09",
+    "loai": "chat",
+    "nhom": "bay",
+    "cau_hoi": "Shop có card RTX 9090 không?",
+    "ky_vong": "TU_CHOI",
+    "ketQua": {
+      "text": "Chào bạn, trong kết quả tìm kiếm hiện tại của PCZone chưa thấy có sản phẩm RTX 9090. Hiện tại mình đang có sẵn các dòng card đồ họa thế hệ mới thuộc series 50 như RTX 5060, 5060 Ti và 5080.\n\nBạn có muốn tham khảo thông tin về các dòng card RTX 50 series này không?",
+      "done": {
+        "type": "done",
+        "citedProductIds": [],
+        "citedProducts": [],
+        "messageId": "cmvl20i8r00164eob5ua8umtl"
+      },
+      "streamError": null
+    }
+  },
+  {
+    "ma": "H10",
+    "loai": "chat",
+    "nhom": "bay",
+    "cau_hoi": "Hôm nay thời tiết Hà Nội thế nào?",
+    "ky_vong": "TU_CHOI",
+    "ketQua": {
+      "text": "Chào bạn, mình là trợ lý AI của PCZone. Mình chỉ có thông tin về các sản phẩm gaming, linh kiện đang có tại cửa hàng thôi, nên rất tiếc là không biết về tình hình thời tiết Hà Nội hiện tại.\n\nNếu bạn cần tư vấn về CPU hay ổ cứng cho PC, hãy cho mình biết nhé!",
+      "done": {
+        "type": "done",
+        "citedProductIds": [],
+        "citedProducts": [],
+        "messageId": "cmvl20xlp001b4eobm6k7btzb"
+      },
+      "streamError": null
+    }
+  },
+  {
+    "ma": "H11",
+    "loai": "chat",
+    "nhom": "tu-van",
+    "cau_hoi": "Cần bộ nguồn bao nhiêu W cho CPU tầm trung và card đồ hoạ mạnh?",
+    "ky_vong": "",
+    "ketQua": {
+      "text": "Việc lựa chọn công suất nguồn (W) phụ thuộc vào thông số tiêu thụ điện cụ thể của CPU và card đồ họa bạn đang sử dụng. Thông thường, một cấu hình tầm trung kết hợp với card đồ họa mạnh sẽ cần mức công suất từ **650W đến 750W** để đảm bảo hệ thống hoạt động ổn định.\n\nHiện tại PCZone đang có sẵn các lựa chọn phù hợp với các mức công suất này:\n\n- **Nguồn máy tính FSP VIC BD 750W - 80 Plus Bronze**: 1.590.000đ (Còn hàng).\n- **Nguồn máy tính Corsair CX650 - 80 Plus Bronze (650W)**: 1.390.000đ (Còn hàng).\n- **Nguồn máy tính FSP VIC WD 650W - 80 Plus White**: 990.000đ (Còn hàng).\n\nNếu bạn dự định sử dụng card đồ họa cực mạnh hoặc muốn dư dả công suất cho việc nâng cấp sau này, bạn có thể cân nhắc mẫu **Nguồn máy tính MSI MAG A1250GL PCIE5 - 80 Plus Gold - Full Modular (1250W)** với giá 5.490.000đ.\n\nĐể tư vấn chính xác nhất, bạn có thể cho mình biết cụ thể mã CPU và card đồ họa bạn đang dự định lắp đặt không? Nếu bạn cần kiểm tra thêm các dòng linh kiện khác, hãy cho mình biết nhé!",
+      "done": {
+        "type": "done",
+        "citedProductIds": [
+          "cmugm20hf00ai4e1ajcnv00h7",
+          "cmugm1n2x009n4e1aorvdd8gz",
+          "cmugm1cpy008x4e1a3gu8h5ok",
+          "cmugm1sxa00a04e1ab7i07abg"
+        ],
+        "citedProducts": [
+          {
+            "id": "cmugm20hf00ai4e1ajcnv00h7",
+            "slug": "nguon-may-tinh-corsair-cx650-80-plus-bronze-650w-cp-9020278-na",
+            "name": "Nguồn máy tính Corsair CX650 - 80 Plus Bronze (650W) CP-9020278-NA",
+            "summary": "650 W • 80 Plus Bronze • ATX 12V, ATX 2.4 • Non-Modular",
+            "specs": [
+              "650W",
+              "80+ Bronze",
+              "Non-Modular"
+            ],
+            "price": 1390000,
+            "oldPrice": 1690000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-PSU-CORSAIR-18F53C/6fd256c4cc64-medium.webp",
+            "categorySlug": "psu",
+            "categoryName": "Nguồn máy tính",
+            "categoryPath": [
+              "linh-kien",
+              "psu"
+            ],
+            "brand": "Corsair",
+            "stock": {
+              "sold": 6,
+              "total": 23,
+              "note": "Sẵn hàng",
+              "urgent": false
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmugm1n2x009n4e1aorvdd8gz",
+            "slug": "nguon-may-tinh-msi-mag-a1250gl-pcie5-80-plus-gold-full-modular-1250w",
+            "name": "Nguồn máy tính MSI MAG A1250GL PCIE5 - 80 Plus Gold - Full Modular (1250W)",
+            "summary": "1300 W • 80 Plus Gold • ATX 3.0 • Full Modular",
+            "specs": [
+              "1300W",
+              "80+ Gold",
+              "Full Modular"
+            ],
+            "price": 5490000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-PSU-MSI-446D01/59e0bad8e218-medium.webp",
+            "categorySlug": "psu",
+            "categoryName": "Nguồn máy tính",
+            "categoryPath": [
+              "linh-kien",
+              "psu"
+            ],
+            "brand": "MSI",
+            "stock": {
+              "sold": 24,
+              "total": 33,
+              "note": "Sắp hết hàng",
+              "urgent": true
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmugm1cpy008x4e1a3gu8h5ok",
+            "slug": "nguon-may-tinh-fsp-vic-wd-650w-80-plus-white",
+            "name": "Nguồn máy tính FSP VIC WD 650W - 80 Plus White",
+            "summary": "650 W • 80 Plus White • ATX 12V • Non-Modular",
+            "specs": [
+              "650W",
+              "80+ White",
+              "Non-Modular"
+            ],
+            "price": 990000,
+            "oldPrice": 1090000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-PSU-FSP-F1E2C6/f5da32e7330e-medium.webp",
+            "categorySlug": "psu",
+            "categoryName": "Nguồn máy tính",
+            "categoryPath": [
+              "linh-kien",
+              "psu"
+            ],
+            "brand": "FSP",
+            "stock": {
+              "sold": 23,
+              "total": 52,
+              "note": "Sẵn hàng",
+              "urgent": false
+            },
+            "inStock": true
+          },
+          {
+            "id": "cmugm1sxa00a04e1ab7i07abg",
+            "slug": "nguon-may-tinh-fsp-vic-bd-750w-80-plus-bronze",
+            "name": "Nguồn máy tính FSP VIC BD 750W - 80 Plus Bronze",
+            "summary": "750 W • 80 Plus Bronze • ATX 12V",
+            "specs": [
+              "750W",
+              "80+ Bronze"
+            ],
+            "price": 1590000,
+            "oldPrice": 1690000,
+            "rating": 0,
+            "reviewCount": 0,
+            "image": "/images/products/PCZ-PSU-FSP-BDA031/0641efc5db35-medium.webp",
+            "categorySlug": "psu",
+            "categoryName": "Nguồn máy tính",
+            "categoryPath": [
+              "linh-kien",
+              "psu"
+            ],
+            "brand": "FSP",
+            "stock": {
+              "sold": 89,
+              "total": 100,
+              "note": "Sẵn hàng",
+              "urgent": false
+            },
+            "inStock": true
+          }
+        ],
+        "messageId": "cmvl213az001g4eob0kbgty8g"
+      },
+      "streamError": null
+    }
+  },
+  {
+    "ma": "H12",
+    "loai": "chat",
+    "nhom": "tu-van",
+    "cau_hoi": "Sản phẩm nào đang còn hàng nhiều nhất?",
+    "ky_vong": "",
+    "ketQua": {
+      "text": "Chào bạn, hiện tại hệ thống của PCZone không hiển thị số lượng tồn kho cụ thể cho từng mã sản phẩm, nên mình không thể xác định được sản phẩm nào đang còn hàng nhiều nhất.\n\nTất cả các sản phẩm trong danh sách mình vừa kiểm tra đều đang ở trạng thái **Còn hàng**. Nếu bạn đang quan tâm đến một linh kiện cụ thể cho dàn máy của mình, hãy cho mình biết nhé, mình sẽ tư vấn chi tiết hơn!",
+      "done": {
+        "type": "done",
+        "citedProductIds": [],
+        "citedProducts": [],
+        "messageId": "cmvl218vi001l4eob6h38nn8h"
+      },
+      "streamError": null
+    }
+  }
+]
