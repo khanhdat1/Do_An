@@ -12,7 +12,7 @@ stateDiagram-v2
   CONFIRMED --> PACKING: Bắt đầu đóng gói
   PACKING --> SHIPPING: Bắt đầu giao (mã vận đơn)
   SHIPPING --> DELIVERED: Giao thành công
-  PENDING --> CANCELLED: Khách huỷ (chưa trả tiền) / nhân viên huỷ
+  PENDING --> CANCELLED: Khách huỷ (chưa trả tiền) / nhân viên huỷ / hệ thống tự huỷ (quá hạn thanh toán)
   CONFIRMED --> CANCELLED
   PACKING --> CANCELLED: Nhân viên huỷ
   SHIPPING --> CANCELLED

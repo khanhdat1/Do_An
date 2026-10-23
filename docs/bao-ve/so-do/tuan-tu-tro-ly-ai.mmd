@@ -5,21 +5,23 @@ sequenceDiagram
   participant A as API
   participant DB as MySQL
   participant G as Gemini
-  KH->>W: "Laptop đồ hoạ dưới 30 triệu?"
-  W->>A: POST /api/ai/chat
+  KH->>W: "Laptop đồ hoạ dưới 30 triệu?" rồi "Còn con nào rẻ hơn không?"
+  W->>A: POST /api/ai/chat (kèm mã hội thoại)
   A->>A: Tính năng đang bật? Giới hạn tần suất
-  A->>DB: Lưu câu hỏi vào hội thoại
-  A->>A: Tách cụm giá "dưới 30 triệu"
-  A->>G: Embedding câu hỏi
+  A->>DB: Lưu câu hỏi, đọc 12 tin nhắn gần nhất
+  A->>A: Câu truy hồi = câu hỏi + tối đa 2 câu trước cùng chủ đề, tách cụm giá, mang khoảng giá sang câu tiếp nối
+  A->>DB: Sản phẩm đang bán trong khoảng giá
+  A->>G: Embedding câu truy hồi
   G-->>A: Vector
-  A->>A: Cosine similarity với chỉ mục embedding sản phẩm → 8 ứng viên
-  A->>DB: Giá, tồn kho thật của sản phẩm ứng viên
-  A->>G: Sản phẩm ứng viên + 12 tin nhắn gần nhất + câu hỏi (stream)
+  A->>A: Cosine similarity, chỉ xếp hạng trong khoảng giá → 8 ứng viên
+  A->>DB: Giá, tồn kho, thông số thật của sản phẩm ứng viên
+  A->>G: Ứng viên kèm thông số + 12 tin nhắn gần nhất + câu hỏi (stream)
   loop Từng đoạn trả lời
     G-->>A: đoạn chữ
     A-->>W: SSE "chunk"
   end
-  A->>A: Tự đối chiếu sản phẩm được nhắc (không tin AI tự khai)
+  A->>A: Tự đối chiếu sản phẩm được nhắc, bắt buộc khớp mã model (không tin AI tự khai)
   A->>DB: Lưu câu trả lời + sản phẩm trích dẫn
   A-->>W: SSE "done" + sản phẩm trích dẫn
   W-->>KH: Câu trả lời + thẻ sản phẩm có link
+  Note over W,A: Tải lại trang: GET /api/ai/chat/conversations/:id mở lại hội thoại (chỉ chủ hội thoại)

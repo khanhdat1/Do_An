@@ -229,7 +229,7 @@ const HAND = {
   CONFIRMED --> PACKING: Bắt đầu đóng gói
   PACKING --> SHIPPING: Bắt đầu giao (mã vận đơn)
   SHIPPING --> DELIVERED: Giao thành công
-  PENDING --> CANCELLED: Khách huỷ (chưa trả tiền) / nhân viên huỷ
+  PENDING --> CANCELLED: Khách huỷ (chưa trả tiền) / nhân viên huỷ / hệ thống tự huỷ (quá hạn thanh toán)
   CONFIRMED --> CANCELLED
   PACKING --> CANCELLED: Nhân viên huỷ
   SHIPPING --> CANCELLED
@@ -256,17 +256,22 @@ const HAND = {
   A->>A: Kiểm tra dữ liệu (Zod), phương thức thanh toán đang bật
   A->>DB: BEGIN TRANSACTION
   A->>DB: Đọc giỏ hàng + sản phẩm
-  alt Hết hàng hoặc sản phẩm ngừng bán
+  alt Hết hàng, ngừng bán hoặc quá 50 cái một dòng
     A-->>W: 409 "không còn đủ số lượng"
   end
-  A->>DB: Kiểm tra lại mã giảm giá (điều kiện, lượt dùng)
+  A->>DB: Giành giỏ hàng: xoá đúng các dòng giỏ vừa đọc
+  alt Số dòng xoá được không khớp (lượt bấm khác đã đặt đơn)
+    A-->>W: 409, không tạo đơn thứ hai
+  end
+  A->>DB: Kiểm tra lại mã giảm giá (khoá lượt dùng của khách bằng FOR UPDATE)
   A->>A: Tổng = tạm tính − giảm giá + phí ship (tính trên tạm tính trước giảm)
-  A->>DB: Tạo Order (mã PCZyyyymmdd-nnnn), ghi nhận mã giảm giá
+  A->>DB: Tạo Order (mã PCZyyyymmdd-XXXXXX, 6 ký tự ngẫu nhiên), ghi nhận mã giảm giá
   loop Từng sản phẩm
     A->>DB: Trừ kho có điều kiện (tồn ≥ số lượng), InventoryTransaction, OrderItem (giá tại lúc mua)
   end
-  A->>DB: OrderStatusHistory (Chờ xác nhận), Payment (chờ thanh toán), xoá giỏ
+  A->>DB: OrderStatusHistory (Chờ xác nhận), Payment (chờ thanh toán)
   A->>DB: COMMIT
+  Note over A,DB: Khoá chết (P2034): chạy lại cả transaction, tối đa 5 lần
   A-->>W: 201 Created
   W-->>KH: Trang đơn hàng (chuyển khoản / MoMo: hiện mã QR)`,
   },
@@ -287,12 +292,15 @@ const HAND = {
   A->>G: Danh mục linh kiện (mã) + yêu cầu, đòi trả JSON
   G-->>A: Cấu hình: mã từng món + lý do
   A->>A: Bỏ mã không có thật, kiểm tra 9 luật tương thích
-  opt Còn lỗi
+  opt Còn lỗi (bỏ qua nếu lượt đầu quá 20 giây và hệ thống tự xử lý được)
     A->>G: Nhờ sửa đúng 1 lần, kèm danh sách lỗi
     G-->>A: Cấu hình đã sửa
   end
   opt Vẫn vượt ngân sách
     A->>A: Tự đổi món rẻ hơn cùng loại (nhánh cận, không dùng AI), giữ tương thích
+  end
+  opt Nhu cầu hiệu năng mà dùng chưa tới 85% ngân sách
+    A->>A: Tự nâng vài món lên món tốt hơn cùng loại (nhánh cận, không dùng AI), không vượt ngân sách
   end
   A->>DB: Lưu PcBuild + mã chia sẻ 8 ký tự
   A-->>W: Cấu hình, lý do, trạng thái sửa và điều chỉnh
@@ -307,24 +315,26 @@ const HAND = {
   participant A as API
   participant DB as MySQL
   participant G as Gemini
-  KH->>W: "Laptop đồ hoạ dưới 30 triệu?"
-  W->>A: POST /api/ai/chat
+  KH->>W: "Laptop đồ hoạ dưới 30 triệu?" rồi "Còn con nào rẻ hơn không?"
+  W->>A: POST /api/ai/chat (kèm mã hội thoại)
   A->>A: Tính năng đang bật? Giới hạn tần suất
-  A->>DB: Lưu câu hỏi vào hội thoại
-  A->>A: Tách cụm giá "dưới 30 triệu"
-  A->>G: Embedding câu hỏi
+  A->>DB: Lưu câu hỏi, đọc 12 tin nhắn gần nhất
+  A->>A: Câu truy hồi = câu hỏi + tối đa 2 câu trước cùng chủ đề, tách cụm giá, mang khoảng giá sang câu tiếp nối
+  A->>DB: Sản phẩm đang bán trong khoảng giá
+  A->>G: Embedding câu truy hồi
   G-->>A: Vector
-  A->>A: Cosine similarity với chỉ mục embedding sản phẩm → 8 ứng viên
-  A->>DB: Giá, tồn kho thật của sản phẩm ứng viên
-  A->>G: Sản phẩm ứng viên + 12 tin nhắn gần nhất + câu hỏi (stream)
+  A->>A: Cosine similarity, chỉ xếp hạng trong khoảng giá → 8 ứng viên
+  A->>DB: Giá, tồn kho, thông số thật của sản phẩm ứng viên
+  A->>G: Ứng viên kèm thông số + 12 tin nhắn gần nhất + câu hỏi (stream)
   loop Từng đoạn trả lời
     G-->>A: đoạn chữ
     A-->>W: SSE "chunk"
   end
-  A->>A: Tự đối chiếu sản phẩm được nhắc (không tin AI tự khai)
+  A->>A: Tự đối chiếu sản phẩm được nhắc, bắt buộc khớp mã model (không tin AI tự khai)
   A->>DB: Lưu câu trả lời + sản phẩm trích dẫn
   A-->>W: SSE "done" + sản phẩm trích dẫn
-  W-->>KH: Câu trả lời + thẻ sản phẩm có link`,
+  W-->>KH: Câu trả lời + thẻ sản phẩm có link
+  Note over W,A: Tải lại trang: GET /api/ai/chat/conversations/:id mở lại hội thoại (chỉ chủ hội thoại)`,
   },
   "tuan-tu-dang-nhap-mxh": {
     title: "Sơ đồ tuần tự — Đăng nhập Google / Facebook",

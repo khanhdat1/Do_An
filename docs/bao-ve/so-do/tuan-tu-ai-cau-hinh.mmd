@@ -13,12 +13,15 @@ sequenceDiagram
   A->>G: Danh mục linh kiện (mã) + yêu cầu, đòi trả JSON
   G-->>A: Cấu hình: mã từng món + lý do
   A->>A: Bỏ mã không có thật, kiểm tra 9 luật tương thích
-  opt Còn lỗi
+  opt Còn lỗi (bỏ qua nếu lượt đầu quá 20 giây và hệ thống tự xử lý được)
     A->>G: Nhờ sửa đúng 1 lần, kèm danh sách lỗi
     G-->>A: Cấu hình đã sửa
   end
   opt Vẫn vượt ngân sách
     A->>A: Tự đổi món rẻ hơn cùng loại (nhánh cận, không dùng AI), giữ tương thích
+  end
+  opt Nhu cầu hiệu năng mà dùng chưa tới 85% ngân sách
+    A->>A: Tự nâng vài món lên món tốt hơn cùng loại (nhánh cận, không dùng AI), không vượt ngân sách
   end
   A->>DB: Lưu PcBuild + mã chia sẻ 8 ký tự
   A-->>W: Cấu hình, lý do, trạng thái sửa và điều chỉnh

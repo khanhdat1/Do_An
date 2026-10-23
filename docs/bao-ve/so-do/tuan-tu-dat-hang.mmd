@@ -9,16 +9,21 @@ sequenceDiagram
   A->>A: Kiểm tra dữ liệu (Zod), phương thức thanh toán đang bật
   A->>DB: BEGIN TRANSACTION
   A->>DB: Đọc giỏ hàng + sản phẩm
-  alt Hết hàng hoặc sản phẩm ngừng bán
+  alt Hết hàng, ngừng bán hoặc quá 50 cái một dòng
     A-->>W: 409 "không còn đủ số lượng"
   end
-  A->>DB: Kiểm tra lại mã giảm giá (điều kiện, lượt dùng)
+  A->>DB: Giành giỏ hàng: xoá đúng các dòng giỏ vừa đọc
+  alt Số dòng xoá được không khớp (lượt bấm khác đã đặt đơn)
+    A-->>W: 409, không tạo đơn thứ hai
+  end
+  A->>DB: Kiểm tra lại mã giảm giá (khoá lượt dùng của khách bằng FOR UPDATE)
   A->>A: Tổng = tạm tính − giảm giá + phí ship (tính trên tạm tính trước giảm)
-  A->>DB: Tạo Order (mã PCZyyyymmdd-nnnn), ghi nhận mã giảm giá
+  A->>DB: Tạo Order (mã PCZyyyymmdd-XXXXXX, 6 ký tự ngẫu nhiên), ghi nhận mã giảm giá
   loop Từng sản phẩm
     A->>DB: Trừ kho có điều kiện (tồn ≥ số lượng), InventoryTransaction, OrderItem (giá tại lúc mua)
   end
-  A->>DB: OrderStatusHistory (Chờ xác nhận), Payment (chờ thanh toán), xoá giỏ
+  A->>DB: OrderStatusHistory (Chờ xác nhận), Payment (chờ thanh toán)
   A->>DB: COMMIT
+  Note over A,DB: Khoá chết (P2034): chạy lại cả transaction, tối đa 5 lần
   A-->>W: 201 Created
   W-->>KH: Trang đơn hàng (chuyển khoản / MoMo: hiện mã QR)
