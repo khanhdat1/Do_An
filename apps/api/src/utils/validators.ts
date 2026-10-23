@@ -12,6 +12,36 @@ export const phoneSchema = z
   .transform((value) => value.replace(/[\s.-]/g, ""))
   .pipe(z.string().regex(/^(0|\+84)\d{9,10}$/, "Số điện thoại không hợp lệ"));
 
+/** Email đăng nhập: chuẩn hoá chữ thường trước khi lưu/so khớp — đăng ký, đăng nhập, quản trị sửa email khách */
+export const emailSchema = z
+  .string({ error: "Vui lòng nhập email" })
+  .trim()
+  .toLowerCase()
+  .max(254, "Email quá dài")
+  .pipe(z.email("Email không hợp lệ"));
+
+/** Số điện thoại hồ sơ (tuỳ chọn): như `phoneSchema` nhưng để trống cũng được — đăng ký, sửa hồ sơ, quản trị sửa khách */
+export const optionalPhoneSchema = z
+  .string()
+  .trim()
+  .transform((value) => value.replace(/[\s.-]/g, ""))
+  .pipe(z.union([z.literal(""), z.string().regex(/^(0|\+84)\d{9,10}$/, "Số điện thoại không hợp lệ")]))
+  .transform((value) => value || undefined)
+  .optional();
+
+/**
+ * Mật khẩu mới (đăng ký, đặt lại, quản trị cấp lại cho khách). bcrypt chỉ đọc 72 byte đầu và lặng lẽ bỏ phần
+ * còn lại, nên phải chặn ở đây: nếu không, hai mật khẩu chỉ khác nhau sau byte thứ 72 sẽ bị coi là một.
+ */
+export const newPasswordSchema = z
+  .string({ error: "Vui lòng nhập mật khẩu" })
+  .min(8, "Mật khẩu tối thiểu 8 ký tự")
+  .refine((value) => Buffer.byteLength(value, "utf8") <= 72, "Mật khẩu quá dài (tối đa 72 byte)")
+  .refine(
+    (value) => /[A-Za-z]/.test(value) && /\d/.test(value),
+    "Mật khẩu phải gồm cả chữ và số",
+  );
+
 /** Các trường của một địa chỉ giao hàng — dùng chung cho sổ địa chỉ (`addresses.routes.ts`) và địa chỉ nhập mới lúc đặt hàng (`orders.routes.ts`) */
 export const addressInputSchema = z.object({
   recipientName: z

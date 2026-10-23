@@ -8,6 +8,7 @@ export interface CustomerExportFilterLabels {
 }
 
 const COLUMNS = [
+  { key: "code", header: "Mã KH", width: 12 },
   { key: "fullName", header: "Họ tên", width: 26 },
   { key: "email", header: "Email", width: 28 },
   { key: "phone", header: "Số điện thoại", width: 16 },
@@ -48,7 +49,8 @@ export async function buildCustomersReportWorkbook(customers: AdminCustomerSumma
       fullName: customer.fullName,
       email: customer.email,
       phone: customer.phone ?? "—",
-      status: customer.isActive ? "Đang hoạt động" : "Đã khoá",
+      code: customer.code,
+      status: customer.isActive ? "Đang hoạt động" : customer.lockReason ? `Đã khoá: ${customer.lockReason}` : "Đã khoá",
       orderCount: customer.orderCount,
       totalSpent: customer.totalSpent,
       createdAt: formatDate(customer.createdAt),

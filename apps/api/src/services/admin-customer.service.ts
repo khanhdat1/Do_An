@@ -1,8 +1,22 @@
+import bcrypt from "bcryptjs";
 import { prisma, type Prisma, type UserRole } from "@pczone/db";
 import { orderSummaryInclude, toAdminOrderSummaryDto } from "../mappers/order.mapper.js";
-import { NotFoundError } from "../middleware/errors.js";
-import type { AdminCustomerDetailDto, AdminCustomerSummaryDto, AdminOrderSummaryDto, Paginated } from "../types/dto.js";
+import { BadRequestError, ConflictError, NotFoundError } from "../middleware/errors.js";
+import type {
+  AdminCustomerAddressDto,
+  AdminCustomerDetailDto,
+  AdminCustomerListDto,
+  AdminCustomerPasswordResetDto,
+  AdminCustomerSummaryDto,
+  AdminOrderSummaryDto,
+  Paginated,
+} from "../types/dto.js";
+import { customerCode, deleteBlockReason, generateTemporaryPassword, OPEN_ORDER_STATUSES } from "../utils/admin-customer.js";
+import { isUniqueViolation } from "../utils/prisma-errors.js";
+import { revokeSessionsOf } from "../utils/session-revocation.js";
 import { logAdminAction } from "./audit-log.service.js";
+import { BCRYPT_COST } from "./auth.service.js";
+import { recomputeProductRating } from "./review.service.js";
 
 export interface AdminActor {
   userId: string;
@@ -21,6 +35,8 @@ const CUSTOMER_SELECT = {
   email: true,
   phone: true,
   isActive: true,
+  lockReason: true,
+  lockedAt: true,
   createdAt: true,
   lastLoginAt: true,
 } satisfies Prisma.UserSelect;
@@ -61,10 +77,13 @@ async function attachOrderStats<T extends { id: string }>(
 function toSummaryDto(row: CustomerRow & { orderCount: number; totalSpent: number }): AdminCustomerSummaryDto {
   return {
     id: row.id,
+    code: customerCode(row.id),
     fullName: row.fullName,
     email: row.email,
     phone: row.phone ?? undefined,
     isActive: row.isActive,
+    lockReason: row.isActive ? undefined : (row.lockReason ?? undefined),
+    lockedAt: row.isActive ? undefined : row.lockedAt?.toISOString(),
     orderCount: row.orderCount,
     totalSpent: row.totalSpent,
     createdAt: row.createdAt.toISOString(),
@@ -82,15 +101,19 @@ function buildCustomerWhere(filters: AdminCustomerFilters): Prisma.UserWhereInpu
   return where;
 }
 
-/** `GET /api/admin/customers` — mặc định mọi khách hàng (đang hoạt động + đã khoá), mới đăng ký trước */
+/**
+ * `GET /api/admin/customers` — mặc định mọi khách hàng (đang hoạt động + đã khoá), mới đăng ký trước. Kèm số tài khoản
+ * theo trạng thái với CÙNG ô tìm kiếm, để các tab "Tất cả / Đang hoạt động / Đã khoá" hiện đúng con số.
+ */
 export async function listCustomersForAdmin(
   filters: AdminCustomerFilters,
   page: number,
   pageSize: number,
-): Promise<Paginated<AdminCustomerSummaryDto>> {
+): Promise<AdminCustomerListDto> {
   const where = buildCustomerWhere(filters);
+  const searchOnly = buildCustomerWhere({ search: filters.search });
 
-  const [total, rows] = await Promise.all([
+  const [total, rows, all, active] = await Promise.all([
     prisma.user.count({ where }),
     prisma.user.findMany({
       where,
@@ -99,6 +122,8 @@ export async function listCustomersForAdmin(
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
+    prisma.user.count({ where: searchOnly }),
+    prisma.user.count({ where: { ...searchOnly, isActive: true } }),
   ]);
 
   const withStats = await attachOrderStats(rows);
@@ -108,6 +133,7 @@ export async function listCustomersForAdmin(
     pageSize,
     total,
     totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    counts: { all, active, locked: all - active },
   };
 }
 
@@ -135,10 +161,125 @@ async function findCustomerOrThrow(id: string): Promise<CustomerRow & { emailVer
   return user;
 }
 
+const ADDRESS_SELECT = {
+  id: true,
+  recipientName: true,
+  phone: true,
+  province: true,
+  district: true,
+  ward: true,
+  streetAddress: true,
+} satisfies Prisma.AddressSelect;
+
+/** Địa chỉ mặc định; khách chưa đánh dấu mặc định thì lấy địa chỉ mới nhất — đúng cách trang thanh toán chọn sẵn */
+function findDefaultAddress(db: Prisma.TransactionClient, userId: string) {
+  return db.address.findFirst({
+    where: { userId },
+    select: ADDRESS_SELECT,
+    orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+  });
+}
+
 export async function getCustomerForAdmin(id: string): Promise<AdminCustomerDetailDto> {
   const user = await findCustomerOrThrow(id);
-  const [withStats] = await attachOrderStats([user]);
-  return { ...toSummaryDto(withStats), emailVerifiedAt: user.emailVerifiedAt?.toISOString() };
+  const [[withStats], address] = await Promise.all([attachOrderStats([user]), findDefaultAddress(prisma, id)]);
+  const defaultAddress: AdminCustomerAddressDto | undefined = address
+    ? {
+        recipientName: address.recipientName,
+        phone: address.phone,
+        province: address.province,
+        district: address.district,
+        ward: address.ward,
+        streetAddress: address.streetAddress,
+      }
+    : undefined;
+  return { ...toSummaryDto(withStats), emailVerifiedAt: user.emailVerifiedAt?.toISOString(), defaultAddress };
+}
+
+export interface AdminCustomerUpdateInput {
+  fullName: string;
+  email: string;
+  phone?: string;
+  /** Không gửi = giữ nguyên sổ địa chỉ */
+  address?: { province: string; district: string; ward: string; streetAddress: string };
+}
+
+/**
+ * `PATCH /api/admin/customers/:id` — quản trị sửa họ tên, email, số điện thoại và địa chỉ mặc định của khách. Đổi email
+ * thì email mới coi như CHƯA xác minh (khách phải xác minh lại). Địa chỉ: sửa địa chỉ mặc định nếu đã có, chưa có thì tạo
+ * mới làm mặc định (người nhận = họ tên, số điện thoại = số của khách). Nhật ký ghi đúng các trường đã đổi.
+ */
+export async function updateCustomerForAdmin(
+  id: string,
+  input: AdminCustomerUpdateInput,
+  admin: AdminActor,
+): Promise<AdminCustomerDetailDto> {
+  const existing = await findCustomerOrThrow(id);
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (input.email !== existing.email) {
+        const taken = await tx.user.findFirst({ where: { email: input.email, id: { not: id } }, select: { id: true } });
+        if (taken) throw new ConflictError("Email này đã được tài khoản khác sử dụng");
+      }
+
+      const emailChanged = input.email !== existing.email;
+      await tx.user.update({
+        where: { id },
+        data: {
+          fullName: input.fullName,
+          email: input.email,
+          phone: input.phone ?? null,
+          ...(emailChanged ? { emailVerifiedAt: null } : {}),
+        },
+      });
+
+      const before: Record<string, string | null> = {};
+      const after: Record<string, string | null> = {};
+      for (const key of ["fullName", "email", "phone"] as const) {
+        const oldValue = existing[key] ?? undefined;
+        const newValue = input[key] ?? undefined;
+        if (oldValue !== newValue) {
+          before[key] = oldValue ?? null;
+          after[key] = newValue ?? null;
+        }
+      }
+
+      if (input.address) {
+        const current = await findDefaultAddress(tx, id);
+        const phone = input.phone ?? current?.phone;
+        if (!phone) throw new BadRequestError("Cần số điện thoại của khách để lưu địa chỉ giao hàng");
+        if (current) {
+          await tx.address.update({ where: { id: current.id }, data: { ...input.address, isDefault: true } });
+        } else {
+          await tx.address.create({
+            data: { userId: id, recipientName: input.fullName, phone, ...input.address, isDefault: true },
+          });
+        }
+        const oldAddress = current ? [current.streetAddress, current.ward, current.district, current.province].join(", ") : null;
+        const newAddress = [input.address.streetAddress, input.address.ward, input.address.district, input.address.province].join(", ");
+        if (oldAddress !== newAddress) {
+          before.address = oldAddress;
+          after.address = newAddress;
+        }
+      }
+
+      await logAdminAction(tx, {
+        actorId: admin.userId,
+        actorRole: admin.role,
+        action: "customer.updated",
+        targetType: "User",
+        targetId: id,
+        metadata: { email: existing.email, before, after },
+      });
+    });
+  } catch (error) {
+    // Hai quản trị cùng đổi sang một email: lượt sau vướng ràng buộc duy nhất của cột email
+    if (isUniqueViolation(error)) throw new ConflictError("Email này đã được tài khoản khác sử dụng");
+    throw error;
+  }
+
+  return getCustomerForAdmin(id);
 }
 
 /** `GET /api/admin/customers/:id/orders` — lịch sử mua hàng, dùng lại đúng include/mapper của `GET /api/admin/orders` */
@@ -171,10 +312,10 @@ export async function listOrdersForCustomer(
 }
 
 /**
- * Khoá/mở khoá tài khoản khách hàng. `User.isActive=false` đã được `auth.service.ts` kiểm ở
- * đăng nhập VÀ ở làm mới phiên (refresh) — vì access token không tra DB mỗi request, một khách đang có
- * access token còn hạn (tối đa 15 phút) vẫn dùng được tới khi token đó hết hạn hoặc họ refresh, không bị
- * đá ra ngay lập tức. Đây là đánh đổi có chủ đích, không phải thiếu sót.
+ * Khoá/mở khoá tài khoản khách hàng. Khoá bắt buộc có lý do (kiểm ở route), lưu vào `User.lockReason` để trang quản trị
+ * hiện lại. Khoá xong khách bị đăng xuất NGAY: xoá mọi refresh token (không làm mới phiên được nữa — `auth.service.ts`
+ * cũng từ chối tài khoản `isActive=false` ở đăng nhập và làm mới phiên) và thu hồi mọi access token đang cầm
+ * (`revokeSessionsOf`), không phải chờ token hết hạn như trước.
  */
 export async function setCustomerLock(
   id: string,
@@ -185,16 +326,89 @@ export async function setCustomerLock(
   const existing = await findCustomerOrThrow(id);
 
   await prisma.$transaction(async (tx) => {
-    await tx.user.update({ where: { id }, data: { isActive } });
+    await tx.user.update({
+      where: { id },
+      data: isActive ? { isActive, lockReason: null, lockedAt: null } : { isActive, lockReason: reason ?? null, lockedAt: new Date() },
+    });
+    if (!isActive) await tx.refreshToken.deleteMany({ where: { userId: id } });
     await logAdminAction(tx, {
       actorId: admin.userId,
       actorRole: admin.role,
       action: isActive ? "customer.unlocked" : "customer.locked",
       targetType: "User",
       targetId: id,
-      metadata: { email: existing.email, reason },
+      metadata: { email: existing.email, reason: isActive ? existing.lockReason ?? undefined : reason },
     });
   });
+  if (!isActive) revokeSessionsOf(id);
 
   return getCustomerForAdmin(id);
+}
+
+/**
+ * `POST /api/admin/customers/:id/reset-password` — quản trị đặt mật khẩu mới cho khách (khách quên mật khẩu mà không
+ * nhận được email, hoặc tài khoản bị lộ). `password` trống thì hệ thống sinh mật khẩu tạm và trả về ĐÚNG MỘT LẦN trong
+ * response — không lưu, không ghi nhật ký. Giống "quên mật khẩu": khách bị đăng xuất khỏi mọi thiết bị, link đặt lại
+ * mật khẩu còn hạn (nếu có) bị huỷ.
+ */
+export async function resetCustomerPassword(
+  id: string,
+  password: string | undefined,
+  admin: AdminActor,
+): Promise<AdminCustomerPasswordResetDto> {
+  const existing = await findCustomerOrThrow(id);
+  const generatedPassword = password ? undefined : generateTemporaryPassword();
+  const passwordHash = await bcrypt.hash(password ?? (generatedPassword as string), BCRYPT_COST);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({ where: { id }, data: { passwordHash, hasPassword: true } });
+    await tx.refreshToken.deleteMany({ where: { userId: id } });
+    await tx.passwordResetToken.deleteMany({ where: { userId: id } });
+    await logAdminAction(tx, {
+      actorId: admin.userId,
+      actorRole: admin.role,
+      action: "customer.password_reset",
+      targetType: "User",
+      targetId: id,
+      metadata: { email: existing.email, mode: generatedPassword ? "random" : "manual" },
+    });
+  });
+  revokeSessionsOf(id);
+
+  return { generatedPassword };
+}
+
+/**
+ * `DELETE /api/admin/customers/:id` — xoá hẳn tài khoản khách hàng. Từ chối (409) khi khách còn đơn chưa xong
+ * (`OPEN_ORDER_STATUSES`). Theo ràng buộc khoá ngoại của schema:
+ * - đơn hàng GIỮ LẠI (cột `userId` thành NULL) — đơn đã chụp tên, địa chỉ, giá lúc đặt nên doanh thu và lịch sử đơn
+ *   không đổi; hội thoại AI, cấu hình Build PC, nhật ký tìm kiếm cũng giữ lại nhưng không còn gắn với ai;
+ * - sổ địa chỉ, giỏ hàng, yêu thích, đánh giá, lượt dùng mã giảm giá, liên kết mạng xã hội, phiên đăng nhập bị xoá theo.
+ * Đánh giá đã duyệt bị xoá nên điểm trung bình của các sản phẩm đó được tính lại trong cùng transaction.
+ */
+export async function deleteCustomerForAdmin(id: string, admin: AdminActor): Promise<void> {
+  const existing = await findCustomerOrThrow(id);
+
+  await prisma.$transaction(async (tx) => {
+    const [openOrders, orderCount, reviewed] = await Promise.all([
+      tx.order.count({ where: { userId: id, status: { in: [...OPEN_ORDER_STATUSES] } } }),
+      tx.order.count({ where: { userId: id } }),
+      tx.review.findMany({ where: { userId: id, isApproved: true }, select: { productId: true }, distinct: ["productId"] }),
+    ]);
+    const blocked = deleteBlockReason(openOrders);
+    if (blocked) throw new ConflictError(blocked);
+
+    await tx.user.delete({ where: { id } });
+    for (const { productId } of reviewed) await recomputeProductRating(tx, productId);
+
+    await logAdminAction(tx, {
+      actorId: admin.userId,
+      actorRole: admin.role,
+      action: "customer.deleted",
+      targetType: "User",
+      targetId: id,
+      metadata: { email: existing.email, fullName: existing.fullName, orderCount, approvedReviewProducts: reviewed.length },
+    });
+  });
+  revokeSessionsOf(id);
 }

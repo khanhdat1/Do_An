@@ -27,6 +27,10 @@
   --color-brand-500: #c2410c;
   --color-brand-600: #9a3412;
   --color-brand-700: #7c2d12;
+  /* Cam nhấn của khu quản trị giao diện tối (Quản lý khách hàng): CHỈ cho viền, vạch nhấn, vòng focus, biểu tượng —
+     4,4:1 trên nền ink-900 (đủ 3:1 cho thành phần không phải chữ). Chữ trắng trên nền này chỉ 4,2:1, chưa đạt AA,
+     nên nút có chữ vẫn dùng brand-500 */
+  --color-ember-500: #d94e15;
 
   /* Vàng nhấn (logo ZONE, AI SEARCH, AI PC BUILDER). Chữ vàng trên nền sáng dùng 700/800 — 600 chỉ đạt ~2,7:1 */
   --color-gold-300: #fde047;

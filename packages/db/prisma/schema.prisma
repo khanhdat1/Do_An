@@ -396,6 +396,9 @@ model User {
 
   role     UserRole @default(CUSTOMER)
   isActive Boolean  @default(true)
+  /// Lý do quản trị nhập khi khoá tài khoản khách hàng (hiện ở trang quản trị); xoá khi mở khoá
+  lockReason String?   @db.VarChar(300)
+  lockedAt   DateTime?
 
   emailVerifiedAt DateTime?
   lastLoginAt     DateTime?

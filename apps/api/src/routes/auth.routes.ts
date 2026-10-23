@@ -25,6 +25,7 @@ import { listLinkedAccounts, unlinkProvider } from "../services/oauth.service.js
 import { requestPasswordReset, resetPassword } from "../services/password-reset.service.js";
 import { clearAuthCookies, readCookie, REFRESH_COOKIE, setAuthCookies } from "../utils/cookies.js";
 import { finishLogin, sessionContext } from "../utils/session.js";
+import { emailSchema, newPasswordSchema, optionalPhoneSchema } from "../utils/validators.js";
 
 export const authRouter = Router();
 
@@ -34,34 +35,7 @@ authRouter.use(noStore);
 /*  Kiểm tra dữ liệu vào                                                      */
 /* -------------------------------------------------------------------------- */
 
-const emailSchema = z
-  .string({ error: "Vui lòng nhập email" })
-  .trim()
-  .toLowerCase()
-  .max(254, "Email quá dài")
-  .pipe(z.email("Email không hợp lệ"));
-
-/**
- * bcrypt chỉ đọc 72 byte đầu và lặng lẽ bỏ phần còn lại, nên phải chặn ở đây:
- * nếu không, hai mật khẩu chỉ khác nhau sau byte thứ 72 sẽ bị coi là một.
- */
-const newPasswordSchema = z
-  .string({ error: "Vui lòng nhập mật khẩu" })
-  .min(8, "Mật khẩu tối thiểu 8 ký tự")
-  .refine((value) => Buffer.byteLength(value, "utf8") <= 72, "Mật khẩu quá dài (tối đa 72 byte)")
-  .refine(
-    (value) => /[A-Za-z]/.test(value) && /\d/.test(value),
-    "Mật khẩu phải gồm cả chữ và số",
-  );
-
-/** Số điện thoại Việt Nam, cho phép nhập có dấu cách / gạch; để trống cũng được */
-const phoneSchema = z
-  .string()
-  .trim()
-  .transform((value) => value.replace(/[\s.-]/g, ""))
-  .pipe(z.union([z.literal(""), z.string().regex(/^(0|\+84)\d{9,10}$/, "Số điện thoại không hợp lệ")]))
-  .transform((value) => value || undefined)
-  .optional();
+const phoneSchema = optionalPhoneSchema;
 
 const forgotPasswordSchema = z.object({ email: emailSchema });
 

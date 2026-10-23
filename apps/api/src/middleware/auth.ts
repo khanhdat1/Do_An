@@ -2,6 +2,7 @@ import type { UserRole } from "@pczone/db";
 import type { Request, RequestHandler } from "express";
 import { verifyAccessToken, verifyAdminAccessToken, type AccessTokenClaims } from "../services/token.service.js";
 import { ACCESS_COOKIE, ADMIN_ACCESS_COOKIE, readCookie } from "../utils/cookies.js";
+import { isSessionRevoked } from "../utils/session-revocation.js";
 import { ForbiddenError, UnauthorizedError } from "./errors.js";
 
 /** Trình duyệt gửi qua cookie; công cụ như curl / Postman có thể gửi header Bearer */
@@ -26,12 +27,19 @@ export const authenticate: RequestHandler = (req, _res, next) => {
   const token = readAccessToken(req);
   if (!token) return next();
 
+  let claims: AccessTokenClaims;
   try {
-    req.auth = verifyAccessToken(token);
-    next();
+    claims = verifyAccessToken(token);
   } catch {
-    next(new UnauthorizedError("Phiên đăng nhập đã hết hạn"));
+    return next(new UnauthorizedError("Phiên đăng nhập đã hết hạn"));
   }
+  // Quản trị vừa khoá tài khoản / cấp lại mật khẩu / xoá tài khoản: token cấp trước lúc đó hết hiệu lực ngay.
+  // Trả 401 như token hết hạn — frontend thử làm mới phiên, refresh token đã bị xoá nên khách bị đăng xuất.
+  if (isSessionRevoked(claims.userId, claims.issuedAtMs)) {
+    return next(new UnauthorizedError("Phiên đăng nhập đã kết thúc, vui lòng đăng nhập lại"));
+  }
+  req.auth = claims;
+  next();
 };
 
 /**
@@ -86,7 +94,8 @@ export function readSession(req: Request): AccessTokenClaims | null {
   if (!token) return null;
 
   try {
-    return verifyAccessToken(token);
+    const claims = verifyAccessToken(token);
+    return isSessionRevoked(claims.userId, claims.issuedAtMs) ? null : claims;
   } catch {
     return null;
   }

@@ -920,18 +920,41 @@ export interface AdminDashboardSummary {
 
 export interface AdminCustomerSummary {
   id: string;
+  /** Mã khách hàng hiển thị, vd "KH8F3K2Q" */
+  code: string;
   fullName: string;
   email: string;
   phone?: string;
   isActive: boolean;
+  /** Chỉ có khi đang khoá */
+  lockReason?: string;
+  lockedAt?: string;
   orderCount: number;
   totalSpent: number;
   createdAt: string;
   lastLoginAt?: string;
 }
 
+export interface AdminCustomerList extends Paginated<AdminCustomerSummary> {
+  counts: { all: number; active: number; locked: number };
+}
+
+export interface AdminCustomerAddress {
+  recipientName: string;
+  phone: string;
+  province: string;
+  district: string;
+  ward: string;
+  streetAddress: string;
+}
+
 export interface AdminCustomerDetail extends AdminCustomerSummary {
   emailVerifiedAt?: string;
+  defaultAddress?: AdminCustomerAddress;
+}
+
+export interface AdminCustomerPasswordReset {
+  generatedPassword?: string;
 }
 
 /* -------------------------------------------------------------------------- */

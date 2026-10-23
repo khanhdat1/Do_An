@@ -936,19 +936,45 @@ export interface AdminDashboardSummaryDto {
  */
 export interface AdminCustomerSummaryDto {
   id: string;
+  /** Mã khách hàng hiển thị, vd "KH8F3K2Q" (utils/admin-customer.ts) */
+  code: string;
   fullName: string;
   email: string;
   phone?: string;
   isActive: boolean;
+  /** Chỉ có khi đang khoá */
+  lockReason?: string;
+  lockedAt?: string;
   orderCount: number;
   totalSpent: number;
   createdAt: string;
   lastLoginAt?: string;
 }
 
-/** `GET /api/admin/customers/:id` — hồ sơ đầy đủ hơn danh sách một chút (thêm email đã xác minh chưa) */
+/** `GET /api/admin/customers` — một trang khách hàng + số tài khoản theo trạng thái (cùng ô tìm kiếm) cho các tab lọc */
+export interface AdminCustomerListDto extends Paginated<AdminCustomerSummaryDto> {
+  counts: { all: number; active: number; locked: number };
+}
+
+/** Địa chỉ mặc định trong sổ địa chỉ của khách — quản trị sửa ở hộp thoại "Sửa khách hàng" */
+export interface AdminCustomerAddressDto {
+  recipientName: string;
+  phone: string;
+  province: string;
+  district: string;
+  ward: string;
+  streetAddress: string;
+}
+
+/** `GET /api/admin/customers/:id` — hồ sơ đầy đủ hơn danh sách một chút (email đã xác minh chưa, địa chỉ mặc định) */
 export interface AdminCustomerDetailDto extends AdminCustomerSummaryDto {
   emailVerifiedAt?: string;
+  defaultAddress?: AdminCustomerAddressDto;
+}
+
+/** `POST /api/admin/customers/:id/reset-password` — mật khẩu do hệ thống sinh chỉ trả về đúng một lần, không lưu ở đâu khác */
+export interface AdminCustomerPasswordResetDto {
+  generatedPassword?: string;
 }
 
 /* -------------------------------------------------------------------------- */

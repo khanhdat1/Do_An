@@ -50,21 +50,25 @@ function LockControl({ customer, canWrite, onUpdated }: { customer: AdminCustome
       <div className="w-full space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:w-80">
         <p className="text-xs font-medium text-slate-500">
           {customer.isActive
-            ? "Khách sẽ không đăng nhập được ở lần tiếp theo (hoặc khi phiên hiện tại hết hạn, tối đa 15 phút)."
+            ? "Khách bị đăng xuất ngay trên mọi thiết bị và không đăng nhập được cho tới khi mở khoá."
             : "Khách sẽ đăng nhập lại được ngay."}
         </p>
+        {customer.isActive ? (
         <textarea
           value={reason}
           onChange={(event) => setReason(event.target.value)}
-          placeholder="Lý do (không bắt buộc, chỉ lưu nội bộ)..."
+          aria-label="Lý do khoá tài khoản"
+          placeholder="Lý do khoá (bắt buộc, chỉ lưu nội bộ)..."
+          maxLength={300}
           rows={2}
           className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
         />
+        ) : null}
         <div className="flex gap-2">
           <button
             type="button"
             onClick={submit}
-            disabled={busy}
+            disabled={busy || (customer.isActive && reason.trim().length < 3)}
             className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${
               customer.isActive ? "bg-sale-600 hover:bg-sale-700" : "bg-brand-500 hover:bg-brand-600"
             }`}
@@ -281,6 +285,12 @@ export default function AdminCustomerDetailView({ customerId }: { customerId: st
           </div>
           {customer.isActive ? <AdminBadge tone="green">Đang hoạt động</AdminBadge> : <AdminBadge tone="red">Đã khoá</AdminBadge>}
         </div>
+        {!customer.isActive && customer.lockReason ? (
+          <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+            <span className="font-bold">Lý do khoá:</span> {customer.lockReason}
+            {customer.lockedAt ? <span className="text-red-700"> · khoá lúc {formatDateTime(customer.lockedAt)}</span> : null}
+          </p>
+        ) : null}
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-xl bg-slate-50 p-3 text-center">

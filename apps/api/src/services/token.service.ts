@@ -36,10 +36,13 @@ const TWO_FA_PENDING_TTL_SECONDS = 60;
 export interface AccessTokenClaims {
   userId: string;
   role: UserRole;
+  /** Lúc cấp token (mili giây) — để `session-revocation.ts` biết token cấp trước hay sau lần thu hồi phiên */
+  issuedAtMs?: number;
 }
 
 export function signAccessToken(user: { id: string; role: UserRole }): string {
-  return jwt.sign({ role: user.role }, env.jwtSecret, {
+  // `iat` chuẩn của JWT chỉ tính bằng giây: không phân biệt được token cấp ngay trước hay ngay sau lần thu hồi phiên
+  return jwt.sign({ role: user.role, iatMs: Date.now() }, env.jwtSecret, {
     algorithm: "HS256",
     issuer: ISSUER,
     subject: user.id,
@@ -61,7 +64,9 @@ export function verifyAccessToken(token: string): AccessTokenClaims {
     throw new Error("Access token thiếu claim bắt buộc");
   }
 
-  return { userId: payload.sub, role: payload.role as UserRole };
+  // Token cấp trước khi có claim `iatMs` thì lấy `iat` (giây) — chỉ kém chính xác trong đúng giây thu hồi phiên
+  const issuedAtMs = typeof payload.iatMs === "number" ? payload.iatMs : typeof payload.iat === "number" ? payload.iat * 1000 : undefined;
+  return { userId: payload.sub, role: payload.role as UserRole, issuedAtMs };
 }
 
 /** Giống signAccessToken nhưng issuer riêng (pcz_admin_access cookie) — xem ADMIN_ISSUER ở trên */
