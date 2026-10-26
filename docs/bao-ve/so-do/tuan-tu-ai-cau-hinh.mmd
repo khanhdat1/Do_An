@@ -17,6 +17,9 @@ sequenceDiagram
     A->>G: Nhờ sửa đúng 1 lần, kèm danh sách lỗi
     G-->>A: Cấu hình đã sửa
   end
+  opt Vẫn còn lỗi tương thích
+    A->>A: Tự đổi ít món nhất cho hết lỗi (tối đa 3 món, nhánh cận, không dùng AI)
+  end
   opt Vẫn vượt ngân sách
     A->>A: Tự đổi món rẻ hơn cùng loại (nhánh cận, không dùng AI), giữ tương thích
   end
