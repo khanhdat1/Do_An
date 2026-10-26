@@ -185,7 +185,7 @@ figcaption { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baselin
     <div class="fact"><b>48</b><span>trang web: 26 khách, 22 quản trị</span></div>
     <div class="fact"><b>31</b><span>bảng CSDL · 13 enum · 14 migration</span></div>
     <div class="fact"><b>~436</b><span>sản phẩm demo, ảnh thật của hãng</span></div>
-    <div class="fact"><b>934</b><span>kiểm thử đơn vị (879 API, 55 web)</span></div>
+    <div class="fact"><b>991</b><span>kiểm thử đơn vị (936 API, 55 web)</span></div>
     <div class="fact"><b>78</b><span>kịch bản kiểm thử đầu-cuối</span></div>
     <div class="fact"><b>132</b><span>component React</span></div>
     <div class="fact"><b>~52k</b><span>dòng TypeScript (không tính test)</span></div>
@@ -257,10 +257,10 @@ figcaption { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baselin
   <div class="prose"><p>Tồn kho được trừ bằng câu lệnh có điều kiện (còn đủ hàng mới trừ), nên hai người đặt cùng món cuối cùng thì chỉ một người thành công, người kia nhận thông báo hết hàng.</p></div>
   ${figure("tuan-tu-dat-hang", "Tuần tự: đặt hàng")}
   <h3>AI gợi ý cấu hình: AI chọn, luật kiểm tra</h3>
-  <div class="prose"><p>AI chỉ được chọn trong danh mục có mã; mã lạ bị bỏ. Tương thích do 9 luật viết bằng mã kiểm tra (socket, loại RAM, số khe RAM, chuẩn bo mạch và chiều dài card so với vỏ, công suất nguồn, cổng xuất hình, tản nhiệt...). Vượt ngân sách thì hệ thống tự đổi món rẻ hơn bằng thuật toán nhánh cận, không tốn thêm lượt AI.</p></div>
+  <div class="prose"><p>AI chỉ được chọn trong danh mục có mã; mã lạ bị bỏ. Tương thích do 9 luật viết bằng mã kiểm tra (socket, loại RAM, số khe RAM, chuẩn bo mạch và chiều dài card so với vỏ, công suất nguồn, cổng xuất hình, tản nhiệt...). Sau lượt AI sửa mà vẫn còn lỗi tương thích thì hệ thống tự đổi ít món nhất cho hết lỗi (tối đa 3 món). Vượt ngân sách thì hệ thống tự đổi món rẻ hơn. Cả hai bước dùng thuật toán nhánh cận, không tốn thêm lượt AI. Khách nêu dung lượng RAM (“cần 32GB RAM”) thì hệ thống giữ mức đó nếu còn vừa tiền, không thì báo rõ trên thẻ gợi ý.</p></div>
   ${figure("tuan-tu-ai-cau-hinh", "Tuần tự: AI gợi ý cấu hình theo ngân sách")}
   <h3>Trợ lý AI: truy hồi trước, trả lời sau (RAG)</h3>
-  <div class="prose"><p>Câu trả lời được stream từng đoạn qua SSE. Sản phẩm trích dẫn do máy chủ tự đối chiếu với danh sách ứng viên, không tin AI tự khai, nên thẻ sản phẩm luôn là hàng có thật và giá lấy từ DB.</p></div>
+  <div class="prose"><p>Câu trả lời được stream từng đoạn qua SSE. Sản phẩm trích dẫn do máy chủ tự đối chiếu với danh sách ứng viên, không tin AI tự khai, nên thẻ sản phẩm luôn là hàng có thật và giá lấy từ DB. Gemini lỗi hoặc chưa trả chữ nào sau 25 giây thì máy chủ tự gọi lại một lần. “Ngân sách 30 triệu” được hiểu là mức trần, và trợ lý không được nói cửa hàng có tổng cộng bao nhiêu sản phẩm.</p></div>
   ${figure("tuan-tu-tro-ly-ai", "Tuần tự: trợ lý AI tư vấn")}
   <h3>Đăng nhập Google / Facebook</h3>
   <div class="prose"><p>Tài khoản mạng xã hội nhận diện bằng mã cố định của nhà cung cấp, không tự gộp theo email; Facebook trùng email bị từ chối để chống kẻ xấu đăng ký trước bằng email của người khác.</p></div>
@@ -272,7 +272,7 @@ figcaption { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baselin
   <div class="table-wrap"><table>
     <thead><tr><th>Loại</th><th>Phạm vi</th><th>Lệnh</th></tr></thead>
     <tbody>
-      <tr><td>Kiểm thử đơn vị — 934</td><td>Bộ tìm kiếm, ký/xác minh VNPay, mã giảm giá, đánh giá, đọc thông số + 9 luật tương thích, tự điều chỉnh ngân sách, trích dẫn và ngữ cảnh hội thoại AI, bộ lọc thông số, ảnh sản phẩm, huỷ/hoàn đơn và tự huỷ đơn quá hạn, mã đơn ngẫu nhiên, quản lý khách hàng, thu hồi phiên tức thì, cài đặt hệ thống, chữ ký file ảnh</td><td><code>npm test -w @pczone/api</code>, <code>-w @pczone/web</code></td></tr>
+      <tr><td>Kiểm thử đơn vị — 991</td><td>Bộ tìm kiếm, ký/xác minh VNPay, mã giảm giá, đánh giá, đọc thông số + 9 luật tương thích, tự điều chỉnh ngân sách và tự sửa lỗi tương thích, trích dẫn và ngữ cảnh hội thoại AI, tự gọi lại khi AI không phản hồi, bộ lọc thông số, ảnh sản phẩm, huỷ/hoàn đơn và tự huỷ đơn quá hạn, mã đơn ngẫu nhiên, quản lý khách hàng, thu hồi phiên tức thì, cài đặt hệ thống, chữ ký file ảnh</td><td><code>npm test -w @pczone/api</code>, <code>-w @pczone/web</code></td></tr>
       <tr><td>Đầu-cuối — 78</td><td>39 kịch bản chức năng: trọn vòng đời đơn với 2 trình duyệt (khách + quản trị), cửa hàng, lọc thông số, cài đặt, Build PC, phân quyền, SEO/header, 12 ca tranh chấp đồng thời của đơn hàng, ảnh sản phẩm, banner, quản lý khách hàng; cộng 39 lượt kiểm tra truy cập bên dưới</td><td><code>npm run test:e2e</code></td></tr>
       <tr><td>Khả năng truy cập</td><td>axe-core, WCAG 2.1 AA gồm cả độ tương phản màu: 19 trang khách, 7 trang tài khoản, toàn bộ khu quản trị (cả trang sửa/chi tiết) — không lỗi nghiêm trọng nào; không tràn ngang ở màn 375px</td><td>nằm trong <code>test:e2e</code></td></tr>
     </tbody>
@@ -321,7 +321,7 @@ figcaption { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baselin
     <div><b>Bảo mật đăng nhập ra sao?</b><p>bcrypt, JWT ngắn hạn + refresh token xoay vòng lưu dạng băm, cookie httpOnly; giới hạn đăng nhập sai; quản trị có phiên riêng và xác thực 2 bước.</p></div>
     <div><b>Đăng nhập Google/Facebook có bị chiếm tài khoản không?</b><p>Không gộp theo email. Facebook không bảo đảm email đã xác minh nên trùng email bị từ chối; người dùng đăng nhập cách cũ rồi tự liên kết.</p></div>
     <div><b>Thanh toán trực tuyến?</b><p>VNPay có đủ mã ký/xác minh và kiểm thử bằng khoá giả, nhưng chưa đăng ký tài khoản sandbox nên đang tắt. Đang dùng COD và chuyển khoản/MoMo qua mã QR, nhân viên xác nhận khi nhận tiền.</p></div>
-    <div><b>Kiểm thử thế nào?</b><p>934 kiểm thử đơn vị cho logic thuần; 78 kịch bản đầu-cuối bằng Playwright chạy trình duyệt thật trên API, web và DB riêng, gồm cả kiểm tra khả năng truy cập bằng axe-core.</p></div>
+    <div><b>Kiểm thử thế nào?</b><p>991 kiểm thử đơn vị cho logic thuần; 78 kịch bản đầu-cuối bằng Playwright chạy trình duyệt thật trên API, web và DB riêng, gồm cả kiểm tra khả năng truy cập bằng axe-core.</p></div>
   </div>
 </section>
 
@@ -352,6 +352,7 @@ figcaption { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baselin
         <li>Chưa có nút tự xoá tài khoản (xử lý qua email hỗ trợ)</li>
         <li>Thời hạn đổi trả, thời gian giao chưa chốt con số</li>
         <li>Số serial/IMEI và biên bản kiểm tra máy mới giữ chỗ “Sắp ra mắt”</li>
+        <li>Gợi ý cấu hình chỉ tự sửa được lỗi tương thích khi đổi tối đa 3 món là đủ</li>
       </ul>
     </div>
   </div>
