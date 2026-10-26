@@ -1,7 +1,7 @@
 // Kiểm thử bước tự điều chỉnh theo ngân sách (hạ cấp cho vừa, nâng cấp khi dư nhiều), không cần DB/mạng/AI.
 // Chạy: npx tsx src/pc-build/budget-fit.test.ts
 // Thông số theo kiểu sản phẩm thật; giá là số giả lập đủ để thấy rõ từng phép đánh đổi.
-import { fitToBudget, upgradeWithinBudget, type BuildCandidates } from "./budget-fit.js";
+import { fitToBudget, resolveCompatibility, upgradeWithinBudget, type BuildCandidates } from "./budget-fit.js";
 import { checkBuild, type BuildPart, type BuildParts } from "./compatibility.js";
 import type { BuildSlot } from "./slots.js";
 import { emptySpec, type NormalizedSpec } from "./spec-types.js";
@@ -26,7 +26,7 @@ function part(productId: string, price: number, spec: Partial<NormalizedSpec>, q
 }
 
 /** Rút gọn các lần đổi thành "ô: món cũ -> món mới" cho dễ đọc (kèm " x2" khi nhiều hơn 1 cái) */
-function swapsOf(fit: ReturnType<typeof fitToBudget | typeof upgradeWithinBudget>) {
+function swapsOf(fit: ReturnType<typeof fitToBudget | typeof upgradeWithinBudget | typeof resolveCompatibility>) {
   const label = (item: BuildPart) => `${item.productId}${item.quantity > 1 ? ` x${item.quantity}` : ""}`;
   return fit?.swaps.map((swap) => `${swap.slot}: ${label(swap.from)} -> ${label(swap.to)}`) ?? null;
 }
@@ -295,6 +295,87 @@ console.log("\n[14] Nâng cấp với kho lớn vẫn chạy nhanh");
   check("tìm được phương án hợp lệ trong ngân sách", fit !== null && fit.result.totalPrice <= 30_000_000 && fit.result.isValid, true);
   check("dưới 2 giây", elapsed < 2000, true);
   console.log(`    (${Math.round(elapsed)} ms, đổi ${fit?.swaps.length} món, tổng ${fit?.result.totalPrice})`);
+}
+
+console.log("\n[15] Tự sửa lỗi tương thích: không có lỗi thì không đổi gì");
+{
+  check("cấu hình hợp lệ -> null", resolveCompatibility(gaming, everything, 30_000_000, GAMING), null);
+}
+
+// Đúng ca B04 của bộ đánh giá ("PC lập trình 18 triệu, cần 32GB RAM"): AI sửa sang nền AM4 nhưng giữ RAM DDR5
+const ramDdr5Kit32 = part("ram-ddr5-2x16", 2_890_000, { ramType: "DDR5", ramModules: 2, ramCapacity: 32 });
+const codingBuild: BuildParts = { CPU: cpu5500gt, MAINBOARD: mbA520, RAM: ramDdr5Kit32, VGA: vga6500, SSD: ssd512, PSU: psu550, CASE: caseMini };
+const CODING: Record<BuildSlot, number> = { CPU: 2, VGA: 2, RAM: 1.5, SSD: 1, MAINBOARD: 0.6, PSU: 0.6, CASE: 0.4 };
+
+console.log("\n[16] RAM DDR5 trên mainboard DDR4: đổi đúng thanh RAM, giữ 32GB");
+{
+  const before = checkBuild(codingBuild);
+  check("trước: lỗi RAM_TYPE", before.checks.filter((c) => c.severity === "ERROR").map((c) => c.rule), ["RAM_TYPE"]);
+  const fix = resolveCompatibility(codingBuild, { ...everything, RAM: [ramDdr5Kit32, ramKit32, ram16, ram8, ramDdr5] }, 18_000_000, CODING);
+  // 2 thanh 16GB rời (2.580.000đ) gần giá kit DDR5 cũ hơn kit 2x16GB (2.490.000đ); mainboard A520 có đủ 2 khe
+  check("chỉ đổi RAM sang DDR4 cùng 32GB, giá gần nhất", swapsOf(fix), ["RAM: ram-ddr5-2x16 -> ram-ddr4-1x16 x2"]);
+  check("sau: không còn lỗi, vẫn đủ linh kiện", [fix?.result.checks.some((c) => c.severity === "ERROR"), fix?.result.isComplete], [false, true]);
+  check("giữ đủ 32GB", (fix?.parts.RAM?.spec.ramCapacity ?? 0) * (fix?.parts.RAM?.quantity ?? 0), 32);
+  check("không vượt ngân sách 18 triệu", (fix?.result.totalPrice ?? Infinity) <= 18_000_000, true);
+}
+
+console.log("\n[17] Không có RAM DDR4 vừa ngân sách: chuyển sang nền DDR5 (CPU + mainboard)");
+{
+  const budget = checkBuild(codingBuild).totalPrice;
+  const fix = resolveCompatibility(codingBuild, { ...everything, RAM: [ramDdr5Kit32, ram16Rgb] }, budget, GAMING);
+  check("đổi CPU AM4 -> AM5 và mainboard DDR4 -> DDR5, giữ nguyên RAM", swapsOf(fix), ["CPU: cpu-5500gt -> cpu-8400f", "MAINBOARD: mb-a520 -> mb-b650"]);
+  check("không đắt hơn ban đầu", (fix?.result.totalPrice ?? Infinity) <= budget, true);
+}
+
+console.log("\n[18] CPU khác socket mainboard: đổi một món, chọn món thiệt ít nhất");
+{
+  const wrongSocket: BuildParts = { ...gaming, CPU: cpu8400f };
+  check("trước: lỗi CPU_SOCKET", checkBuild(wrongSocket).checks.filter((c) => c.severity === "ERROR").map((c) => c.rule), ["CPU_SOCKET"]);
+  const fix = resolveCompatibility(wrongSocket, everything, 30_000_000, GAMING);
+  check("đổi CPU sang AM4 gần giá nhất", swapsOf(fix), ["CPU: cpu-8400f -> cpu-5500gt"]);
+}
+
+console.log("\n[19] Không sửa được thì trả null, không đổi bừa");
+{
+  check("không có linh kiện thay thế", resolveCompatibility(codingBuild, {}, 18_000_000, CODING), null);
+}
+
+console.log("\n[19b] Sửa trong ngân sách được thì không vượt; không được thì lắp được vẫn hơn");
+{
+  const budget = checkBuild(codingBuild).totalPrice;
+  const onlyPricier = resolveCompatibility(codingBuild, { RAM: [ramDdr5Kit32, ram16Rgb] }, budget, CODING);
+  check("chỉ có cách sửa vượt ngân sách -> vẫn sửa, giữ 32GB", swapsOf(onlyPricier), ["RAM: ram-ddr5-2x16 -> ram-ddr4-1x16-rgb x2"]);
+  check("tổng tăng thêm đúng phần chênh", onlyPricier?.result.totalPrice, budget - 2_890_000 + 2 * 3_490_000);
+  const ramPool: BuildCandidates = { RAM: [ramDdr5Kit32, ram16Rgb, ram8] };
+  check("khách không nêu RAM: trong ngân sách (16GB) trước vượt ngân sách (32GB)", swapsOf(resolveCompatibility(codingBuild, ramPool, budget, CODING)), [
+    "RAM: ram-ddr5-2x16 -> ram-ddr4-1x8 x2",
+  ]);
+  check("khách cần 32GB mà 32GB không vừa ngân sách: vẫn giữ ngân sách, hạ còn 16GB", swapsOf(resolveCompatibility(codingBuild, ramPool, budget, CODING, 32)), [
+    "RAM: ram-ddr5-2x16 -> ram-ddr4-1x8 x2",
+  ]);
+  check("khách cần 32GB và có cách giữ 32GB trong ngân sách: giữ", swapsOf(resolveCompatibility(codingBuild, { RAM: [ramDdr5Kit32, ram16, ram8] }, budget, CODING, 32)), [
+    "RAM: ram-ddr5-2x16 -> ram-ddr4-1x16 x2",
+  ]);
+}
+
+console.log("\n[20] Khách nêu dung lượng RAM: không hạ dưới mức đó (ca B04 khi chạy thật: 2×16GB bị hạ còn 2×8GB)");
+{
+  // Bộ B04 đã sửa tương thích: 15.520.000đ, cần bớt ≥ 1 triệu
+  const fixed: BuildParts = { ...codingBuild, RAM: { ...ram16, quantity: 2 } };
+  const cpu4500 = part("cpu-4500", 2_490_000, { socket: "AM4", tdpWatts: 65, hasIgpu: false, extra: { coolerIncluded: true } });
+  const pool: BuildCandidates = { CPU: [cpu5500gt, cpu4500], RAM: [ram16, ram8] };
+  check("khách không nêu RAM: bớt một thanh (thiệt ít nhất), còn 16GB", swapsOf(fitToBudget(fixed, pool, 14_520_000, CODING)), ["RAM: ram-ddr4-1x16 x2 -> ram-ddr4-1x16"]);
+  const kept = fitToBudget(fixed, pool, 14_520_000, CODING, 32);
+  check("khách cần 32GB: giữ RAM, hạ CPU", swapsOf(kept), ["CPU: cpu-5500gt -> cpu-4500"]);
+  check("vẫn đủ 32GB và trong ngân sách", [(kept?.parts.RAM?.spec.ramCapacity ?? 0) * (kept?.parts.RAM?.quantity ?? 0), (kept?.result.totalPrice ?? Infinity) <= 14_520_000], [32, true]);
+  check("có sàn 32GB mà không giữ được trong ngân sách -> null (bên gọi mới thử lại không sàn và báo RAM giảm)", fitToBudget(fixed, { RAM: [ram16, ram8] }, 14_520_000, CODING, 32), null);
+
+  // Sửa tương thích: 4 thanh 8GB không lắp được trên A520 (2 khe), không còn cách nào giữ 32GB
+  const ramOnly: BuildCandidates = { RAM: [ramDdr5Kit32, ram8] };
+  check("khách không nêu RAM: được hạ về 16GB để hết lỗi", swapsOf(resolveCompatibility(codingBuild, ramOnly, 18_000_000, CODING)), ["RAM: ram-ddr5-2x16 -> ram-ddr4-1x8 x2"]);
+  check("khách cần 32GB mà không còn cách nào giữ 32GB: vẫn sửa cho lắp được, hạ còn 16GB (bên gọi báo cho khách)", swapsOf(resolveCompatibility(codingBuild, ramOnly, 18_000_000, CODING, 32)), [
+    "RAM: ram-ddr5-2x16 -> ram-ddr4-1x8 x2",
+  ]);
 }
 
 console.log(`\n===== ${passed} pass / ${failed} fail =====`);

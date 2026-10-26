@@ -363,8 +363,8 @@ export interface BudgetSwap {
 
 export interface AiBuildSuggestion {
   build: SavedBuild;
-  /** Ngân sách/nhu cầu AI hiểu từ câu của khách */
-  understood: { budget: number | null; purpose: string };
+  /** Ngân sách/nhu cầu AI hiểu từ câu của khách; `ramGb`: dung lượng RAM khách nêu */
+  understood: { budget: number | null; purpose: string; ramGb: number | null };
   /** AI viết cho lựa chọn của nó — khi `budgetFit` là FITTED/UPGRADED, vài món đã được hệ thống đổi sau đó */
   summary: string;
   /** Đã bỏ lý do của những món hệ thống đổi */
@@ -381,6 +381,13 @@ export interface AiBuildSuggestion {
    * nên không nhờ AI sửa — hệ thống tự điều chỉnh (`budgetFit`)
    */
   repair: "NOT_NEEDED" | "REPAIRED" | "FAILED" | "SKIPPED";
+  /**
+   * Không dùng AI, chạy trước `budgetFit`: còn lỗi tương thích thì hệ thống đổi ít món nhất cho hết lỗi; rỗng = không cần.
+   * `ramKept`: dung lượng RAM không giảm; `withinBudget`: không phải tăng tổng vượt ngân sách mới sửa được
+   */
+  compatibilityFix: { swaps: BudgetSwap[]; ramKept: boolean; withinBudget: boolean };
+  /** Cấu hình lưu có ít RAM hơn mức khách nêu (không có cách nào vừa đủ RAM đó vừa trong ngân sách); null = không nêu hoặc đã đủ */
+  ramShortfall: { requestedGb: number; finalGb: number } | null;
   /** Số mã AI đưa ra nhưng không có trong kho nên bị bỏ */
   droppedCount: number;
 }

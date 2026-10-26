@@ -8,6 +8,12 @@ import { BUILD_SLOTS, type BuildSlot } from "./slots.js";
 
 /** Tổng RAM không hạ xuống dưới mức này, trừ khi cấu hình ban đầu vốn đã ít hơn */
 const MIN_RAM_GB = 16;
+
+/** Sàn dung lượng RAM khi phải đổi RAM: MIN_RAM_GB, hoặc mức khách nêu nếu cao hơn — trừ khi cấu hình vốn đã ít hơn sàn */
+function ramFloorGb(currentGb: number | null, requestedGb: number | null): number {
+  const floor = Math.max(MIN_RAM_GB, requestedGb ?? 0);
+  return currentGb === null ? floor : Math.min(currentGb, floor);
+}
 /** Số thanh RAM được thử: bỏ 3 thanh cho khỏi lệch kênh đôi */
 const RAM_QUANTITIES = [1, 2, 4];
 
@@ -46,14 +52,14 @@ function countWarnings(result: BuildCheckResult): number {
 const costOf = (part: BuildPart) => part.price * part.quantity;
 
 /** Các lựa chọn rẻ hơn cho một ô, kèm số lượng; RAM thử nhiều số thanh nhưng giữ dung lượng tối thiểu */
-function cheaperOptions(slot: BuildSlot, current: BuildPart, candidates: BuildPart[]): BuildPart[] {
+function cheaperOptions(slot: BuildSlot, current: BuildPart, candidates: BuildPart[], requestedRamGb: number | null): BuildPart[] {
   if (slot !== "RAM") {
     return candidates
       .filter((candidate) => candidate.price < current.price && candidate.productId !== current.productId)
       .map((candidate) => ({ ...candidate, quantity: current.quantity }));
   }
   const currentGb = current.spec.ramCapacity === null ? null : current.spec.ramCapacity * current.quantity;
-  const floorGb = currentGb === null ? MIN_RAM_GB : Math.min(currentGb, MIN_RAM_GB);
+  const floorGb = ramFloorGb(currentGb, requestedRamGb);
   return candidates.flatMap((candidate) => {
     const gb = candidate.spec.ramCapacity;
     if (gb === null) return []; // không rõ dung lượng thì không dám đổi sang
@@ -69,9 +75,15 @@ function cheaperOptions(slot: BuildSlot, current: BuildPart, candidates: BuildPa
 /**
  * Tìm cách đổi ÍT THIỆT NHẤT để tổng không vượt `budget`. Thiệt = Σ trọng số của loại × số tiền bớt ở loại đó (loại quan
  * trọng với nhu cầu có trọng số cao nên được giữ lâu nhất) + phạt mỗi món đổi + phạt mỗi cảnh báo mới. Duyệt nhánh-và-cận.
- * `null`: không vượt ngân sách, hoặc không có cách đổi nào hợp lệ.
+ * `requestedRamGb`: dung lượng RAM khách nêu, không hạ dưới mức đó. `null`: không vượt ngân sách, hoặc không có cách đổi nào hợp lệ.
  */
-export function fitToBudget(parts: BuildParts, candidates: BuildCandidates, budget: number, weights: Record<BuildSlot, number>): BudgetFit | null {
+export function fitToBudget(
+  parts: BuildParts,
+  candidates: BuildCandidates,
+  budget: number,
+  weights: Record<BuildSlot, number>,
+  requestedRamGb: number | null = null,
+): BudgetFit | null {
   const original = checkBuild(parts);
   if (original.totalPrice <= budget) return null;
 
@@ -80,7 +92,7 @@ export function fitToBudget(parts: BuildParts, candidates: BuildCandidates, budg
   const slots = BUILD_SLOTS.filter((slot) => parts[slot] !== undefined).sort((a, b) => weights[b] - weights[a]);
   const currentOf = (slot: BuildSlot) => parts[slot] as BuildPart;
   const options = slots.map((slot) =>
-    cheaperOptions(slot, currentOf(slot), candidates[slot] ?? [])
+    cheaperOptions(slot, currentOf(slot), candidates[slot] ?? [], requestedRamGb)
       // Rẻ hơn ít nhất trước = thiệt ít nhất trước, nên gặp món đã quá thiệt là bỏ được cả phần còn lại
       .sort((a, b) => costOf(b) - costOf(a) || a.productId.localeCompare(b.productId) || a.quantity - b.quantity),
   );
@@ -300,5 +312,126 @@ export function upgradeWithinBudget(parts: BuildParts, candidates: BuildCandidat
   }
 
   visit(0, original.totalPrice, 0, 0);
+  return best ? { parts: best.parts, swaps: swapsBetween(parts, best.parts), result: best.result } : null;
+}
+
+/** Số món tối đa được đổi để hết lỗi tương thích — đổi nhiều hơn thì cấu hình đã khác hẳn lựa chọn của AI */
+const MAX_COMPAT_SWAPS = 3;
+
+/** Mọi lựa chọn khác cho một ô (không giới hạn giá); RAM thử nhiều số thanh nhưng tổng dung lượng không dưới `ramFloorGb` */
+function replacementOptions(slot: BuildSlot, current: BuildPart, candidates: BuildPart[], ramFloorGb: number): BuildPart[] {
+  if (slot !== "RAM") {
+    return candidates.filter((candidate) => candidate.productId !== current.productId).map((candidate) => ({ ...candidate, quantity: current.quantity }));
+  }
+  return candidates.flatMap((candidate) => {
+    const gb = candidate.spec.ramCapacity;
+    if (gb === null) return [];
+    return RAM_QUANTITIES.filter((quantity) => !(candidate.productId === current.productId && quantity === current.quantity) && gb * quantity >= ramFloorGb).map(
+      (quantity) => ({ ...candidate, quantity }),
+    );
+  });
+}
+
+/**
+ * Cấu hình còn lỗi tương thích (vd. RAM DDR5 với mainboard chỉ nhận DDR4 — gặp thật ở yêu cầu "PC lập trình 18 triệu, cần
+ * 32GB RAM": lượt AI sửa đổi sang nền AM4 rẻ hơn nhưng giữ RAM DDR5) thì đổi ÍT NHẤT các món sao cho hết lỗi, KHÔNG dùng AI.
+ * Thiệt = Σ trọng số của loại × chênh lệch giá + phạt mỗi món đổi + phạt mỗi cảnh báo mới; ô dính vào lỗi được xét trước.
+ * Tối đa MAX_COMPAT_SWAPS món. "Trong ngân sách" = không vượt `budget`, hoặc không đắt hơn ban đầu nếu ban đầu đã vượt.
+ * Thứ tự ưu tiên khi không đạt được hết:
+ * 1. trong ngân sách, giữ tổng dung lượng RAM đang có;
+ * 2. trong ngân sách, hạ RAM nhưng không dưới `requestedRamGb` (mức khách nêu) hay MIN_RAM_GB;
+ * 3. trong ngân sách, hạ RAM về MIN_RAM_GB dù dưới mức khách nêu — ngân sách là ràng buộc chính như ở `fitToBudget`, bên
+ *    gọi báo cho khách là RAM đã giảm. Gặp thật ở B04 ("18 triệu, cần 32GB RAM"): kho chỉ có một mainboard AM4 (2 khe
+ *    DDR4), bộ lắp được rẻ nhất có 32GB và card rời đã khoảng 18,1 triệu;
+ * 4. vượt ngân sách (giữ RAM đang có, rồi mức khách nêu): cấu hình lắp được mà đắt hơn vẫn hơn cấu hình không lắp được —
+ *    bên gọi chạy `fitToBudget` ngay sau để cố kéo tổng về, không được thì báo vượt ngân sách.
+ * `null`: không có lỗi, hoặc không tìm được cách sửa.
+ */
+export function resolveCompatibility(
+  parts: BuildParts,
+  candidates: BuildCandidates,
+  budget: number | null,
+  weights: Record<BuildSlot, number>,
+  requestedRamGb: number | null = null,
+): BudgetFit | null {
+  const original = checkBuild(parts);
+  const errors = original.checks.filter((check) => check.severity === "ERROR");
+  if (errors.length === 0) return null;
+
+  const withinBudget = budget === null ? Number.POSITIVE_INFINITY : Math.max(budget, original.totalPrice);
+  const erroredIds = new Set(errors.flatMap((check) => check.productIds));
+  const inError = (slot: BuildSlot) => erroredIds.has((parts[slot] as BuildPart).productId);
+  const slots = BUILD_SLOTS.filter((slot) => parts[slot] !== undefined).sort(
+    (a, b) => Number(inError(b)) - Number(inError(a)) || weights[a] - weights[b],
+  );
+  const currentOf = (slot: BuildSlot) => parts[slot] as BuildPart;
+  const currentRamGb = parts.RAM?.spec.ramCapacity == null ? null : parts.RAM.spec.ramCapacity * parts.RAM.quantity;
+  const baseWarnings = countWarnings(original);
+
+  function search(ramFloorGb: number, ceiling: number): Best | null {
+    const options = slots.map((slot) =>
+      replacementOptions(slot, currentOf(slot), candidates[slot] ?? [], ramFloorGb)
+        // Chênh giá ít nhất trước: gặp món đã quá thiệt là bỏ được cả phần còn lại của ô này
+        .sort(
+          (a, b) =>
+            Math.abs(costOf(a) - costOf(currentOf(slot))) - Math.abs(costOf(b) - costOf(currentOf(slot))) ||
+            a.productId.localeCompare(b.productId) ||
+            a.quantity - b.quantity,
+        ),
+    );
+    const working: BuildParts = { ...parts };
+    let best = null as Best | null;
+    let nodes = 0;
+
+    function visit(index: number, total: number, loss: number, changes: number): void {
+      if (++nodes > MAX_NODES) return;
+      const bound = loss + changes * CHANGE_PENALTY;
+      if (best && bound >= best.score) return;
+
+      if (index === slots.length) {
+        if (changes === 0 || total > ceiling) return;
+        const result = checkBuild(working);
+        if ((original.isComplete && !result.isComplete) || result.checks.some((check) => check.severity === "ERROR")) return;
+        const score = bound + Math.max(0, countWarnings(result) - baseWarnings) * WARNING_PENALTY;
+        if (!best || score < best.score) best = { score, parts: { ...working }, result };
+        return;
+      }
+
+      const slot = slots[index];
+      const current = currentOf(slot);
+      visit(index + 1, total, loss, changes);
+      if (changes >= MAX_COMPAT_SWAPS) return;
+      for (const candidate of options[index]) {
+        const delta = costOf(candidate) - costOf(current);
+        const nextLoss = loss + weights[slot] * Math.abs(delta);
+        if (best && nextLoss + (changes + 1) * CHANGE_PENALTY >= best.score) break;
+        working[slot] = candidate;
+        visit(index + 1, total + delta, nextLoss, changes + 1);
+      }
+      working[slot] = current;
+    }
+
+    visit(0, original.totalPrice, 0, 0);
+    return best;
+  }
+
+  const keep = currentRamGb ?? ramFloorGb(null, requestedRamGb);
+  const floor = ramFloorGb(currentRamGb, requestedRamGb);
+  const steps: [number, number][] = [
+    [keep, withinBudget],
+    [floor, withinBudget],
+    [ramFloorGb(currentRamGb, null), withinBudget],
+    [keep, Number.POSITIVE_INFINITY],
+    [floor, Number.POSITIVE_INFINITY],
+  ];
+  const tried = new Set<string>();
+  let best: Best | null = null;
+  for (const [ramGb, ceiling] of steps) {
+    const key = `${ramGb}|${ceiling}`;
+    if (tried.has(key)) continue;
+    tried.add(key);
+    best = search(ramGb, ceiling);
+    if (best) break;
+  }
   return best ? { parts: best.parts, swaps: swapsBetween(parts, best.parts), result: best.result } : null;
 }

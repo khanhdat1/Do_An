@@ -8,6 +8,8 @@ import {
   needsPerformance,
   parseSuggestion,
   promptBudget,
+  ramShortfallIssue,
+  requestedRamGb,
   shouldUpgrade,
   statedBudget,
   suggestionName,
@@ -19,7 +21,7 @@ import {
 import { chatComplete, type ChatMessage } from "../ai/openai-client.js";
 import { keySpecs } from "../mappers/pc-build.mapper.js";
 import { BadRequestError, ServiceUnavailableError } from "../middleware/errors.js";
-import { fitToBudget, upgradeWithinBudget, type BudgetFit, type BuildCandidates } from "../pc-build/budget-fit.js";
+import { fitToBudget, resolveCompatibility, upgradeWithinBudget, type BudgetFit, type BuildCandidates } from "../pc-build/budget-fit.js";
 import { checkBuild, type BuildPart, type BuildParts } from "../pc-build/compatibility.js";
 import { BUILD_SLOTS } from "../pc-build/slots.js";
 import { formatMoneyLabel } from "../search/price-intent.js";
@@ -49,16 +51,25 @@ function partsOf(suggestion: ParsedSuggestion, partById: Map<string, BuildPart>)
   return parts;
 }
 
-function evaluate(reply: string, catalog: Catalog, partById: Map<string, BuildPart>, budgetFromPrompt: number | null): Attempt {
+/** Mức khách nêu trong câu, đọc tất định (không tin AI tự khai): ngân sách và dung lượng RAM */
+interface PromptNeeds {
+  budget: number | null;
+  ramGb: number | null;
+}
+
+const ramGbOf = (parts: BuildParts) => (parts.RAM?.spec.ramCapacity == null ? null : parts.RAM.spec.ramCapacity * parts.RAM.quantity);
+
+function evaluate(reply: string, catalog: Catalog, partById: Map<string, BuildPart>, needs: PromptNeeds): Attempt {
   const parsed = parseSuggestion(reply, catalog);
   if (!parsed) return { suggestion: null, parts: {}, issues: [UNREADABLE_REPLY_ISSUE] };
-  if (budgetFromPrompt !== null && parsed.budget !== budgetFromPrompt) {
+  if (needs.budget !== null && parsed.budget !== needs.budget) {
     const aiBudget = parsed.budget === null ? "không có" : formatPrice(parsed.budget);
-    console.info(`[ai-build] AI đọc ngân sách ${aiBudget}, câu của khách là ${formatPrice(budgetFromPrompt)} — kiểm tra theo câu của khách`);
+    console.info(`[ai-build] AI đọc ngân sách ${aiBudget}, câu của khách là ${formatPrice(needs.budget)} — kiểm tra theo câu của khách`);
   }
-  const suggestion = withPromptBudget(parsed, budgetFromPrompt);
+  const suggestion = withPromptBudget(parsed, needs.budget);
   const parts = partsOf(suggestion, partById);
-  return { suggestion, parts, issues: findRepairIssues(suggestion, checkBuild(parts), catalog) };
+  const ramIssue = ramShortfallIssue(ramGbOf(parts), needs.ramGb);
+  return { suggestion, parts, issues: [...findRepairIssues(suggestion, checkBuild(parts), catalog), ...(ramIssue ? [ramIssue] : [])] };
 }
 
 /**
@@ -66,13 +77,21 @@ function evaluate(reply: string, catalog: Catalog, partById: Map<string, BuildPa
  * loại quan trọng với nhu cầu; nhu cầu hiệu năng mà dùng chưa tới 85% ngân sách thì nâng vài món lên món đắt hơn cùng loại
  * (nâng kèm nguồn/vỏ/mainboard nếu cần). Chỉ nhận phương án đủ linh kiện, không lỗi tương thích, không vượt ngân sách.
  */
-function adjustToBudget(attempt: Attempt, candidates: BuildCandidates): { status: AiBuildSuggestionDto["budgetFit"]["status"]; fit: BudgetFit | null } {
+function adjustToBudget(
+  attempt: Attempt,
+  candidates: BuildCandidates,
+  needs: PromptNeeds,
+): { status: AiBuildSuggestionDto["budgetFit"]["status"]; fit: BudgetFit | null } {
   const { suggestion, parts } = attempt;
   if (!suggestion || suggestion.budget === null) return { status: "NOT_NEEDED", fit: null };
   const total = checkBuild(parts).totalPrice;
   const weights = downgradeWeights(suggestion.purpose);
   if (total > suggestion.budget) {
-    const fit = fitToBudget(parts, candidates, suggestion.budget, weights);
+    // Giữ mức RAM khách nêu nếu còn vừa tiền (cắt món khác trước); không thì ngân sách vẫn là ràng buộc chính — RAM giảm
+    // được báo cho khách qua `ramShortfall`
+    const fit =
+      fitToBudget(parts, candidates, suggestion.budget, weights, needs.ramGb) ??
+      (needs.ramGb !== null ? fitToBudget(parts, candidates, suggestion.budget, weights) : null);
     return { status: fit ? "FITTED" : "NOT_POSSIBLE", fit };
   }
   const fit = shouldUpgrade(suggestion.purpose, total, suggestion.budget) ? upgradeWithinBudget(parts, candidates, suggestion.budget, weights) : null;
@@ -104,7 +123,7 @@ export async function suggestBuild(userId: string | null, prompt: string): Promi
 
   const catalog = buildCatalog(entries);
   const partById = new Map(components.map(({ part }) => [part.productId, part]));
-  const budgetFromPrompt = promptBudget(prompt);
+  const needs: PromptNeeds = { budget: promptBudget(prompt), ramGb: requestedRamGb(prompt) };
 
   const messages: ChatMessage[] = [
     { role: "system", content: buildSystemPrompt(catalog) },
@@ -116,14 +135,16 @@ export async function suggestBuild(userId: string | null, prompt: string): Promi
   const started = Date.now();
   const firstReply = await chatComplete(messages, { json: true });
   const firstMs = Date.now() - started;
-  let attempt = evaluate(firstReply, catalog, partById, budgetFromPrompt);
+  let attempt = evaluate(firstReply, catalog, partById, needs);
   let repair: AiBuildSuggestionDto["repair"] = "NOT_NEEDED";
 
   if (attempt.issues.length > 0) {
     // Lượt đầu đã chậm mà bước tự điều chỉnh (không dùng AI) ra được cấu hình hợp lệ trong ngân sách thì khỏi bắt khách chờ
-    // thêm một lượt AI nữa. Bước đó không thêm được loại linh kiện, nên nhu cầu hiệu năng mà thiếu card rời thì vẫn nhờ AI
+    // thêm một lượt AI nữa. Bước đó không thêm được loại linh kiện hay tăng dung lượng RAM, nên nhu cầu hiệu năng mà thiếu
+    // card rời, hoặc RAM ít hơn mức khách nêu, thì vẫn nhờ AI
     const lacksGpu = attempt.suggestion !== null && needsPerformance(attempt.suggestion.purpose) && !attempt.suggestion.picks.VGA;
-    if (firstMs > SLOW_FIRST_REPLY_MS && !lacksGpu && adjustToBudget(attempt, candidates).fit) {
+    const lacksRam = ramShortfallIssue(ramGbOf(attempt.parts), needs.ramGb) !== null;
+    if (firstMs > SLOW_FIRST_REPLY_MS && !lacksGpu && !lacksRam && adjustToBudget(attempt, candidates, needs).fit) {
       repair = "SKIPPED";
       console.info(
         `[ai-build] Lượt đầu mất ${seconds(firstMs)} (quá ${seconds(SLOW_FIRST_REPLY_MS)}) — bỏ lượt nhờ AI sửa, hệ thống tự điều chỉnh theo ngân sách. Vấn đề của lượt đầu:\n  - ${attempt.issues.join("\n  - ")}`,
@@ -136,7 +157,7 @@ export async function suggestBuild(userId: string | null, prompt: string): Promi
           [...messages, { role: "assistant", content: firstReply }, { role: "user", content: buildRepairMessage(attempt.issues) }],
           { json: true },
         );
-        const second = evaluate(secondReply, catalog, partById, budgetFromPrompt);
+        const second = evaluate(secondReply, catalog, partById, needs);
         if (second.suggestion && second.issues.length <= attempt.issues.length) {
           attempt = second;
           repair = "REPAIRED";
@@ -153,20 +174,41 @@ export async function suggestBuild(userId: string | null, prompt: string): Promi
     throw new ServiceUnavailableError("AI chưa đưa ra được cấu hình hợp lệ. Vui lòng thử lại, hoặc tự chọn linh kiện bên dưới.");
   }
 
-  let picks = suggestion.picks;
-  let notes = suggestion.notes;
-  const { status, fit } = adjustToBudget(attempt, candidates);
-  const budgetFit: AiBuildSuggestionDto["budgetFit"] = { status, swaps: [] };
-  if (fit) {
-    const nameOf = new Map(entries.map((entry) => [entry.productId, entry.name]));
-    const product = (part: BuildPart) => ({ productId: part.productId, name: nameOf.get(part.productId) ?? "", price: part.price, quantity: part.quantity });
-    picks = { ...picks };
-    notes = { ...notes };
-    for (const { slot, to } of fit.swaps) {
+  const picks = { ...suggestion.picks };
+  const notes = { ...suggestion.notes };
+  const nameOf = new Map(entries.map((entry) => [entry.productId, entry.name]));
+  const product = (part: BuildPart) => ({ productId: part.productId, name: nameOf.get(part.productId) ?? "", price: part.price, quantity: part.quantity });
+  const applySwaps = (swaps: BudgetFit["swaps"]) => {
+    for (const { slot, to } of swaps) {
       picks[slot] = { productId: to.productId, quantity: to.quantity };
       delete notes[slot]; // lý do AI viết cho món cũ, không còn đúng
     }
-    budgetFit.swaps = fit.swaps.map(({ slot, from, to }) => ({ slot, from: product(from), to: product(to) }));
+    return swaps.map(({ slot, from, to }) => ({ slot, from: product(from), to: product(to) }));
+  };
+
+  // Còn lỗi tương thích sau lượt AI sửa (hoặc khi bỏ qua lượt sửa) thì hệ thống tự đổi ít món nhất cho hết lỗi, KHÔNG dùng
+  // AI — trước đây cấu hình lắp không được vẫn được lưu nguyên (yêu cầu B04 của bộ đánh giá: RAM DDR5 với mainboard DDR4)
+  const compatibilityFix: AiBuildSuggestionDto["compatibilityFix"] = { swaps: [], ramKept: true, withinBudget: true };
+  const compatibility = resolveCompatibility(attempt.parts, candidates, suggestion.budget, downgradeWeights(suggestion.purpose), needs.ramGb);
+  if (compatibility) {
+    const before = checkBuild(attempt.parts).totalPrice;
+    compatibilityFix.ramKept = (ramGbOf(compatibility.parts) ?? 0) >= (ramGbOf(attempt.parts) ?? 0);
+    compatibilityFix.withinBudget = suggestion.budget === null || compatibility.result.totalPrice <= Math.max(suggestion.budget, before);
+    attempt = { ...attempt, parts: compatibility.parts };
+    compatibilityFix.swaps = applySwaps(compatibility.swaps);
+    console.info(
+      `[ai-build] Còn lỗi tương thích — hệ thống đổi ${compatibility.swaps.length} món cho hết lỗi${compatibilityFix.ramKept ? "" : " (phải giảm RAM)"}${
+        compatibilityFix.withinBudget ? "" : ` (tổng tăng lên ${formatPrice(compatibility.result.totalPrice)}, vượt ngân sách)`
+      }: ${compatibilityFix.swaps.map((swap) => `${swap.slot} ${swap.from.name} -> ${swap.to.name}`).join("; ")}`,
+    );
+  } else if (checkBuild(attempt.parts).checks.some((check) => check.severity === "ERROR")) {
+    console.info("[ai-build] Còn lỗi tương thích và không tìm được cách đổi tối đa 3 món để hết lỗi");
+  }
+
+  const { status, fit } = adjustToBudget(attempt, candidates, needs);
+  const budgetFit: AiBuildSuggestionDto["budgetFit"] = { status, swaps: [] };
+  if (fit) {
+    budgetFit.swaps = applySwaps(fit.swaps);
     console.info(
       `[ai-build] Tổng ${formatPrice(checkBuild(attempt.parts).totalPrice)} so với ngân sách ${formatPrice(suggestion.budget ?? 0)} — hệ thống ${status === "FITTED" ? "hạ" : "nâng"} ${fit.swaps.length} món, tổng mới ${formatPrice(fit.result.totalPrice)}: ${budgetFit.swaps
         .map((swap) => `${swap.slot} ${swap.from.name} -> ${swap.to.name}`)
@@ -176,7 +218,13 @@ export async function suggestBuild(userId: string | null, prompt: string): Promi
     console.info(`[ai-build] Vẫn vượt ngân sách ${formatPrice(suggestion.budget ?? 0)} và không có cách đổi nào vừa ngân sách mà vẫn tương thích`);
   }
 
-  const finalTotal = fit?.result.totalPrice ?? checkBuild(attempt.parts).totalPrice;
+  const finalParts = fit?.parts ?? attempt.parts;
+  const finalTotal = fit?.result.totalPrice ?? checkBuild(finalParts).totalPrice;
+  const finalRamGb = ramGbOf(finalParts);
+  const ramShortfall = needs.ramGb !== null && finalRamGb !== null && finalRamGb < needs.ramGb ? { requestedGb: needs.ramGb, finalGb: finalRamGb } : null;
+  if (ramShortfall) {
+    console.info(`[ai-build] Khách cần ${ramShortfall.requestedGb}GB RAM, cấu hình lưu có ${ramShortfall.finalGb}GB (không có cách giữ đủ mà vẫn trong ngân sách)`);
+  }
   const budgetUse = suggestion.budget === null ? "" : ` / ${formatPrice(suggestion.budget)} (${Math.round((finalTotal / suggestion.budget) * 100)}%)`;
   console.info(
     `[ai-build] Xong sau ${seconds(Date.now() - started)} (lượt đầu ${seconds(firstMs)}; lượt sửa: ${repair}; ngân sách: ${status}) — tổng ${formatPrice(finalTotal)}${budgetUse}`,
@@ -193,7 +241,7 @@ export async function suggestBuild(userId: string | null, prompt: string): Promi
 
   return {
     build,
-    understood: { budget: suggestion.budget, purpose: suggestion.purpose },
+    understood: { budget: suggestion.budget, purpose: suggestion.purpose, ramGb: needs.ramGb },
     summary: suggestion.summary,
     notes: BUILD_SLOTS.flatMap((slot) => {
       const text = notes[slot];
@@ -201,6 +249,8 @@ export async function suggestBuild(userId: string | null, prompt: string): Promi
     }),
     repair,
     budgetFit,
+    compatibilityFix,
+    ramShortfall,
     droppedCount: suggestion.rejectedCodes.length,
   };
 }

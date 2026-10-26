@@ -1,6 +1,7 @@
 import OpenAI, { APIError } from "openai";
 import { env } from "../env.js";
 import { ServiceUnavailableError } from "../middleware/errors.js";
+import { retryBeforeFirstChunk } from "./stream-retry.js";
 
 // SDK mặc định timeout 10 PHÚT (OpenAI.DEFAULT_TIMEOUT = 600000ms) — hợp lý cho việc chạy nền, nhưng
 // với AI Chat có người dùng đang chờ trực tiếp, một lượt Gemini bị quá tải "treo" (không trả 503 nhanh
@@ -123,17 +124,36 @@ export async function chatComplete(messages: ChatMessage[], options: { json?: bo
   return response.choices[0]?.message?.content ?? "";
 }
 
-/**
- * Lỗi TRƯỚC khi có token nào trả về thì `callWithRetry` xử lý như bình thường (ném lỗi rõ ràng).
- * Lỗi GIỮA CHỪNG (sau khi đã bắt đầu stream) không đi qua đây được nữa — response đã cam kết 200
- * text/event-stream rồi, bên gọi (route) phải tự bắt exception từ vòng lặp `for await` và ghi một
- * sự kiện SSE lỗi thay vì đổi mã trạng thái HTTP.
- */
-export async function* chatCompleteStream(messages: ChatMessage[]): AsyncGenerator<string> {
-  requireConfigured();
-  const stream = await callWithRetry(() => openaiClient().chat.completions.create({ model: env.ai.chatModel, messages, stream: true }));
+/** Mỗi lần thử phải có chữ đầu tiên trong chừng này (đo thật: lượt chậm nhất vẫn trả lời được mất ~20 giây) */
+const CHAT_FIRST_CHUNK_TIMEOUT_MS = 25_000;
+/** Tổng số lần thử khi Gemini hỏng trước chữ đầu tiên — thêm nữa thì khách chờ quá lâu, thà báo lỗi để khách tự gửi lại */
+const CHAT_STREAM_ATTEMPTS = 2;
+
+async function* openTextStream(messages: ChatMessage[], signal: AbortSignal): AsyncGenerator<string> {
+  const stream = await callWithRetry(() => openaiClient().chat.completions.create({ model: env.ai.chatModel, messages, stream: true }, { signal }));
   for await (const chunk of stream) {
     const delta = chunk.choices[0]?.delta?.content;
     if (delta) yield delta;
+  }
+}
+
+/**
+ * Hỏng TRƯỚC chữ đầu tiên (không mở được kết nối, Gemini im lặng quá `CHAT_FIRST_CHUNK_TIMEOUT_MS`, hay trả về rỗng) thì tự thử
+ * lại một lần — khách chỉ thấy chờ lâu hơn chút, không thấy lỗi (`stream-retry.ts`). Lỗi GIỮA CHỪNG (đã có chữ) thì không thử
+ * lại được nữa — response đã cam kết 200 text/event-stream rồi, bên gọi (route) phải tự bắt exception từ vòng lặp `for await`
+ * và ghi một sự kiện SSE lỗi thay vì đổi mã trạng thái HTTP.
+ */
+export async function* chatCompleteStream(messages: ChatMessage[]): AsyncGenerator<string> {
+  requireConfigured();
+  try {
+    yield* retryBeforeFirstChunk((_attempt, signal) => openTextStream(messages, signal), {
+      maxAttempts: CHAT_STREAM_ATTEMPTS,
+      firstChunkTimeoutMs: CHAT_FIRST_CHUNK_TIMEOUT_MS,
+      delayMs: 500,
+      onRetry: (attempt, error) =>
+        console.warn(`[ai-chat] Lần ${attempt} lỗi trước chữ đầu tiên (${error instanceof Error ? error.message : String(error)}) — thử lại`),
+    });
+  } catch (error) {
+    throw error instanceof ServiceUnavailableError ? error : mapError(error);
   }
 }

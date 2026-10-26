@@ -72,6 +72,24 @@ console.log("\n[2] shiftPriceFilter");
   check("'trên 20 triệu' rồi 'đắt hơn' -> giữ trên 20 triệu", shiftPriceFilter({ min: 20_000_000, label: "Trên 20 triệu" }, "pricier")?.min, 20_000_000);
 }
 
+console.log("\n[2b] Ngân sách là trần, không nới ±20% (H01: gợi ý mẫu 33 triệu cho 'ngân sách 30 triệu')");
+{
+  const budget = buildChatRetrievalQuery("Mình học đồ hoạ, ngân sách 30 triệu, nên chọn laptop nào?", []).priceFilter;
+  check("'ngân sách 30 triệu' -> tối đa đúng 30 triệu", [budget?.max, budget?.budgetCeiling, budget?.label], [30_000_000, true, "Ngân sách tối đa 30 triệu"]);
+  check("mẫu 32.990.000đ bị loại", inRange(32_990_000, budget), false);
+  check("mẫu 29.990.000đ vẫn được gợi ý", inRange(29_990_000, budget), true);
+  const noAccents = buildChatRetrievalQuery("ngan sach 30 trieu mua laptop do hoa", []).priceFilter;
+  check("gõ không dấu cũng nhận ra", noAccents?.max, 30_000_000);
+  const onlyHave = buildChatRetrievalQuery("mình chỉ có 20 triệu, mua laptop gì?", []).priceFilter;
+  check("'chỉ có 20 triệu' -> tối đa 20 triệu", onlyHave?.max, 20_000_000);
+  const around = buildChatRetrievalQuery("laptop gaming tầm 25 triệu", []).priceFilter;
+  check("'tầm 25 triệu' vẫn là khoảng 20–30 triệu", [around?.min, around?.max, around?.budgetCeiling], [20_000_000, 30_000_000, undefined]);
+  const pricier = buildChatRetrievalQuery("Có con nào đắt hơn không?", ["ngân sách 30 triệu mua laptop đồ hoạ"]).priceFilter;
+  check("ngân sách rồi 'đắt hơn' -> trên 30 triệu", [pricier?.min, pricier?.max], [30_000_000, undefined]);
+  const cheaper = buildChatRetrievalQuery("Có con nào rẻ hơn không?", ["ngân sách 30 triệu mua laptop đồ hoạ"]).priceFilter;
+  check("ngân sách rồi 'rẻ hơn' -> dưới sàn 24 triệu", [cheaper?.min, cheaper?.max], [undefined, 24_000_000]);
+}
+
 console.log("\n[3] summarizeSpecs — thông số cho prompt");
 {
   const vga = summarizeSpecs({
@@ -105,6 +123,10 @@ console.log("\n[4] buildChatSystemPrompt");
   check("dòng sản phẩm kèm thông số", prompt.includes("- Card màn hình MSI RTX 5060 Ventus 2X (VGA) — 8.490.000đ — Còn hàng — Thông số: Chiều dài: 197 mm"), true);
   check("có luật cấm khẳng định giá sàn/giá trần của cả danh mục", prompt.includes("không khẳng định giá thấp nhất/cao nhất của cả một danh mục"), true);
   check("báo cho AI biết danh sách đã lọc theo khoảng giá", prompt.includes('lọc theo khoảng giá "Từ 20 triệu đến 25 triệu"'), true);
+  check("có luật cấm nói tổng số sản phẩm PCZone có (H06: 'PCZone hiện có 3 lựa chọn' khi kho có 5 mainboard AM5)", prompt.includes("KHÔNG nói tổng số sản phẩm hay số lựa chọn mà PCZone có"), true);
+  check("khoảng giá thường không kèm câu ngân sách", prompt.includes("ngân sách tối đa"), false);
+  const budgetPrompt = buildChatSystemPrompt([], { min: 24_000_000, max: 30_000_000, target: 30_000_000, budgetCeiling: true, label: "Ngân sách tối đa 30 triệu" });
+  check("có ngân sách -> dặn AI không gợi ý quá mức đó", budgetPrompt.includes("Khách đã nêu ngân sách tối đa 30.000.000đ: không gợi ý"), true);
   check("sản phẩm không có thông số -> không in phần 'Thông số:' rỗng", buildChatSystemPrompt([{ name: "A", categoryName: "B", price: 1000, inStock: false, specs: "" }], null).endsWith("- A (B) — 1.000đ — Hết hàng"), true);
 }
 

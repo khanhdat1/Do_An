@@ -10,6 +10,8 @@ import {
   parseSuggestion,
   minimumBuildTotal,
   promptBudget,
+  ramShortfallIssue,
+  requestedRamGb,
   shouldUpgrade,
   statedBudget,
   suggestionName,
@@ -223,6 +225,20 @@ console.log("\n[8] Ngân sách để kiểm tra lấy từ câu của khách, kh
     true,
   );
   check("câu không nêu giá -> giữ con số AI đọc", withPromptBudget(misread, null).budget, 30_000_000);
+}
+
+console.log("\n[9] Dung lượng RAM khách nêu — sàn cho các bước tự điều chỉnh");
+{
+  check("'cần 32GB RAM' (ca B04) -> 32", requestedRamGb("PC lập trình 18 triệu, cần 32GB RAM"), 32);
+  check("'ram tối thiểu 32 GB' -> 32", requestedRamGb("build pc ram tối thiểu 32 GB"), 32);
+  check("'ram 16g' -> 16", requestedRamGb("pc chơi game ram 16g"), 16);
+  check("'32G-RAM' -> 32", requestedRamGb("PC 32G-RAM để dựng video"), 32);
+  check("VRAM của card không phải RAM", requestedRamGb("card 8GB VRAM chơi game"), null);
+  check("không nêu RAM -> null", requestedRamGb("PC chơi game 20 triệu"), null);
+  check("số không phải dung lượng RAM thường gặp -> null", requestedRamGb("cần 20GB RAM"), null);
+  check("thiếu RAM so với mức khách nêu -> nhờ AI sửa", ramShortfallIssue(16, 32)?.startsWith("Khách cần 32GB RAM nhưng cấu hình mới có 16GB"), true);
+  check("đủ RAM -> không có vấn đề", ramShortfallIssue(32, 32), null);
+  check("khách không nêu RAM -> không có vấn đề", ramShortfallIssue(16, null), null);
 }
 
 console.log(`\n===== ${passed} pass / ${failed} fail =====`);

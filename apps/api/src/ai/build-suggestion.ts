@@ -280,6 +280,28 @@ export function promptBudget(prompt: string): number | null {
   return amount !== undefined && amount >= MIN_BUDGET && amount <= MAX_BUDGET ? amount : null;
 }
 
+/** Dung lượng RAM hợp lệ để nhận là yêu cầu của khách — số khác ("cần 20GB RAM") nhiều khả năng là gõ nhầm */
+const RAM_SIZES = new Set([8, 16, 24, 32, 48, 64, 96, 128]);
+
+/**
+ * Dung lượng RAM khách nêu thẳng trong câu ("cần 32GB RAM", "ram tối thiểu 32 GB", "ram 16g"), đọc tất định như ngân sách.
+ * Các bước tự điều chỉnh (budget-fit.ts) dùng nó làm sàn: gặp thật ở "PC lập trình 18 triệu, cần 32GB RAM" — hạ ngân sách
+ * đổi RAM 2×16GB sang 2×8GB trong khi lời giới thiệu của AI vẫn ghi 32GB. Không bắt nhầm "8GB VRAM" (card màn hình).
+ * `null` khi câu không nêu.
+ */
+export function requestedRamGb(prompt: string): number | null {
+  const text = normalize(prompt);
+  const match = /\b(\d{1,3}) ?g(?:b)? ?ram\b/.exec(text) ?? /\bram (?:toi thieu |it nhat |tu |khoang )?(\d{1,3}) ?g(?:b)?\b/.exec(text);
+  const gb = match ? Number(match[1]) : Number.NaN;
+  return RAM_SIZES.has(gb) ? gb : null;
+}
+
+/** Cấu hình có ít RAM hơn mức khách nêu thì nhờ AI sửa — bước tự điều chỉnh chỉ giữ, không tự nâng dung lượng lên */
+export function ramShortfallIssue(ramGb: number | null, requestedGb: number | null): string | null {
+  if (requestedGb === null || ramGb === null || ramGb >= requestedGb) return null;
+  return `Khách cần ${requestedGb}GB RAM nhưng cấu hình mới có ${ramGb}GB. Hãy chọn RAM (loại và số thanh) đủ ${requestedGb}GB, hợp với mainboard.`;
+}
+
 /** Thay ngân sách AI tự khai bằng ngân sách đọc từ câu của khách (nếu đọc được) trước mọi bước kiểm tra */
 export function withPromptBudget(suggestion: ParsedSuggestion, budgetFromPrompt: number | null): ParsedSuggestion {
   return budgetFromPrompt === null ? suggestion : { ...suggestion, budget: budgetFromPrompt };

@@ -1,11 +1,11 @@
 "use client";
 
-import { Copy, Scale, Sparkles, TrendingUp, TriangleAlert, X } from "lucide-react";
+import { Copy, Scale, Sparkles, TrendingUp, TriangleAlert, Wrench, X } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { formatPrice } from "@/lib/format";
 import { SLOT_LABEL, savedBuildUrl, type BuildSelection } from "@/lib/pc-build";
 import { cn } from "@/lib/utils";
-import type { AiBuildSuggestion, BuildCheckResult } from "@/types";
+import type { AiBuildSuggestion, BudgetSwap, BuildCheckResult } from "@/types";
 
 interface AiSuggestionCardProps {
   suggestion: AiBuildSuggestion;
@@ -15,10 +15,25 @@ interface AiSuggestionCardProps {
   onDismiss: () => void;
 }
 
+function SwapList({ swaps }: { swaps: BudgetSwap[] }) {
+  return (
+    <ul className="mt-1.5 space-y-1">
+      {swaps.map((swap) => (
+        <li key={swap.slot}>
+          <span className="font-semibold text-slate-700">{SLOT_LABEL[swap.slot]}:</span> {swap.from.name} ({formatPrice(swap.from.price)}
+          {swap.from.quantity > 1 ? ` × ${swap.from.quantity}` : ""}) → <span className="font-semibold text-slate-800">{swap.to.name}</span> (
+          {formatPrice(swap.to.price)}
+          {swap.to.quantity > 1 ? ` × ${swap.to.quantity}` : ""})
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** Thẻ giải thích của AI. Tổng tiền so với ngân sách luôn lấy từ hệ thống, vì AI có thể tự nhận sai là "vừa ngân sách" */
 export default function AiSuggestionCard({ suggestion, selection, result, onDismiss }: AiSuggestionCardProps) {
   const toast = useToast();
-  const { budget, purpose } = suggestion.understood;
+  const { budget, purpose, ramGb } = suggestion.understood;
   const suggested = new Map(suggestion.build.items.map((item) => [item.slot, item.productId]));
   const changedCount = suggestion.build.items.filter((item) => selection[item.slot]?.productId !== item.productId).length;
   const notes = suggestion.notes.filter((note) => selection[note.slot]?.productId === suggested.get(note.slot));
@@ -39,6 +54,9 @@ export default function AiSuggestionCard({ suggestion, selection, result, onDism
   // Hệ thống (không dùng AI) đã đổi vài món: hạ cho vừa ngân sách, hoặc nâng để tận dụng ngân sách
   const upgraded = budgetFit.status === "UPGRADED";
   const systemSwaps = budgetFit.status === "FITTED" || upgraded ? budgetFit.swaps : [];
+  // `?? …`: API bản cũ (web và API không triển khai cùng lúc) chưa trả trường này
+  const compatibilityFix = suggestion.compatibilityFix ?? { swaps: [], ramKept: true, withinBudget: true };
+  const compatSwaps = compatibilityFix.swaps;
   const swapDelta = Math.abs(systemSwaps.reduce((sum, swap) => sum + swap.to.price * swap.to.quantity - swap.from.price * swap.from.quantity, 0));
   // Tổng lúc lưu trừ phần hệ thống thêm vào = tổng AI chọn ban đầu
   const aiBudgetUse = upgraded && budget ? Math.round(((build.totalAtSave - swapDelta) / budget) * 100) : null;
@@ -68,6 +86,12 @@ export default function AiSuggestionCard({ suggestion, selection, result, onDism
           <p className="mt-1 text-xs text-slate-500">
             AI hiểu: ngân sách <strong className="text-slate-700">{budget === null ? "không nêu" : formatPrice(budget)}</strong> · nhu cầu{" "}
             <strong className="text-slate-700">{purpose}</strong>
+            {ramGb ? (
+              <>
+                {" "}
+                · RAM <strong className="text-slate-700">{ramGb}GB</strong>
+              </>
+            ) : null}
           </p>
         </div>
         <button
@@ -99,6 +123,35 @@ export default function AiSuggestionCard({ suggestion, selection, result, onDism
         </p>
       ) : null}
 
+      {suggestion.ramShortfall ? (
+        <p className="mt-3 flex gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800 ring-1 ring-amber-200">
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>
+            Bạn cần {suggestion.ramShortfall.requestedGb}GB RAM, nhưng với ngân sách
+            {budget === null ? " này" : ` ${formatPrice(budget)}`} không có cấu hình nào lắp được mà đủ {suggestion.ramShortfall.requestedGb}GB,
+            nên hệ thống giữ ngân sách và dùng {suggestion.ramShortfall.finalGb}GB. Muốn đủ {suggestion.ramShortfall.requestedGb}GB, bạn tăng
+            ngân sách hoặc tự đổi RAM ở bảng bên dưới.
+          </span>
+        </p>
+      ) : null}
+
+      {compatSwaps.length > 0 ? (
+        <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 text-xs leading-relaxed text-slate-600 ring-1 ring-slate-200">
+          <p className="flex items-center gap-1.5 font-semibold text-slate-800">
+            <Wrench className="size-4 shrink-0 text-brand-500" aria-hidden />
+            Hệ thống đã tự sửa lỗi tương thích
+          </p>
+          <p className="mt-1">
+            Lựa chọn của AI còn linh kiện không lắp được với nhau, nên hệ thống (không dùng AI) đổi {compatSwaps.length} món — ít thay đổi
+            nhất{compatibilityFix.ramKept ? ", giữ đủ dung lượng RAM" : ", nhưng phải giảm dung lượng RAM"}
+            {compatibilityFix.withinBudget
+              ? " và không vượt ngân sách:"
+              : ". Không có cách sửa nào nằm trong ngân sách, nên tổng tăng lên:"}
+          </p>
+          <SwapList swaps={compatSwaps} />
+        </div>
+      ) : null}
+
       {systemSwaps.length > 0 ? (
         <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 text-xs leading-relaxed text-slate-600 ring-1 ring-slate-200">
           <p className="flex items-center gap-1.5 font-semibold text-slate-800">
@@ -121,16 +174,7 @@ export default function AiSuggestionCard({ suggestion, selection, result, onDism
               bộ kiểm tra tương thích, và giữ lâu nhất linh kiện quan trọng với nhu cầu &quot;{purpose}&quot;:
             </p>
           )}
-          <ul className="mt-1.5 space-y-1">
-            {systemSwaps.map((swap) => (
-              <li key={swap.slot}>
-                <span className="font-semibold text-slate-700">{SLOT_LABEL[swap.slot]}:</span> {swap.from.name} ({formatPrice(swap.from.price)}
-                {swap.from.quantity > 1 ? ` × ${swap.from.quantity}` : ""}) → <span className="font-semibold text-slate-800">{swap.to.name}</span> (
-                {formatPrice(swap.to.price)}
-                {swap.to.quantity > 1 ? ` × ${swap.to.quantity}` : ""})
-              </li>
-            ))}
-          </ul>
+          <SwapList swaps={systemSwaps} />
           <p className="mt-1.5 font-semibold text-emerald-700">
             {upgraded ? `Thêm ${formatPrice(swapDelta)}, tổng vẫn trong ngân sách` : `Bớt được ${formatPrice(swapDelta)}`}
           </p>
@@ -139,7 +183,7 @@ export default function AiSuggestionCard({ suggestion, selection, result, onDism
 
       {suggestion.summary ? (
         <p className="mt-3 text-sm leading-relaxed text-slate-700">
-          {systemSwaps.length > 0 ? (
+          {systemSwaps.length > 0 || compatSwaps.length > 0 ? (
             <span className="block text-xs text-slate-500">Tóm tắt của AI (viết cho lựa chọn ban đầu, trước khi hệ thống đổi linh kiện):</span>
           ) : null}
           {suggestion.summary}

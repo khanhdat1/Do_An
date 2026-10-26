@@ -476,8 +476,8 @@ export interface BudgetSwapDto {
 /** `POST /api/ai/build` — gợi ý đã được kiểm tra bằng bộ luật và lưu lại (có link ngắn) */
 export interface AiBuildSuggestionDto {
   build: SavedBuildDto;
-  /** Ngân sách/nhu cầu AI hiểu từ câu của khách — hiện ra để khách tự kiểm tra */
-  understood: { budget: number | null; purpose: string };
+  /** Ngân sách/nhu cầu AI hiểu từ câu của khách — hiện ra để khách tự kiểm tra. `ramGb`: dung lượng RAM khách nêu (đọc tất định) */
+  understood: { budget: number | null; purpose: string; ramGb: number | null };
   /** AI viết cho lựa chọn CỦA NÓ — khi `budgetFit` là FITTED/UPGRADED, vài món đã được hệ thống đổi sau đó */
   summary: string;
   /** Lý do AI chọn từng món; bỏ những món hệ thống đã đổi (lý do cũ không còn đúng) */
@@ -496,6 +496,18 @@ export interface AiBuildSuggestionDto {
    * SKIPPED: lượt đầu chỉ lệch ngân sách nhưng đã quá chậm, nên không nhờ AI sửa — bước `budgetFit` tự điều chỉnh.
    */
   repair: "NOT_NEEDED" | "REPAIRED" | "FAILED" | "SKIPPED";
+  /**
+   * Bước KHÔNG dùng AI, chạy trước `budgetFit`: cấu hình sau lượt AI sửa vẫn còn lỗi tương thích thì hệ thống tự đổi ít món
+   * nhất (tối đa 3) cho hết lỗi, ưu tiên giữ dung lượng RAM và không vượt ngân sách. `swaps` rỗng: không cần hoặc không sửa được.
+   * `ramKept`: tổng dung lượng RAM không giảm. `withinBudget`: tổng không vượt ngân sách (lựa chọn của AI vốn đã vượt thì
+   * không đắt hơn lựa chọn đó) — false khi chỉ sửa được bằng cách tăng tổng, `budgetFit` chạy sau sẽ cố kéo về.
+   */
+  compatibilityFix: { swaps: BudgetSwapDto[]; ramKept: boolean; withinBudget: boolean };
+  /**
+   * Cấu hình lưu có ít RAM hơn mức khách nêu: không có cách nào vừa lắp được, vừa đủ RAM đó, vừa trong ngân sách, nên hệ
+   * thống giữ ngân sách. `null`: khách không nêu RAM, hoặc đã đủ.
+   */
+  ramShortfall: { requestedGb: number; finalGb: number } | null;
   /** Số mã AI đưa ra nhưng không có trong kho/sai loại nên bị bỏ */
   droppedCount: number;
 }
